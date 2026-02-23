@@ -9,14 +9,19 @@ environment:
 
 dependencies:
   bloc: ^9.2.0
+  equatable: ^2.0.8
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.2
+  font_awesome_flutter: ^10.8.0
+  permission_handler: ^12.0.1
+  shadcn_flutter: ^0.0.51
 
 dev_dependencies:
+  flutter_native_splash: ^2.4.6
   bloc_lint: ">=0.3.3 <0.3.6"
   bloc_test: ^10.0.0
   bloc_tools: ^0.1.0-dev.20
@@ -28,3 +33,5 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
+  assets:
+    - assets/icons/
