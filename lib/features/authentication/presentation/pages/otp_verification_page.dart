@@ -3,6 +3,8 @@ import 'package:mobile/core/constants/app_constants.dart';
 import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
+/// If you are on an emulator and not using a test number (to be added in Firebase console), this will not work as the app is not authorized.
+/// You must either use a physical device or a test number.
 class OtpVerificationPage extends StatelessWidget {
   const OtpVerificationPage({super.key});
 

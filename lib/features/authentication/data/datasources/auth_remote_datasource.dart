@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mobile/features/authentication/data/models/user_model.dart';
 
 abstract class AuthRemoteDataSource {
@@ -14,23 +17,84 @@ abstract class AuthRemoteDataSource {
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
+  AuthRemoteDataSourceImpl(this._firebaseAuth);
+
+  final FirebaseAuth _firebaseAuth;
+
+  // Stored between sendOtp and verifyOtp calls
+  String? _verificationId;
+
   @override
-  Future<void> sendOtp({required String phoneNumber}) =>
-      Future<void>.delayed(const Duration(seconds: 1));
+  Future<void> sendOtp({required String phoneNumber}) async {
+    final completer = Completer<void>();
+
+    await _firebaseAuth.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      timeout: const Duration(seconds: 60),
+      verificationCompleted: (PhoneAuthCredential credential) {
+        // Auto-verification on some Android devices — OTP retrieved silently.
+        if (!completer.isCompleted) completer.complete();
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        if (!completer.isCompleted) completer.completeError(e);
+      },
+      codeSent: (String verificationId, int? resendToken) {
+        _verificationId = verificationId;
+        if (!completer.isCompleted) completer.complete();
+      },
+      codeAutoRetrievalTimeout: (String verificationId) {
+        _verificationId = verificationId;
+        if (!completer.isCompleted) completer.complete();
+      },
+    );
+
+    return completer.future;
+  }
 
   @override
   Future<UserModel> verifyOtp({
     required String phoneNumber,
     required String otp,
   }) async {
-    await Future<void>.delayed(const Duration(seconds: 1));
-    return UserModel(id: 'mock-id', phoneNumber: phoneNumber, isNewUser: true);
+    final verificationId = _verificationId;
+    if (verificationId == null) {
+      throw FirebaseAuthException(
+        code: 'missing-verification-id',
+        message: 'sendOtp must be called before verifyOtp.',
+      );
+    }
+
+    final credential = PhoneAuthProvider.credential(
+      verificationId: verificationId,
+      smsCode: otp,
+    );
+
+    final userCredential =
+        await _firebaseAuth.signInWithCredential(credential);
+
+    final firebaseUser = userCredential.user;
+    if (firebaseUser == null) {
+      throw FirebaseAuthException(
+        code: 'null-user',
+        message: 'Sign in succeeded but user is null.',
+      );
+    }
+
+    return UserModel(
+      id: firebaseUser.uid,
+      phoneNumber: firebaseUser.phoneNumber ?? phoneNumber,
+      // FIXME: Violation of SRP, What's more, the problem is that yes, his
+      //  number is recognized, but it goes straight to the notifications page,
+      // when in fact he may not even have entered his name yet.
+      isNewUser: userCredential.additionalUserInfo?.isNewUser ?? false,
+    );
   }
 
   @override
   Future<UserModel> linkGoogleAccount() async {
     await Future<void>.delayed(const Duration(seconds: 1));
-    return const UserModel(id: 'mock-google-id', phoneNumber: '', isNewUser: false);
+    return const UserModel(
+        id: 'mock-google-id', phoneNumber: '', isNewUser: false);
   }
 
   @override

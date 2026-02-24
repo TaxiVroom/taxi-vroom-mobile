@@ -1,5 +1,6 @@
 import 'package:mobile/features/authentication/domain/entities/user_entity.dart';
 
+// TODO: Interface instead of abstract class
 abstract class AuthRepository {
   Future<void> sendOtp({required String phoneNumber});
 

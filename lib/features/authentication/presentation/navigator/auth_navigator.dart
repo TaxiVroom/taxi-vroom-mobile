@@ -28,6 +28,7 @@ class _AuthNavigatorState extends State<AuthNavigator> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
+      // TODO: Check if we can do without this listenWhen
       listenWhen: (previous, current) {
         if (current is AuthPhoneNumberInputReady) return false;
         if (current is AuthEmailInputReady) {

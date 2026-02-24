@@ -7,7 +7,7 @@ class UserModel extends UserEntity {
     super.email,
     super.firstName,
     super.lastName,
-    required this.isNewUser,
+    required this.isNewUser,  // TODO: To remove
   });
 
   final bool isNewUser;

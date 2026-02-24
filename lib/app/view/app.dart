@@ -1,5 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/features/authentication/data/datasources/auth_remote_datasource_fake.dart';
+import 'package:mobile/features/authentication/data/datasources/auth_remote_datasource.dart';
 import 'package:mobile/features/authentication/data/repositories/auth_repository_impl.dart';
 import 'package:mobile/features/authentication/data/repositories/notification_repository_impl.dart';
 import 'package:mobile/features/authentication/domain/usecases/check_email_availability_usecase.dart';
@@ -17,7 +18,7 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dataSource = AuthRemoteDataSourceFake();
+    final dataSource = AuthRemoteDataSourceImpl(FirebaseAuth.instance);
     final authRepo = AuthRepositoryImpl(dataSource);
     final notifRepo = NotificationRepositoryImpl();
 
