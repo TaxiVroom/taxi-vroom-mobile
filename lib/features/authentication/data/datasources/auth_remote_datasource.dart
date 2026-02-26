@@ -2,7 +2,13 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mobile/features/authentication/data/models/user_model.dart';
+import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
+import 'package:mobile/features/authentication/domain/entities/registration_flow_update.dart';
 
+// TODO: Violation SRP + ISP (SOLID) — ce datasource mélange deux responsabilités :
+//  - Appels Firebase (sendOtp, verifyOtp, linkGoogleAccount)
+//  - Appels backend HTTP (fetchRegistrationFlow, registerWithEmail, checkEmailAvailability)
+//  À scinder en FirebaseAuthDataSource et RegistrationFlowDataSource.
 abstract class AuthRemoteDataSource {
   Future<void> sendOtp({required String phoneNumber});
   Future<UserModel> verifyOtp({required String phoneNumber, required String otp});
@@ -14,6 +20,19 @@ abstract class AuthRemoteDataSource {
     required String phoneNumber,
   });
   Future<bool> checkEmailAvailability({required String email});
+  Future<RegistrationFlowEntity> getOrCreateRegistrationFlow({required String userId});
+
+  Future<void> updateRegistrationFlow({
+    required String userId,
+    required RegistrationFlowUpdate update,
+  });
+
+  Future<void> createPassenger({
+    required String userId,
+    required String email,
+    required String firstName,
+    required String lastName,
+  });
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -83,18 +102,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     return UserModel(
       id: firebaseUser.uid,
       phoneNumber: firebaseUser.phoneNumber ?? phoneNumber,
-      // FIXME: Violation of SRP, What's more, the problem is that yes, his
-      //  number is recognized, but it goes straight to the notifications page,
-      // when in fact he may not even have entered his name yet.
-      isNewUser: userCredential.additionalUserInfo?.isNewUser ?? false,
     );
   }
 
   @override
   Future<UserModel> linkGoogleAccount() async {
     await Future<void>.delayed(const Duration(seconds: 1));
-    return const UserModel(
-        id: 'mock-google-id', phoneNumber: '', isNewUser: false);
+    return const UserModel(id: 'mock-google-id', phoneNumber: '');
   }
 
   @override
@@ -111,7 +125,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       email: email,
       firstName: firstName,
       lastName: lastName,
-      isNewUser: false,
     );
   }
 
@@ -119,5 +132,46 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<bool> checkEmailAvailability({required String email}) async {
     await Future<void>.delayed(const Duration(milliseconds: 800));
     return true;
+  }
+
+  @override
+  Future<void> updateRegistrationFlow({
+    required String userId,
+    required RegistrationFlowUpdate update,
+  }) async {
+    // We translate the sealed class into JSON: only the fields for the current step
+    // are sent, the rest is ignored by the backend (PATCH).
+    // FIXME: Add a toJson method on RegistrationFlowUpdate subclasses
+    //  so this switch lives in the model, not here.
+    // ignore: unused_local_variable
+    final body = switch (update) {
+      EmailUpdate(:final email) => {'email': email},
+      NameUpdate(:final firstName, :final lastName) => {
+          'first_name': firstName,
+          'last_name': lastName,
+        },
+    };
+    // TODO: PATCH /registration-flows/:userId with body
+    throw UnimplementedError('updateRegistrationFlow not yet connected to backend');
+  }
+
+  @override
+  Future<void> createPassenger({
+    required String userId,
+    required String email,
+    required String firstName,
+    required String lastName,
+  }) async {
+    // TODO: POST /passengers  { userId, email, firstName, lastName }
+    throw UnimplementedError('createPassenger not yet connected to backend');
+  }
+
+  @override
+  Future<RegistrationFlowEntity> getOrCreateRegistrationFlow({required String userId}) async {
+    // TODO: GET /registration-flows/:userId
+    // Le JSON doit contenir un champ 'role' ('passenger' | 'driver') pour construire
+    // le bon sous-type (PassengerRegistrationFlowModel ou DriverRegistrationFlowModel).
+    // Le backend crée la registration_flow si elle n'existe pas encore.
+    throw UnimplementedError('getOrCreateRegistrationFlow not yet connected to backend');
   }
 }

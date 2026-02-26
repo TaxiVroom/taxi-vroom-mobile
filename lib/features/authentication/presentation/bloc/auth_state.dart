@@ -74,77 +74,18 @@ final class AuthGoogleSignInLoading extends AuthState {
   const AuthGoogleSignInLoading();
 }
 
-final class AuthNewUserDetected extends AuthState {
-  const AuthNewUserDetected({required this.phoneNumber});
+/// État de sortie du flow auth. Porte le résultat de [getOrCreateRegistrationFlow]
+/// afin que le navigator puisse router vers le bon flow d'inscription
+/// (passenger, driver…) via un switch exhaustif sur le type de [registrationFlow].
+final class AuthOtpVerified extends AuthState {
+  const AuthOtpVerified({required this.registrationFlow});
 
-  final String phoneNumber;
-
-  @override
-  List<Object> get props => [phoneNumber];
-}
-
-final class AuthEmailInputReady extends AuthState {
-  const AuthEmailInputReady({
-    required this.phoneNumber,
-    this.isFormatValid = false,
-  });
-
-  final String phoneNumber;
-  final bool isFormatValid;
-
-  AuthEmailInputReady copyWith({bool? isFormatValid}) => AuthEmailInputReady(
-        phoneNumber: phoneNumber,
-        isFormatValid: isFormatValid ?? this.isFormatValid,
-      );
+  // Sealed class — le compilateur force la gestion exhaustive de chaque sous-type
+  // (PassengerRegistrationFlowEntity, DriverRegistrationFlowEntity…) dans le navigator.
+  final RegistrationFlowEntity registrationFlow;
 
   @override
-  List<Object> get props => [phoneNumber, isFormatValid];
-}
-
-final class AuthEmailChecking extends AuthState {
-  const AuthEmailChecking();
-}
-
-final class AuthEmailTaken extends AuthState {
-  const AuthEmailTaken({required this.phoneNumber});
-
-  final String phoneNumber;
-
-  @override
-  List<Object> get props => [phoneNumber];
-}
-
-final class AuthNameInputReady extends AuthState {
-  const AuthNameInputReady({
-    required this.phoneNumber,
-    required this.email,
-    this.isFormValid = false,
-  });
-
-  final String phoneNumber;
-  final String email;
-  final bool isFormValid;
-
-  AuthNameInputReady copyWith({bool? isFormValid}) => AuthNameInputReady(
-        phoneNumber: phoneNumber,
-        email: email,
-        isFormValid: isFormValid ?? this.isFormValid,
-      );
-
-  @override
-  List<Object> get props => [phoneNumber, email, isFormValid];
-}
-
-final class AuthRegistering extends AuthState {
-  const AuthRegistering();
-}
-
-final class AuthNotificationReady extends AuthState {
-  const AuthNotificationReady();
-}
-
-final class AuthAuthenticated extends AuthState {
-  const AuthAuthenticated();
+  List<Object> get props => [registrationFlow];
 }
 
 final class AuthError extends AuthState {

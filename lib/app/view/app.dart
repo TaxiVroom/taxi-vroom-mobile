@@ -1,12 +1,13 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/features/authentication/data/datasources/auth_remote_datasource.dart';
+import 'package:mobile/features/authentication/data/datasources/auth_remote_datasource_fake.dart';
 import 'package:mobile/features/authentication/data/repositories/auth_repository_impl.dart';
 import 'package:mobile/features/authentication/data/repositories/notification_repository_impl.dart';
 import 'package:mobile/features/authentication/domain/usecases/check_email_availability_usecase.dart';
-import 'package:mobile/features/authentication/domain/usecases/register_user_usecase.dart';
+import 'package:mobile/features/authentication/domain/usecases/create_passenger_usecase.dart';
+import 'package:mobile/features/authentication/domain/usecases/get_or_create_registration_flow_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/request_notification_permission_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/send_otp_usecase.dart';
+import 'package:mobile/features/authentication/domain/usecases/update_registration_flow_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/verify_otp_usecase.dart';
 import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:mobile/features/authentication/presentation/navigator/auth_navigator.dart';
@@ -18,7 +19,8 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dataSource = AuthRemoteDataSourceImpl(FirebaseAuth.instance);
+    // TODO: Remplacer par AuthRemoteDataSourceImpl(FirebaseAuth.instance) quand le backend est prêt
+    final dataSource = AuthRemoteDataSourceFake();
     final authRepo = AuthRepositoryImpl(dataSource);
     final notifRepo = NotificationRepositoryImpl();
 
@@ -26,11 +28,8 @@ class App extends StatelessWidget {
       create: (_) => AuthBloc(
         sendOtpUseCase: SendOtpUseCase(authRepo),
         verifyOtpUseCase: VerifyOtpUseCase(authRepo),
-        registerUserUseCase: RegisterUserUseCase(authRepo),
-        requestNotificationPermissionUseCase:
-            RequestNotificationPermissionUseCase(notifRepo),
-        checkEmailAvailabilityUseCase:
-            CheckEmailAvailabilityUseCase(authRepo),
+        getOrCreateRegistrationFlowUseCase:
+            GetOrCreateRegistrationFlowUseCase(authRepo),
       ),
       child: ShadcnApp(
         debugShowCheckedModeBanner: false,
@@ -44,7 +43,13 @@ class App extends StatelessWidget {
         ),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const AuthNavigator(),
+        home: AuthNavigator(
+          updateRegistrationFlowUseCase: UpdateRegistrationFlowUseCase(authRepo),
+          createPassengerUseCase: CreatePassengerUseCase(authRepo),
+          requestNotificationPermissionUseCase:
+              RequestNotificationPermissionUseCase(notifRepo),
+          checkEmailAvailabilityUseCase: CheckEmailAvailabilityUseCase(authRepo),
+        ),
       ),
     );
   }

@@ -21,6 +21,7 @@ dependencies:
   shadcn_flutter: ^0.0.51
   firebase_auth: ^6.1.4
   firebase_core: ^4.4.0
+  flow_builder: ^0.1.0
 
 dev_dependencies:
   flutter_native_splash: ^2.4.6

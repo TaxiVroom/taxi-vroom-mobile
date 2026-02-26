@@ -10,7 +10,6 @@ class WelcomePage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Hero ──────────────────────────────────────────────────
           Expanded(
             child: ColoredBox(
               color: const Color(0xFF0066FF),

@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
+import 'package:mobile/features/authentication/presentation/bloc/passenger_registration/passenger_registration_bloc.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class NamePage extends StatelessWidget {
@@ -7,19 +7,27 @@ class NamePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocBuilder<PassengerRegistrationBloc, PassengerRegistrationState>(
       builder: (context, state) {
-        final isLoading = state is AuthRegistering;
-        final isFormValid = state is AuthNameInputReady && state.isFormValid;
+        final isLoading = state is RegRegistering;
+        final isFormValid = state is RegNameInputReady && state.isFormValid;
 
-        return Scaffold(
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) {
+              context.read<PassengerRegistrationBloc>().add(const RegBackPressed());
+            }
+          },
+          child: Scaffold(
           backgroundColor: Colors.white,
           headers: [
             AppBar(
               leading: [
                 GhostButton(
                   density: ButtonDensity.icon,
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () =>
+                      context.read<PassengerRegistrationBloc>().add(const RegBackPressed()),
                   child: const Icon(Icons.arrow_back),
                 ),
               ],
@@ -40,7 +48,7 @@ class NamePage extends StatelessWidget {
                 width: double.infinity,
                 child: PrimaryButton(
                   onPressed: (isFormValid && !isLoading)
-                      ? () => context.read<AuthBloc>().add(const AuthNameSubmitted())
+                      ? () => context.read<PassengerRegistrationBloc>().add(const RegNameSubmitted())
                       : null,
                   alignment: Alignment.center,
                   trailing: isLoading
@@ -67,8 +75,8 @@ class NamePage extends StatelessWidget {
                         placeholder: const Text('Prénom'),
                         autofocus: true,
                         onChanged: (v) => context
-                            .read<AuthBloc>()
-                            .add(AuthNameFirstNameTyped(firstName: v)),
+                            .read<PassengerRegistrationBloc>()
+                            .add(RegNameFirstNameTyped(firstName: v)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -76,8 +84,8 @@ class NamePage extends StatelessWidget {
                       child: TextField(
                         placeholder: const Text('Nom de famille'),
                         onChanged: (v) => context
-                            .read<AuthBloc>()
-                            .add(AuthNameLastNameTyped(lastName: v)),
+                            .read<PassengerRegistrationBloc>()
+                            .add(RegNameLastNameTyped(lastName: v)),
                       ),
                     ),
                   ],
@@ -92,6 +100,7 @@ class NamePage extends StatelessWidget {
                 ),
               ],
             ),
+          ),
           ),
         );
       },

@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
+import 'package:mobile/features/authentication/presentation/bloc/passenger_registration/passenger_registration_bloc.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class NotificationsPage extends StatelessWidget {
@@ -7,9 +7,18 @@ class NotificationsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocBuilder<PassengerRegistrationBloc, PassengerRegistrationState>(
       builder: (context, state) {
-        return Scaffold(
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) {
+              context
+                  .read<PassengerRegistrationBloc>()
+                  .add(const RegBackPressed());
+            }
+          },
+          child: Scaffold(
           backgroundColor: Colors.white,
           footers: [
             Padding(
@@ -20,8 +29,8 @@ class NotificationsPage extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: PrimaryButton(
-                      onPressed: () => context.read<AuthBloc>().add(
-                            const AuthNotificationPermissionRequested(),
+                      onPressed: () => context.read<PassengerRegistrationBloc>().add(
+                            const RegNotificationPermissionRequested(),
                           ),
                       alignment: Alignment.center,
                       child: const Text('Activer les notifications'),
@@ -31,8 +40,8 @@ class NotificationsPage extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: GhostButton(
-                      onPressed: () => context.read<AuthBloc>().add(
-                            const AuthNotificationPermissionSkipped(),
+                      onPressed: () => context.read<PassengerRegistrationBloc>().add(
+                            const RegNotificationPermissionSkipped(),
                           ),
                       alignment: Alignment.center,
                       child: const Text(
@@ -89,6 +98,7 @@ class NotificationsPage extends StatelessWidget {
                 ],
               ),
             ),
+          ),
           ),
         );
       },

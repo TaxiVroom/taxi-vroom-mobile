@@ -3,13 +3,11 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:mobile/core/constants/app_constants.dart';
-import 'package:mobile/features/authentication/domain/utils/email_validator.dart';
-import 'package:mobile/features/authentication/data/models/user_model.dart';
-import 'package:mobile/features/authentication/domain/usecases/check_email_availability_usecase.dart';
-import 'package:mobile/features/authentication/domain/usecases/register_user_usecase.dart';
-import 'package:mobile/features/authentication/domain/usecases/request_notification_permission_usecase.dart';
+import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
+import 'package:mobile/features/authentication/domain/usecases/get_or_create_registration_flow_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/send_otp_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/verify_otp_usecase.dart';
+import 'dart:developer';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -18,15 +16,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc({
     required SendOtpUseCase sendOtpUseCase,
     required VerifyOtpUseCase verifyOtpUseCase,
-    required RegisterUserUseCase registerUserUseCase,
-    required RequestNotificationPermissionUseCase requestNotificationPermissionUseCase,
-    required CheckEmailAvailabilityUseCase checkEmailAvailabilityUseCase,
+    required GetOrCreateRegistrationFlowUseCase getOrCreateRegistrationFlowUseCase,
   })  : _sendOtpUseCase = sendOtpUseCase,
         _verifyOtpUseCase = verifyOtpUseCase,
-        _registerUserUseCase = registerUserUseCase,
-        _requestNotificationPermissionUseCase =
-            requestNotificationPermissionUseCase,
-        _checkEmailAvailabilityUseCase = checkEmailAvailabilityUseCase,
+        _getOrCreateRegistrationFlowUseCase = getOrCreateRegistrationFlowUseCase,
         super(const AuthInitial()) {
     on<AuthPhoneNumberChanged>(_onPhoneNumberChanged);
     on<AuthPhoneNumberSubmitted>(_onPhoneNumberSubmitted);
@@ -34,30 +27,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthOtpResendRequested>(_onOtpResendRequested);
     on<AuthOtpTimerTicked>(_onOtpTimerTicked);
     on<AuthGoogleSignInRequested>(_onGoogleSignInRequested);
-    on<AuthEmailOptionSelected>(_onEmailOptionSelected);
-    on<AuthEmailTyped>(_onEmailTyped);
-    on<AuthEmailSubmitted>(_onEmailSubmitted);
-    on<AuthNameSubmitted>(_onNameSubmitted);
-    on<AuthNameFirstNameTyped>(_onNameFirstNameTyped);
-    on<AuthNameLastNameTyped>(_onNameLastNameTyped);
-    on<AuthNotificationPermissionRequested>(_onNotificationPermissionRequested);
-    on<AuthNotificationPermissionSkipped>(_onNotificationPermissionSkipped);
   }
 
   final SendOtpUseCase _sendOtpUseCase;
   final VerifyOtpUseCase _verifyOtpUseCase;
-  final RegisterUserUseCase _registerUserUseCase;
-  final RequestNotificationPermissionUseCase
-      _requestNotificationPermissionUseCase;
-  final CheckEmailAvailabilityUseCase _checkEmailAvailabilityUseCase;
+  final GetOrCreateRegistrationFlowUseCase _getOrCreateRegistrationFlowUseCase;
 
   StreamSubscription<int>? _timerSubscription;
 
   // Données conservées entre les étapes
   String _phoneNumber = '';
-  String _email = '';
-  String _firstName = '';
-  String _lastName = '';
 
   void _onPhoneNumberChanged(
     AuthPhoneNumberChanged event,
@@ -73,6 +52,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(const AuthPhoneNumberLoading());
+    // TODO: Check if there is a package that verifies whether a phone number is valid or not, regardless of the country code.
     try {
       await _sendOtpUseCase(phoneNumber: _phoneNumber);
       emit(AuthOtpSent(phoneNumber: _phoneNumber));
@@ -116,6 +96,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  // FIXME (And it's the same for all the other functions in the block): Business logic present in the Presentation layer.
+  // This orchestration (OTP verification + Backend check) should be
+  // moved to a dedicated UseCase in the Domain layer.
+  // To be refactored to comply with Clean Architecture (10 years maintenance).
   Future<void> _onOtpSubmitted(
     AuthOtpSubmitted event,
     Emitter<AuthState> emit,
@@ -127,11 +111,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         phoneNumber: event.phoneNumber,
         otp: event.otp,
       );
-      if (user is UserModel && user.isNewUser) {
-        emit(AuthNewUserDetected(phoneNumber: event.phoneNumber));
-      } else {
-        emit(const AuthNotificationReady());
-      }
+      final registration = await _getOrCreateRegistrationFlowUseCase(userId: user.id);
+      // AuthOtpVerified porte la sealed class RegistrationFlowEntity.
+      // Le navigator fait un switch exhaustif dessus pour router vers
+      // PassengerRegistrationNavigator ou DriverRegistrationNavigator.
+      emit(AuthOtpVerified(registrationFlow: registration));
+    } catch (e) {
+      emit(AuthError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onGoogleSignInRequested(
+    AuthGoogleSignInRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthGoogleSignInLoading());
+    try {
+      // TODO: Remplacer par un vrai appel Google Sign-In + getOrCreateRegistrationFlow
+      await Future<void>.delayed(const Duration(seconds: 1));
+      emit(AuthOtpVerified(
+        registrationFlow: const PassengerRegistrationFlowEntity(
+          userId: 'google-mock-user-id',
+          currentStep: PassengerRegistrationStep.email,
+        ),
+      ));
     } catch (e) {
       emit(AuthError(message: e.toString()));
     }
@@ -147,120 +150,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(AuthError(message: e.toString()));
     }
-  }
-
-  Future<void> _onGoogleSignInRequested(
-    AuthGoogleSignInRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(const AuthGoogleSignInLoading());
-    try {
-      await Future<void>.delayed(const Duration(seconds: 1)); // mock
-      emit(const AuthNotificationReady());
-    } catch (e) {
-      emit(AuthError(message: e.toString()));
-    }
-  }
-
-  void _onEmailOptionSelected(
-    AuthEmailOptionSelected event,
-    Emitter<AuthState> emit,
-  ) {
-    emit(AuthEmailInputReady(phoneNumber: _phoneNumber));
-  }
-
-  void _onEmailTyped(
-    AuthEmailTyped event,
-    Emitter<AuthState> emit,
-  ) {
-    _email = event.email.trim();
-    final isValid = EmailValidator.isValid(_email);
-    final current = state;
-    if (current is AuthEmailInputReady) {
-      emit(current.copyWith(isFormatValid: isValid));
-    } else if (current is AuthEmailTaken) {
-      emit(AuthEmailInputReady(phoneNumber: _phoneNumber, isFormatValid: isValid));
-    }
-  }
-
-  Future<void> _onEmailSubmitted(
-    AuthEmailSubmitted event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(const AuthEmailChecking());
-    try {
-      final isAvailable =
-          await _checkEmailAvailabilityUseCase(email: _email);
-      if (isAvailable) {
-        emit(AuthNameInputReady(phoneNumber: _phoneNumber, email: _email));
-      } else {
-        emit(AuthEmailTaken(phoneNumber: _phoneNumber));
-      }
-    } catch (e) {
-      emit(AuthError(message: e.toString()));
-    }
-  }
-
-  void _onNameFirstNameTyped(
-    AuthNameFirstNameTyped event,
-    Emitter<AuthState> emit,
-  ) {
-    _firstName = event.firstName.trim();
-    if (state is AuthNameInputReady) {
-      emit((state as AuthNameInputReady).copyWith(
-        isFormValid: _firstName.isNotEmpty && _lastName.isNotEmpty,
-      ));
-    }
-  }
-
-  void _onNameLastNameTyped(
-    AuthNameLastNameTyped event,
-    Emitter<AuthState> emit,
-  ) {
-    _lastName = event.lastName.trim();
-    if (state is AuthNameInputReady) {
-      emit((state as AuthNameInputReady).copyWith(
-        isFormValid: _firstName.isNotEmpty && _lastName.isNotEmpty,
-      ));
-    }
-  }
-
-  Future<void> _onNameSubmitted(
-    AuthNameSubmitted event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(const AuthRegistering());
-    try {
-      await _registerUserUseCase(
-        email: _email,
-        firstName: _firstName,
-        lastName: _lastName,
-        phoneNumber: _phoneNumber,
-      );
-      emit(const AuthNotificationReady());
-    } catch (e) {
-      emit(AuthError(message: e.toString()));
-      emit(AuthNameInputReady(
-        phoneNumber: _phoneNumber,
-        email: _email,
-        isFormValid: true,
-      ));
-    }
-  }
-
-  Future<void> _onNotificationPermissionRequested(
-    AuthNotificationPermissionRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    await _requestNotificationPermissionUseCase();
-    emit(const AuthAuthenticated());
-  }
-
-  void _onNotificationPermissionSkipped(
-    AuthNotificationPermissionSkipped event,
-    Emitter<AuthState> emit,
-  ) {
-    emit(const AuthAuthenticated());
   }
 
   @override

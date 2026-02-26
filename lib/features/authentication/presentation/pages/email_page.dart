@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
+import 'package:mobile/features/authentication/presentation/bloc/passenger_registration/passenger_registration_bloc.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class EmailPage extends StatefulWidget {
@@ -10,7 +10,15 @@ class EmailPage extends StatefulWidget {
 }
 
 class _EmailPageState extends State<EmailPage> {
-  final _controller = TextEditingController();
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: context.read<PassengerRegistrationBloc>().state.email,
+    );
+  }
 
   @override
   void dispose() {
@@ -20,22 +28,34 @@ class _EmailPageState extends State<EmailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocBuilder<PassengerRegistrationBloc, PassengerRegistrationState>(
       builder: (context, state) {
-        final isChecking = state is AuthEmailChecking;
-        final isTaken = state is AuthEmailTaken;
-        final canSubmit = state is AuthEmailInputReady &&
+        final isChecking = state is RegEmailChecking;
+        final isTaken = state is RegEmailTaken;
+        final canSubmit = state is RegEmailInputReady &&
             state.isFormatValid &&
             !isChecking;
 
-        return Scaffold(
+        return PopScope(
+          canPop: false,
+          // Le hardware back doit passer par le BLoC, pas directement par le Navigator.
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) {
+              context
+                  .read<PassengerRegistrationBloc>()
+                  .add(const RegBackPressed());
+            }
+          },
+          child: Scaffold(
           backgroundColor: Colors.white,
           headers: [
             AppBar(
               leading: [
                 GhostButton(
                   density: ButtonDensity.icon,
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => context
+                      .read<PassengerRegistrationBloc>()
+                      .add(const RegBackPressed()),
                   child: const Icon(Icons.arrow_back),
                 ),
               ],
@@ -51,8 +71,8 @@ class _EmailPageState extends State<EmailPage> {
                 child: PrimaryButton(
                   onPressed: canSubmit
                       ? () => context
-                          .read<AuthBloc>()
-                          .add(const AuthEmailSubmitted())
+                          .read<PassengerRegistrationBloc>()
+                          .add(const RegEmailSubmitted())
                       : null,
                   alignment: Alignment.center,
                   trailing: isChecking
@@ -78,8 +98,8 @@ class _EmailPageState extends State<EmailPage> {
                   keyboardType: TextInputType.emailAddress,
                   autofocus: true,
                   onChanged: (v) => context
-                      .read<AuthBloc>()
-                      .add(AuthEmailTyped(email: v)),
+                      .read<PassengerRegistrationBloc>()
+                      .add(RegEmailTyped(email: v)),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -117,6 +137,7 @@ class _EmailPageState extends State<EmailPage> {
                 ],
               ],
             ),
+          ),
           ),
         );
       },

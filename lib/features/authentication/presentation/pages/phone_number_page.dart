@@ -32,7 +32,6 @@ class PhoneNumberPage extends StatelessWidget {
           ],
           child: Column(
             children: [
-              // ── Hero ──────────────────────────────────────────────────
               Expanded(
                 flex: 4,
                 child: Stack(

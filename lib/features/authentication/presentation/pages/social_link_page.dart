@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
+import 'package:mobile/features/authentication/presentation/bloc/passenger_registration/passenger_registration_bloc.dart';
 import 'package:mobile/features/authentication/presentation/widgets/auth_provider_button.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -8,21 +8,18 @@ class SocialLinkPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocBuilder<PassengerRegistrationBloc, PassengerRegistrationState>(
       builder: (context, state) {
-        final isGoogleLoading = state is AuthGoogleSignInLoading;
+        final isGoogleLoading = state is RegGoogleSignInLoading;
 
-        return Scaffold(
+        return PopScope(
+          canPop: false,
+          child: Scaffold(
           backgroundColor: Colors.white,
-          headers: [
+          headers: const [
             AppBar(
-              leading: [
-                GhostButton(
-                  density: ButtonDensity.icon,
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Icon(Icons.arrow_back),
-                ),
-              ],
+              // Première page du wizard — pas de retour possible.
+              // L'AuthNavigator a supprimé toutes les routes OTP avec pushAndRemoveUntil.
               backgroundColor: Colors.white,
             ),
           ],
@@ -58,8 +55,8 @@ class SocialLinkPage extends StatelessWidget {
                     ),
                     loading: isGoogleLoading,
                     onPressed: () => context
-                        .read<AuthBloc>()
-                        .add(const AuthGoogleSignInRequested()),
+                        .read<PassengerRegistrationBloc>()
+                        .add(const RegGoogleSignInRequested()),
                   ),
                   const SizedBox(height: 24),
                   const Row(
@@ -82,13 +79,14 @@ class SocialLinkPage extends StatelessWidget {
                     onPressed: isGoogleLoading
                         ? null
                         : () => context
-                            .read<AuthBloc>()
-                            .add(const AuthEmailOptionSelected()),
+                            .read<PassengerRegistrationBloc>()
+                            .add(const RegEmailOptionSelected()),
                   ),
                   const Spacer(),
                 ],
               ),
             ),
+          ),
           ),
         );
       },
