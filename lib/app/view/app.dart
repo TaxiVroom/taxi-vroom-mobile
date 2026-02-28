@@ -1,5 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/features/authentication/data/datasources/auth_remote_datasource_fake.dart';
+import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mobile/core/network/auth_interceptor.dart';
+import 'package:mobile/features/authentication/data/datasources/auth_remote_datasource.dart';
 import 'package:mobile/features/authentication/data/repositories/auth_repository_impl.dart';
 import 'package:mobile/features/authentication/data/repositories/notification_repository_impl.dart';
 import 'package:mobile/features/authentication/domain/usecases/check_email_availability_usecase.dart';
@@ -19,8 +22,12 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Remplacer par AuthRemoteDataSourceImpl(FirebaseAuth.instance) quand le backend est prêt
-    final dataSource = AuthRemoteDataSourceFake();
+    // TODO: Remplacer baseUrl par la vraie URL de l'API quand le backend est prêt.
+    final dio = Dio(BaseOptions(baseUrl: 'https://api.taxi-vroom.com'));
+    dio.interceptors.add(
+      AuthInterceptor(firebaseAuth: FirebaseAuth.instance, dio: dio),
+    );
+    final dataSource = AuthRemoteDataSourceImpl(FirebaseAuth.instance, dio);
     final authRepo = AuthRepositoryImpl(dataSource);
     final notifRepo = NotificationRepositoryImpl();
 

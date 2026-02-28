@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mobile/features/authentication/data/models/passenger_registration_flow_model.dart';
 import 'package:mobile/features/authentication/data/models/user_model.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_update.dart';
@@ -36,9 +38,10 @@ abstract class AuthRemoteDataSource {
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  AuthRemoteDataSourceImpl(this._firebaseAuth);
+  AuthRemoteDataSourceImpl(this._firebaseAuth, this._dio);
 
   final FirebaseAuth _firebaseAuth;
+  final Dio _dio;
 
   // Stored between sendOtp and verifyOtp calls
   String? _verificationId;
@@ -168,10 +171,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<RegistrationFlowEntity> getOrCreateRegistrationFlow({required String userId}) async {
-    // TODO: GET /registration-flows/:userId
-    // Le JSON doit contenir un champ 'role' ('passenger' | 'driver') pour construire
-    // le bon sous-type (PassengerRegistrationFlowModel ou DriverRegistrationFlowModel).
-    // Le backend crée la registration_flow si elle n'existe pas encore.
-    throw UnimplementedError('getOrCreateRegistrationFlow not yet connected to backend');
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/registration-flows/$userId',
+    );
+    final json = response.data!;
+    // Switch sur 'role' — le backend indique quel type de flow retourner.
+    // Ajouter un case 'driver' ici quand DriverRegistrationFlowModel existera.
+    return switch (json['role'] as String) {
+      'passenger' => PassengerRegistrationFlowModel.fromJson(json),
+      final role => throw UnimplementedError('Unknown registration flow role: $role'),
+    };
   }
 }

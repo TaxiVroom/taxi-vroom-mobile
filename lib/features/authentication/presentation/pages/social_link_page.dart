@@ -18,8 +18,6 @@ class SocialLinkPage extends StatelessWidget {
           backgroundColor: Colors.white,
           headers: const [
             AppBar(
-              // Première page du wizard — pas de retour possible.
-              // L'AuthNavigator a supprimé toutes les routes OTP avec pushAndRemoveUntil.
               backgroundColor: Colors.white,
             ),
           ],
