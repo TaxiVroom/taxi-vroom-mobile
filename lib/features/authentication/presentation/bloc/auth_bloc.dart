@@ -27,6 +27,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthOtpResendRequested>(_onOtpResendRequested);
     on<AuthOtpTimerTicked>(_onOtpTimerTicked);
     on<AuthGoogleSignInRequested>(_onGoogleSignInRequested);
+    on<AuthPhoneSelected>(_onPhoneSelected);
+    on<AuthBackPressed>(_onBackPressed);
+    on<AuthRegistrationCompleted>(_onRegistrationCompleted);
   }
 
   final SendOtpUseCase _sendOtpUseCase;
@@ -150,6 +153,35 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(AuthError(message: e.toString()));
     }
+  }
+
+  void _onPhoneSelected(
+    AuthPhoneSelected event,
+    Emitter<AuthState> emit,
+  ) {
+    emit(const AuthPhoneNumberInputReady());
+  }
+
+  void _onBackPressed(
+    AuthBackPressed event,
+    Emitter<AuthState> emit,
+  ) {
+    switch (state) {
+      case AuthPhoneNumberInputReady() || AuthPhoneNumberLoading():
+        emit(const AuthInitial());
+      case AuthOtpSent() || AuthOtpCountdown() || AuthOtpVerifying():
+        _timerSubscription?.cancel();
+        emit(const AuthPhoneNumberInputReady());
+      default:
+        break;
+    }
+  }
+
+  void _onRegistrationCompleted(
+    AuthRegistrationCompleted event,
+    Emitter<AuthState> emit,
+  ) {
+    emit(const AuthAuthenticated());
   }
 
   @override

@@ -51,3 +51,20 @@ final class AuthOtpTimerTicked extends AuthEvent {
 final class AuthGoogleSignInRequested extends AuthEvent {
   const AuthGoogleSignInRequested();
 }
+
+/// Dispatché par WelcomePage quand l'utilisateur choisit le tunnel téléphone.
+final class AuthPhoneSelected extends AuthEvent {
+  const AuthPhoneSelected();
+}
+
+/// Dispatché par PhoneNumberPage et OtpVerificationPage via PopScope.
+/// Le BLoC détermine l'état précédent selon le state courant.
+final class AuthBackPressed extends AuthEvent {
+  const AuthBackPressed();
+}
+
+/// Dispatché par PassengerRegistrationNavigator via onAuthenticated.
+/// Signale que le tunnel d'inscription est terminé — on peut afficher HomePage.
+final class AuthRegistrationCompleted extends AuthEvent {
+  const AuthRegistrationCompleted();
+}

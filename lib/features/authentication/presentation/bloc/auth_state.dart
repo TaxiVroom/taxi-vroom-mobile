@@ -96,3 +96,8 @@ final class AuthError extends AuthState {
   @override
   List<Object> get props => [message];
 }
+
+/// État terminal : inscription terminée, on affiche HomePage.
+final class AuthAuthenticated extends AuthState {
+  const AuthAuthenticated();
+}

@@ -14,7 +14,14 @@ class PhoneNumberPage extends StatelessWidget {
         final isPhoneValid =
             state is AuthPhoneNumberInputReady && state.isPhoneValid;
 
-        return Scaffold(
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) {
+              context.read<AuthBloc>().add(const AuthBackPressed());
+            }
+          },
+          child: Scaffold(
           footers: const [
             Padding(
               padding: EdgeInsets.fromLTRB(24, 0, 24, 24),
@@ -79,7 +86,9 @@ class PhoneNumberPage extends StatelessWidget {
                       left: 8,
                       child: GhostButton(
                         density: ButtonDensity.icon,
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: () => context
+                            .read<AuthBloc>()
+                            .add(const AuthBackPressed()),
                         child: const Icon(
                           Icons.arrow_back,
                           color: Colors.white,
@@ -178,6 +187,7 @@ class PhoneNumberPage extends StatelessWidget {
                 ),
               ),
             ],
+          ),
           ),
         );
       },

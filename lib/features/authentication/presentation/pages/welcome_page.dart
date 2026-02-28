@@ -1,3 +1,5 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide TextField;
 
 class WelcomePage extends StatelessWidget {
@@ -72,8 +74,9 @@ class WelcomePage extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: PrimaryButton(
-                      onPressed: () =>
-                          Navigator.of(context).pushNamed('/phone'),
+                      onPressed: () => context
+                          .read<AuthBloc>()
+                          .add(const AuthPhoneSelected()),
                       alignment: Alignment.center,
                       child: const Text('Réserver un trajet'),
                     ),

@@ -22,13 +22,21 @@ class OtpVerificationPage extends StatelessWidget {
     final remainingSeconds =
         state is AuthOtpCountdown ? state.remainingSeconds : 0;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          context.read<AuthBloc>().add(const AuthBackPressed());
+        }
+      },
+      child: Scaffold(
       headers: [
         AppBar(
           leading: [
             GhostButton(
               density: ButtonDensity.icon,
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () =>
+                  context.read<AuthBloc>().add(const AuthBackPressed()),
               child: const Icon(Icons.arrow_back),
             ),
           ],
@@ -84,6 +92,7 @@ class OtpVerificationPage extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
