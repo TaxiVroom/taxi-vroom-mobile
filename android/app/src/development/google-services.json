@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "459140396884",
+    "project_id": "taxi-vroom",
+    "storage_bucket": "taxi-vroom.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:459140396884:android:7d79d1d9cd7bb30679bac1",
+        "android_client_info": {
+          "package_name": "com.example.verygoodcore.mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "459140396884-5l92vbjmb6a63nucje5nqmv5njjdp783.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbm1mXLfa8OBZBhWWqR0mUfRgGqboqj8I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "459140396884-5l92vbjmb6a63nucje5nqmv5njjdp783.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "459140396884-dblojcqmt4don1tnu73s79k0ohqd0k8e.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.verygoodcore.mobile"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:459140396884:android:5246d4ba44c15fcb79bac1",
+        "android_client_info": {
+          "package_name": "com.example.verygoodcore.mobile.dev"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "459140396884-d1lani5neqgg60imnoahelpk9ptgqafj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.verygoodcore.mobile.dev",
+            "certificate_hash": "fb522748e645f738ac71e3a5067f8041f9a14764"
+          }
+        },
+        {
+          "client_id": "459140396884-5l92vbjmb6a63nucje5nqmv5njjdp783.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbm1mXLfa8OBZBhWWqR0mUfRgGqboqj8I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "459140396884-5l92vbjmb6a63nucje5nqmv5njjdp783.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "459140396884-dblojcqmt4don1tnu73s79k0ohqd0k8e.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.verygoodcore.mobile"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
