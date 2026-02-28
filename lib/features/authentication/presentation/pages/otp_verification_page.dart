@@ -123,6 +123,10 @@ class OtpVerificationPage extends StatelessWidget {
       );
     }
 
+    if (remainingSeconds == 0) {
+      return const CircularProgressIndicator(color: Color(0xFF0066FF));
+    }
+
     return Text(
       'Renvoyer le code dans ${remainingSeconds}s',
       style: const TextStyle(color: Color(0xFF6B7280)),

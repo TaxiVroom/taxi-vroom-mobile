@@ -121,6 +121,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthOtpVerified(registrationFlow: registration));
     } catch (e) {
       emit(AuthError(message: e.toString()));
+      emit(AuthOtpCountdown(
+        phoneNumber: event.phoneNumber,
+        remainingSeconds: 0,
+        isResendAvailable: true,
+      ));
     }
   }
 
@@ -147,11 +152,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthOtpResendRequested event,
     Emitter<AuthState> emit,
   ) async {
+    // Disable the resend button immediately to give instant visual feedback.
+    emit(AuthOtpCountdown(
+      phoneNumber: event.phoneNumber,
+      remainingSeconds: 0,
+      isResendAvailable: false,
+    ));
     try {
       await _sendOtpUseCase(phoneNumber: event.phoneNumber);
       _startCountdown(phoneNumber: event.phoneNumber, emit: emit);
     } catch (e) {
       emit(AuthError(message: e.toString()));
+      emit(AuthOtpCountdown(
+        phoneNumber: event.phoneNumber,
+        remainingSeconds: 0,
+        isResendAvailable: true,
+      ));
     }
   }
 
