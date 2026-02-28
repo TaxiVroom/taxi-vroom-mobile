@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mobile/core/network/auth_interceptor.dart';
+import 'package:mobile/env/app_config.dart';
 import 'package:mobile/features/authentication/data/datasources/auth_remote_datasource.dart';
 import 'package:mobile/features/authentication/data/repositories/auth_repository_impl.dart';
 import 'package:mobile/features/authentication/data/repositories/notification_repository_impl.dart';
@@ -18,12 +19,13 @@ import 'package:mobile/l10n/l10n.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class App extends StatelessWidget {
-  const App({super.key});
+  const App({super.key, required this.config});
+
+  final AppConfig config;
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Remplacer baseUrl par la vraie URL de l'API quand le backend est prêt.
-    final dio = Dio(BaseOptions(baseUrl: 'https://api.taxi-vroom.com'));
+    final dio = Dio(BaseOptions(baseUrl: config.apiBaseUrl));
     dio.interceptors.add(
       AuthInterceptor(firebaseAuth: FirebaseAuth.instance, dio: dio),
     );
