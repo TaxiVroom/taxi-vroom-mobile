@@ -21,7 +21,6 @@ sealed class PassengerRegistrationState extends Equatable {
   List<Object?> get props => [currentStep, email, firstName, lastName];
 }
 
-/// Nouveau user — le passenger choisit son mode d'inscription (Google ou email).
 final class RegSocialLinkReady extends PassengerRegistrationState {
   const RegSocialLinkReady({
     required super.currentStep,

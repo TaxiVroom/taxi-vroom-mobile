@@ -28,8 +28,8 @@ final class RegEmailSubmitted extends PassengerRegistrationEvent {
   const RegEmailSubmitted();
 }
 
-final class RegNameFirstNameTyped extends PassengerRegistrationEvent {
-  const RegNameFirstNameTyped({required this.firstName});
+final class RegFirstNameTyped extends PassengerRegistrationEvent {
+  const RegFirstNameTyped({required this.firstName});
 
   final String firstName;
 
@@ -37,8 +37,8 @@ final class RegNameFirstNameTyped extends PassengerRegistrationEvent {
   List<Object> get props => [firstName];
 }
 
-final class RegNameLastNameTyped extends PassengerRegistrationEvent {
-  const RegNameLastNameTyped({required this.lastName});
+final class RegLastNameTyped extends PassengerRegistrationEvent {
+  const RegLastNameTyped({required this.lastName});
 
   final String lastName;
 
@@ -50,7 +50,6 @@ final class RegNameSubmitted extends PassengerRegistrationEvent {
   const RegNameSubmitted();
 }
 
-/// Événement générique de retour arrière.
 /// Le bloc détermine l'étape précédente via [PassengerRegistrationStep.previous].
 final class RegBackPressed extends PassengerRegistrationEvent {
   const RegBackPressed();

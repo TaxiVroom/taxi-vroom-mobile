@@ -4,10 +4,10 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:mobile/core/constants/app_constants.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
+import 'package:mobile/features/authentication/domain/entities/user_role.dart';
 import 'package:mobile/features/authentication/domain/usecases/get_or_create_registration_flow_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/send_otp_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/verify_otp_usecase.dart';
-import 'dart:developer';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -27,7 +27,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthOtpResendRequested>(_onOtpResendRequested);
     on<AuthOtpTimerTicked>(_onOtpTimerTicked);
     on<AuthGoogleSignInRequested>(_onGoogleSignInRequested);
-    on<AuthPhoneSelected>(_onPhoneSelected);
+    on<AuthRoleChosen>(_onRoleChosen);
     on<AuthBackPressed>(_onBackPressed);
     on<AuthRegistrationCompleted>(_onRegistrationCompleted);
   }
@@ -38,43 +38,58 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   StreamSubscription<int>? _timerSubscription;
 
-  // Données conservées entre les étapes
-  String _phoneNumber = '';
-
   void _onPhoneNumberChanged(
     AuthPhoneNumberChanged event,
     Emitter<AuthState> emit,
   ) {
-    _phoneNumber = event.internationalPhoneNumber;
-    final isValid = event.internationalPhoneNumber.replaceAll(RegExp(r'\D'), '').length >= AppConstants.phoneMinDigitCount;
-    emit(AuthPhoneNumberInputReady(isPhoneValid: isValid));
+    final isValid = event.internationalPhoneNumber
+            .replaceAll(RegExp(r'\D'), '')
+            .length >=
+        AppConstants.phoneMinDigitCount;
+    final roleSelectedState = state as AuthRoleSelectedState;
+    emit(AuthPhoneNumberInputReady(
+      role: roleSelectedState.role,
+      phoneNumber: event.internationalPhoneNumber,
+      isPhoneValid: isValid,
+    ));
   }
 
   Future<void> _onPhoneNumberSubmitted(
     AuthPhoneNumberSubmitted event,
     Emitter<AuthState> emit,
   ) async {
-    emit(const AuthPhoneNumberLoading());
+    final roleSelectedState = state as AuthRoleSelectedState;
+    emit(AuthPhoneNumberLoading(
+      role: roleSelectedState.role,
+      phoneNumber: roleSelectedState.phoneNumber,
+    ));
     // TODO: Check if there is a package that verifies whether a phone number is valid or not, regardless of the country code.
     try {
-      await _sendOtpUseCase(phoneNumber: _phoneNumber);
-      emit(AuthOtpSent(phoneNumber: _phoneNumber));
-      _startCountdown(phoneNumber: _phoneNumber, emit: emit);
+      await _sendOtpUseCase(phoneNumber: roleSelectedState.phoneNumber);
+      emit(AuthOtpSent(role: roleSelectedState.role, phoneNumber: roleSelectedState.phoneNumber));
+      _startOtpResendCountdown(emit: emit);
     } catch (e) {
-      emit(AuthError(message: e.toString()));
-      emit(const AuthPhoneNumberInputReady(isPhoneValid: true));
+      emit(AuthError(
+        message: e.toString(),
+        role: roleSelectedState.role,
+        phoneNumber: roleSelectedState.phoneNumber,
+      ));
+      emit(AuthPhoneNumberInputReady(
+        role: roleSelectedState.role,
+        phoneNumber: roleSelectedState.phoneNumber,
+        isPhoneValid: true,
+      ));
     }
   }
 
-  /// Starts the resend countdown. Does NOT emit [AuthOtpSent] — the user
-  /// is already on the OTP screen. Ticks are handled by [_onOtpTimerTicked].
-  void _startCountdown({
-    required String phoneNumber,
-    required Emitter<AuthState> emit,
-  }) {
+  /// Does NOT emit [AuthOtpSent] — the user is already on the OTP screen.
+  /// Ticks are handled by [_onOtpTimerTicked].
+  void _startOtpResendCountdown({required Emitter<AuthState> emit}) {
     _timerSubscription?.cancel();
+    final roleSelectedState = state as AuthRoleSelectedState;
     emit(AuthOtpCountdown(
-      phoneNumber: phoneNumber,
+      role: roleSelectedState.role,
+      phoneNumber: roleSelectedState.phoneNumber,
       remainingSeconds: AppConstants.otpCountdownSeconds,
       isResendAvailable: false,
     ));
@@ -107,22 +122,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthOtpSubmitted event,
     Emitter<AuthState> emit,
   ) async {
+    final roleSelectedState = state as AuthRoleSelectedState;
+    final role = roleSelectedState.role;
+    final phoneNumber = roleSelectedState.phoneNumber;
     _timerSubscription?.cancel();
-    emit(AuthOtpVerifying(phoneNumber: event.phoneNumber));
+    emit(AuthOtpVerifying(role: role, phoneNumber: phoneNumber));
     try {
       final user = await _verifyOtpUseCase(
         phoneNumber: event.phoneNumber,
         otp: event.otp,
       );
-      final registration = await _getOrCreateRegistrationFlowUseCase(userId: user.id);
+      final registrationFlow =
+          await _getOrCreateRegistrationFlowUseCase(userId: user.id, role: role, phone: phoneNumber);
       // AuthOtpVerified porte la sealed class RegistrationFlowEntity.
       // Le navigator fait un switch exhaustif dessus pour router vers
       // PassengerRegistrationNavigator ou DriverRegistrationNavigator.
-      emit(AuthOtpVerified(registrationFlow: registration));
+      emit(AuthOtpVerified(role: role, registrationFlow: registrationFlow));
     } catch (e) {
-      emit(AuthError(message: e.toString()));
+      emit(AuthError(message: e.toString(), role: role, phoneNumber: phoneNumber));
       emit(AuthOtpCountdown(
-        phoneNumber: event.phoneNumber,
+        role: role,
+        phoneNumber: phoneNumber,
         remainingSeconds: 0,
         isResendAvailable: true,
       ));
@@ -133,18 +153,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthGoogleSignInRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(const AuthGoogleSignInLoading());
+    emit(AuthGoogleSignInLoading(role: event.role));
     try {
       // TODO: Remplacer par un vrai appel Google Sign-In + getOrCreateRegistrationFlow
       await Future<void>.delayed(const Duration(seconds: 1));
       emit(AuthOtpVerified(
+        role: event.role,
         registrationFlow: const PassengerRegistrationFlowEntity(
           userId: 'google-mock-user-id',
           currentStep: PassengerRegistrationStep.email,
         ),
       ));
     } catch (e) {
-      emit(AuthError(message: e.toString()));
+      emit(AuthError(message: e.toString(), role: event.role));
     }
   }
 
@@ -152,30 +173,35 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthOtpResendRequested event,
     Emitter<AuthState> emit,
   ) async {
+    final roleSelectedState = state as AuthRoleSelectedState;
+    final role = roleSelectedState.role;
+    final phoneNumber = roleSelectedState.phoneNumber;
     // Disable the resend button immediately to give instant visual feedback.
     emit(AuthOtpCountdown(
-      phoneNumber: event.phoneNumber,
+      role: role,
+      phoneNumber: phoneNumber,
       remainingSeconds: 0,
       isResendAvailable: false,
     ));
     try {
       await _sendOtpUseCase(phoneNumber: event.phoneNumber);
-      _startCountdown(phoneNumber: event.phoneNumber, emit: emit);
+      _startOtpResendCountdown(emit: emit);
     } catch (e) {
-      emit(AuthError(message: e.toString()));
+      emit(AuthError(message: e.toString(), role: role, phoneNumber: phoneNumber));
       emit(AuthOtpCountdown(
-        phoneNumber: event.phoneNumber,
+        role: role,
+        phoneNumber: phoneNumber,
         remainingSeconds: 0,
         isResendAvailable: true,
       ));
     }
   }
 
-  void _onPhoneSelected(
-    AuthPhoneSelected event,
+  void _onRoleChosen(
+    AuthRoleChosen event,
     Emitter<AuthState> emit,
   ) {
-    emit(const AuthPhoneNumberInputReady());
+    emit(AuthPhoneNumberInputReady(role: event.role));
   }
 
   void _onBackPressed(
@@ -187,7 +213,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(const AuthInitial());
       case AuthOtpSent() || AuthOtpCountdown() || AuthOtpVerifying():
         _timerSubscription?.cancel();
-        emit(const AuthPhoneNumberInputReady());
+        emit(AuthPhoneNumberInputReady(
+          role: (state as AuthRoleSelectedState).role,
+        ));
       default:
         break;
     }
@@ -197,7 +225,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthRegistrationCompleted event,
     Emitter<AuthState> emit,
   ) {
-    emit(const AuthAuthenticated());
+    emit(AuthAuthenticated(role: (state as AuthRoleSelectedState).role));
   }
 
   @override

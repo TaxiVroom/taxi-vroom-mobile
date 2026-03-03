@@ -1,4 +1,4 @@
-import 'package:mobile/features/authentication/domain/repositories/notification_repository.dart';
+import 'package:mobile/features/registration/passenger/domain/repositories/notification_repository.dart';
 
 class RequestNotificationPermissionUseCase {
   const RequestNotificationPermissionUseCase(this._repository);

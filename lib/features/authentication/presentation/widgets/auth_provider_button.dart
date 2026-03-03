@@ -1,9 +1,5 @@
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-/// Bouton outline générique pour les connexions sociales.
-///
-/// Affiche une icône à gauche et un label centré.
-/// Gère nativement l'état de chargement via [loading].
 class AuthProviderButton extends StatelessWidget {
   const AuthProviderButton({
     super.key,

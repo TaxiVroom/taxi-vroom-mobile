@@ -2,24 +2,20 @@ import 'package:flow_builder/flow_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
-import 'package:mobile/features/authentication/domain/usecases/check_email_availability_usecase.dart';
-import 'package:mobile/features/authentication/domain/usecases/create_passenger_usecase.dart';
-import 'package:mobile/features/authentication/domain/usecases/request_notification_permission_usecase.dart';
-import 'package:mobile/features/authentication/domain/usecases/update_registration_flow_usecase.dart';
-import 'package:mobile/features/authentication/presentation/bloc/passenger_registration/passenger_registration_bloc.dart';
-import 'package:mobile/features/authentication/presentation/pages/email_page.dart';
-import 'package:mobile/features/authentication/presentation/pages/name_page.dart';
-import 'package:mobile/features/authentication/presentation/pages/notifications_page.dart';
-import 'package:mobile/features/authentication/presentation/pages/social_link_page.dart';
+import 'package:mobile/features/registration/passenger/domain/usecases/check_email_availability_usecase.dart';
+import 'package:mobile/features/registration/passenger/domain/usecases/create_passenger_usecase.dart';
+import 'package:mobile/features/registration/passenger/domain/usecases/request_notification_permission_usecase.dart';
+import 'package:mobile/features/registration/passenger/domain/usecases/update_registration_flow_usecase.dart';
+import 'package:mobile/features/registration/passenger/presentation/bloc/passenger_registration_bloc.dart';
+import 'package:mobile/features/registration/passenger/presentation/pages/email_page.dart';
+import 'package:mobile/features/registration/passenger/presentation/pages/name_page.dart';
+import 'package:mobile/features/registration/passenger/presentation/pages/notifications_page.dart';
+import 'package:mobile/features/registration/passenger/presentation/pages/social_link_page.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart'
     show Basic, ButtonSize, PrimaryButton, SurfaceCard, Text, showToast;
 
-/// Gère toute la navigation du tunnel d'inscription passager
-/// en réagissant aux états du [PassengerRegistrationBloc].
-///
 /// Reçoit le [registrationFlow] déjà fetché par [AuthBloc] —
-/// pas besoin de le re-fetcher. Le bloc démarre immédiatement
-/// à la bonne étape via son bootstrap interne ([RegStarted]).
+/// pas de double fetch. Le bloc démarre directement à la bonne étape.
 class PassengerRegistrationNavigator extends StatefulWidget {
   const PassengerRegistrationNavigator({
     super.key,
@@ -37,8 +33,7 @@ class PassengerRegistrationNavigator extends StatefulWidget {
   final RequestNotificationPermissionUseCase requestNotificationPermissionUseCase;
   final CheckEmailAvailabilityUseCase checkEmailAvailabilityUseCase;
 
-  /// Appelé quand [RegAuthenticated] est émis.
-  /// Permet au parent (AuthNavigator) de naviguer vers l'écran principal
+  /// Permet au parent ([AuthNavigator]) de naviguer vers l'écran principal
   /// sans que ce widget ait besoin de connaître la navigation extérieure.
   final VoidCallback onAuthenticated;
 
@@ -75,29 +70,7 @@ class _PassengerRegistrationNavigatorState
     return BlocProvider<PassengerRegistrationBloc>.value(
       value: _bloc,
       child: BlocListener<PassengerRegistrationBloc, PassengerRegistrationState>(
-        listener: (context, state) {
-          switch (state) {
-            case RegAuthenticated():
-              widget.onAuthenticated();
-            case RegError():
-              showToast(
-                context: context,
-                builder: (ctx, overlay) => SurfaceCard(
-                  child: Basic(
-                    title: const Text('Erreur'),
-                    subtitle: Text(state.message),
-                    trailing: PrimaryButton(
-                      size: ButtonSize.small,
-                      onPressed: overlay.close,
-                      child: const Text('OK'),
-                    ),
-                  ),
-                ),
-              );
-            case _:
-              break;
-          }
-        },
+        listener: _onRegistrationStateChanged,
         // BlocBuilder passe le dernier état au FlowBuilder à chaque émission.
         // FlowBuilder diffe les deux listes et joue push ou pop automatiquement —
         // sans aucun appel impératif.
@@ -113,15 +86,42 @@ class _PassengerRegistrationNavigatorState
     );
   }
 
-  /// Retourne la stack qui correspond exactement à [state].
+  void _onRegistrationStateChanged(
+    BuildContext context,
+    PassengerRegistrationState state,
+  ) {
+    switch (state) {
+      case RegAuthenticated():
+        widget.onAuthenticated();
+      case RegError():
+        _onRegistrationError(context, state);
+      case _:
+        break;
+    }
+  }
+
+  void _onRegistrationError(BuildContext context, RegError error) {
+    showToast(
+      context: context,
+      builder: (ctx, overlay) => SurfaceCard(
+        child: Basic(
+          title: const Text('Erreur'),
+          subtitle: Text(error.message),
+          trailing: PrimaryButton(
+            size: ButtonSize.small,
+            onPressed: overlay.close,
+            child: const Text('OK'),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Les [ValueKey] stables permettent au Navigator de choisir automatiquement
+  /// l'animation push (page ajoutée en fin) ou pop (page retirée en fin).
   ///
-  /// Les [ValueKey] stables permettent au Navigator de differ les deux listes
-  /// et de choisir automatiquement l'animation push (page ajoutée en fin)
-  /// ou pop (page retirée en fin).
-  ///
-  /// [pages] (liste précédente) est utilisé uniquement pour [RegError] :
-  /// une erreur est transitoire et ne doit pas faire bouger la stack —
-  /// le [BlocListener] affiche le toast.
+  /// [pages] est utilisé uniquement pour [RegError] : erreur transitoire —
+  /// le [BlocListener] affiche le toast sans changer la stack.
   List<Page<void>> _onGeneratePages(
     PassengerRegistrationState state,
     List<Page<void>> pages,

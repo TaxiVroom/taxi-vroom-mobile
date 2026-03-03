@@ -3,8 +3,6 @@ import 'package:mobile/core/constants/app_constants.dart';
 import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-/// If you are on an emulator and not using a test number (to be added in Firebase console), this will not work as the app is not authorized.
-/// You must either use a physical device or a test number.
 class OtpVerificationPage extends StatelessWidget {
   const OtpVerificationPage({super.key});
 
@@ -16,7 +14,7 @@ class OtpVerificationPage extends StatelessWidget {
   }
 
   Widget _buildOtpContent(BuildContext context, AuthState state) {
-    final phoneNumber = _resolvePhoneNumber(state);
+    final phoneNumber = _getPhoneNumberFromState(state);
     final isVerifying = state is AuthOtpVerifying;
     final canResend = state is AuthOtpCountdown && state.isResendAvailable;
     final remainingSeconds =
@@ -25,9 +23,7 @@ class OtpVerificationPage extends StatelessWidget {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) {
-          context.read<AuthBloc>().add(const AuthBackPressed());
-        }
+        if (!didPop) _onBackPressed(context);
       },
       child: Scaffold(
       headers: [
@@ -35,8 +31,7 @@ class OtpVerificationPage extends StatelessWidget {
           leading: [
             GhostButton(
               density: ButtonDensity.icon,
-              onPressed: () =>
-                  context.read<AuthBloc>().add(const AuthBackPressed()),
+              onPressed: () => _onBackPressed(context),
               child: const Icon(Icons.arrow_back),
             ),
           ],
@@ -60,25 +55,7 @@ class OtpVerificationPage extends StatelessWidget {
                 style: const TextStyle(fontSize: 15, color: Color(0xFF6B7280)),
               ),
               const SizedBox(height: 40),
-              Center(
-                child: InputOTP(
-                  children: List.generate(
-                    AppConstants.otpLength,
-                    (_) => InputOTPChild.character(allowDigit: true),
-                  ),
-                  onChanged: (value) {
-                    final digits = value.whereType<int>().toList();
-                    if (digits.length == AppConstants.otpLength) {
-                      context.read<AuthBloc>().add(
-                            AuthOtpSubmitted(
-                              otp: String.fromCharCodes(digits),
-                              phoneNumber: phoneNumber,
-                            ),
-                          );
-                    }
-                  },
-                ),
-              ),
+              _buildOtpInput(context, phoneNumber),
               const SizedBox(height: 32),
               Center(
                 child: _buildResendControls(
@@ -97,6 +74,19 @@ class OtpVerificationPage extends StatelessWidget {
     );
   }
 
+  Widget _buildOtpInput(BuildContext context, String phoneNumber) {
+    return Center(
+      child: InputOTP(
+        children: List.generate(
+          AppConstants.otpLength,
+          (_) => InputOTPChild.character(allowDigit: true),
+        ),
+        onChanged: (otpDigits) =>
+            _onOtpDigitsChanged(context, otpDigits, phoneNumber),
+      ),
+    );
+  }
+
   Widget _buildResendControls(
     BuildContext context, {
     required bool isVerifying,
@@ -110,9 +100,7 @@ class OtpVerificationPage extends StatelessWidget {
 
     if (canResend) {
       return GhostButton(
-        onPressed: () => context.read<AuthBloc>().add(
-              AuthOtpResendRequested(phoneNumber: phoneNumber),
-            ),
+        onPressed: () => _onResendOtpRequested(context, phoneNumber),
         child: const Text(
           'Renvoyer le code',
           style: TextStyle(
@@ -133,9 +121,31 @@ class OtpVerificationPage extends StatelessWidget {
     );
   }
 
-  String _resolvePhoneNumber(AuthState state) => switch (state) {
-        AuthOtpCountdown() => state.phoneNumber,
-        AuthOtpVerifying() => state.phoneNumber,
-        _ => '',
-      };
+  void _onBackPressed(BuildContext context) {
+    context.read<AuthBloc>().add(const AuthBackPressed());
+  }
+
+  void _onOtpDigitsChanged(
+    BuildContext context,
+    List<Object?> otpDigits,
+    String phoneNumber,
+  ) {
+    final digits = otpDigits.whereType<int>().toList();
+    if (digits.length == AppConstants.otpLength) {
+      context.read<AuthBloc>().add(
+        AuthOtpSubmitted(
+          otp: String.fromCharCodes(digits),
+          phoneNumber: phoneNumber,
+        ),
+      );
+    }
+  }
+
+  void _onResendOtpRequested(BuildContext context, String phoneNumber) {
+    context.read<AuthBloc>().add(AuthOtpResendRequested(phoneNumber: phoneNumber));
+  }
+
+  // phoneNumber est garanti présent sur tout AuthRoleSelectedState.
+  String _getPhoneNumberFromState(AuthState state) =>
+      state is AuthRoleSelectedState ? state.phoneNumber : '';
 }

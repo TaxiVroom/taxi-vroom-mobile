@@ -1,4 +1,4 @@
-import 'package:mobile/features/authentication/domain/repositories/notification_repository.dart';
+import 'package:mobile/features/registration/passenger/domain/repositories/notification_repository.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Mock — sera remplacé par Firebase Messaging ou autre

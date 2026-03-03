@@ -5,12 +5,12 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'dart:developer';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
-import 'package:mobile/features/authentication/domain/entities/registration_flow_update.dart';
-import 'package:mobile/features/authentication/domain/usecases/check_email_availability_usecase.dart';
-import 'package:mobile/features/authentication/domain/usecases/create_passenger_usecase.dart';
-import 'package:mobile/features/authentication/domain/usecases/request_notification_permission_usecase.dart';
-import 'package:mobile/features/authentication/domain/usecases/update_registration_flow_usecase.dart';
-import 'package:mobile/features/authentication/domain/utils/email_validator.dart';
+import 'package:mobile/features/registration/passenger/domain/entities/registration_flow_update.dart';
+import 'package:mobile/features/registration/passenger/domain/usecases/check_email_availability_usecase.dart';
+import 'package:mobile/features/registration/passenger/domain/usecases/create_passenger_usecase.dart';
+import 'package:mobile/features/registration/passenger/domain/usecases/request_notification_permission_usecase.dart';
+import 'package:mobile/features/registration/passenger/domain/usecases/update_registration_flow_usecase.dart';
+import 'package:mobile/features/registration/passenger/domain/utils/email_validator.dart';
 
 part 'passenger_registration_event.dart';
 part 'passenger_registration_state.dart';
@@ -35,8 +35,8 @@ class PassengerRegistrationBloc
     on<RegEmailOptionSelected>(_onEmailOptionSelected);
     on<RegEmailTyped>(_onEmailTyped);
     on<RegEmailSubmitted>(_onEmailSubmitted);
-    on<RegNameFirstNameTyped>(_onNameFirstNameTyped);
-    on<RegNameLastNameTyped>(_onNameLastNameTyped);
+    on<RegFirstNameTyped>(_onFirstNameTyped);
+    on<RegLastNameTyped>(_onLastNameTyped);
     on<RegNameSubmitted>(_onNameSubmitted);
     on<RegBackPressed>(_onBackPressed);
     on<RegNotificationPermissionRequested>(_onNotificationPermissionRequested);
@@ -117,7 +117,6 @@ class PassengerRegistrationBloc
         firstName: state.firstName,
         lastName: state.lastName,
       ));
-      // Retour à l'écran de choix après l'erreur pour permettre une nouvelle tentative.
       emit(RegSocialLinkReady(
         currentStep: state.currentStep,
         email: state.email,
@@ -131,8 +130,7 @@ class PassengerRegistrationBloc
     RegEmailOptionSelected event,
     Emitter<PassengerRegistrationState> emit,
   ) {
-    // Mise à jour locale de la boussole : l'utilisateur a choisi la méthode email.
-    // Le backend sera synchronisé lors du submit de l'email.
+    // Mise à jour locale : le backend sera synchronisé lors du submit de l'email.
     emit(RegEmailInputReady(
       currentStep: PassengerRegistrationStep.email,
       email: state.email,
@@ -193,7 +191,9 @@ class PassengerRegistrationBloc
       })}');
       await _updateRegistrationFlowUseCase(
         userId: _userId,
-        update: EmailUpdate(email: state.email),
+        // fromStep = the step the user is completing → backend sets currentStep to
+        // NEXT_STEP[fromStep], so re-submitting the same step is always idempotent.
+        update: EmailUpdate(fromStep: state.currentStep, email: state.email),
       );
 
       // TODO: Remplacer state.currentStep.next! par updatedFlow.currentStep
@@ -213,7 +213,6 @@ class PassengerRegistrationBloc
         firstName: state.firstName,
         lastName: state.lastName,
       ));
-      // Retour à la saisie email après l'erreur pour permettre une nouvelle tentative.
       emit(RegEmailInputReady(
         currentStep: state.currentStep,
         email: state.email,
@@ -224,29 +223,29 @@ class PassengerRegistrationBloc
     }
   }
 
-  void _onNameFirstNameTyped(
-    RegNameFirstNameTyped event,
+  void _onFirstNameTyped(
+    RegFirstNameTyped event,
     Emitter<PassengerRegistrationState> emit,
   ) {
     if (state is! RegNameInputReady) return;
     final firstName = event.firstName.trim();
-    final s = state as RegNameInputReady;
-    emit(s.copyWith(
+    final nameInputState = state as RegNameInputReady;
+    emit(nameInputState.copyWith(
       firstName: firstName,
-      isFormValid: firstName.isNotEmpty && s.lastName.isNotEmpty,
+      isFormValid: firstName.isNotEmpty && nameInputState.lastName.isNotEmpty,
     ));
   }
 
-  void _onNameLastNameTyped(
-    RegNameLastNameTyped event,
+  void _onLastNameTyped(
+    RegLastNameTyped event,
     Emitter<PassengerRegistrationState> emit,
   ) {
     if (state is! RegNameInputReady) return;
     final lastName = event.lastName.trim();
-    final s = state as RegNameInputReady;
-    emit(s.copyWith(
+    final nameInputState = state as RegNameInputReady;
+    emit(nameInputState.copyWith(
       lastName: lastName,
-      isFormValid: s.firstName.isNotEmpty && lastName.isNotEmpty,
+      isFormValid: nameInputState.firstName.isNotEmpty && lastName.isNotEmpty,
     ));
   }
 
@@ -261,6 +260,23 @@ class PassengerRegistrationBloc
       lastName: state.lastName,
     ));
     try {
+      log(
+          '[PassengerRegistrationBloc] PATCH name :\n${const JsonEncoder.withIndent('  ').convert({
+        'userId': _userId,
+        'firstName': state.firstName,
+        'lastName': state.lastName,
+      })}');
+      await _updateRegistrationFlowUseCase(
+        userId: _userId,
+        // fromStep = the step the user is completing → backend sets currentStep to
+        // NEXT_STEP[fromStep], so re-submitting the same step is always idempotent.
+        update: NameUpdate(
+          fromStep: state.currentStep,
+          firstName: state.firstName,
+          lastName: state.lastName,
+        ),
+      );
+
       log(
           '[PassengerRegistrationBloc] POST /passengers :\n${const JsonEncoder.withIndent('  ').convert({
         'userId': _userId,
@@ -306,16 +322,16 @@ class PassengerRegistrationBloc
     RegBackPressed event,
     Emitter<PassengerRegistrationState> emit,
   ) {
-    final prev = state.currentStep.previous;
+    final previousStep = state.currentStep.previous;
     log(
-        '[PassengerRegistrationBloc] RegBackPressed — currentStep: "${state.currentStep.name}", prev: "${prev?.name ?? 'null (déjà au début, on ignore)'}"');
-    if (prev == null) return;
+        '[PassengerRegistrationBloc] RegBackPressed — currentStep: "${state.currentStep.name}", previousStep: "${previousStep?.name ?? 'null (déjà au début, on ignore)'}"');
+    if (previousStep == null) return;
 
-    switch (prev) {
+    switch (previousStep) {
       case PassengerRegistrationStep.socialLink:
         log('[PassengerRegistrationBloc] → emit RegSocialLinkReady');
         emit(RegSocialLinkReady(
-          currentStep: prev,
+          currentStep: previousStep,
           email: state.email,
           firstName: state.firstName,
           lastName: state.lastName,
@@ -323,7 +339,7 @@ class PassengerRegistrationBloc
       case PassengerRegistrationStep.email:
         log('[PassengerRegistrationBloc] → emit RegEmailInputReady(email: "${state.email}")');
         emit(RegEmailInputReady(
-          currentStep: prev,
+          currentStep: previousStep,
           email: state.email,
           firstName: state.firstName,
           lastName: state.lastName,
@@ -332,7 +348,7 @@ class PassengerRegistrationBloc
       case PassengerRegistrationStep.name:
         log('[PassengerRegistrationBloc] → emit RegNameInputReady');
         emit(RegNameInputReady(
-          currentStep: prev,
+          currentStep: previousStep,
           email: state.email,
           firstName: state.firstName,
           lastName: state.lastName,
