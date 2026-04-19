@@ -7,7 +7,7 @@ import 'package:mobile/features/authentication/domain/entities/registration_flow
 sealed class RegistrationFlowUpdate {
   const RegistrationFlowUpdate({required this.fromStep});
 
-  final PassengerRegistrationStep fromStep;
+  final RegistrationStep fromStep;
 }
 
 final class EmailUpdate extends RegistrationFlowUpdate {
@@ -25,4 +25,12 @@ final class NameUpdate extends RegistrationFlowUpdate {
 
   final String firstName;
   final String lastName;
+}
+
+// Notifie le backend que le chauffeur a fini d'uploader ses documents
+// et que son dossier est prêt à être reviewé par un admin.
+// Pas de champs supplémentaires — fromStep suffit pour que le backend
+// passe currentStep à PENDING_REVIEW.
+final class DocumentsReadyForReviewUpdate extends RegistrationFlowUpdate {
+  const DocumentsReadyForReviewUpdate({required super.fromStep});
 }

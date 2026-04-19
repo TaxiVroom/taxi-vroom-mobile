@@ -1,16 +1,44 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/features/registration/passenger/presentation/bloc/passenger_registration_bloc.dart';
+import 'package:mobile/features/registration/shared/bloc/registration_bloc.dart';
+import 'package:mobile/features/registration/shared/bloc/registration_event.dart';
+import 'package:mobile/features/registration/shared/bloc/registration_state.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-class NamePage extends StatelessWidget {
+class NamePage extends StatefulWidget {
   const NamePage({super.key});
 
   @override
+  State<NamePage> createState() => _NamePageState();
+}
+
+class _NamePageState extends State<NamePage> {
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pré-remplit les champs depuis le BLoC — nécessaire quand l'user revient
+    // en arrière puis retourne sur cette page (FlowBuilder recrée le widget).
+    final state = context.read<RegistrationBloc>().state;
+    _firstNameController = TextEditingController(text: state.firstName);
+    _lastNameController = TextEditingController(text: state.lastName);
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PassengerRegistrationBloc, PassengerRegistrationState>(
+    return BlocBuilder<RegistrationBloc, RegistrationState>(
       builder: (context, state) {
-        final isLoading = state is RegRegistering;
-        final isFormValid = state is RegNameInputReady && state.isFormValid;
+        final isLoading = state is RegistrationRegistering;
+        final isFormValid =
+            state is RegistrationNameInputReady && state.isFormValid;
 
         return PopScope(
           canPop: false,
@@ -45,7 +73,7 @@ class NamePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 8),
-                  _buildNameFields(context),
+                  _buildNameFields(),
                   const SizedBox(height: 8),
                   const Text(
                     'Votre nom sera utilisé sur votre profil et vos reçus de trajet.',
@@ -95,11 +123,12 @@ class NamePage extends StatelessWidget {
     );
   }
 
-  Widget _buildNameFields(BuildContext context) {
+  Widget _buildNameFields() {
     return Row(
       children: [
         Expanded(
           child: TextField(
+            controller: _firstNameController,
             placeholder: const Text('Prénom'),
             autofocus: true,
             onChanged: (firstName) => _onFirstNameTyped(context, firstName),
@@ -108,6 +137,7 @@ class NamePage extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: TextField(
+            controller: _lastNameController,
             placeholder: const Text('Nom de famille'),
             onChanged: (lastName) => _onLastNameTyped(context, lastName),
           ),
@@ -117,22 +147,22 @@ class NamePage extends StatelessWidget {
   }
 
   void _onBackPressed(BuildContext context) {
-    context.read<PassengerRegistrationBloc>().add(const RegBackPressed());
+    context.read<RegistrationBloc>().add(const RegistrationBackPressed());
   }
 
   void _onNameSubmitted(BuildContext context) {
-    context.read<PassengerRegistrationBloc>().add(const RegNameSubmitted());
+    context.read<RegistrationBloc>().add(const RegistrationNameSubmitted());
   }
 
   void _onFirstNameTyped(BuildContext context, String firstName) {
     context
-        .read<PassengerRegistrationBloc>()
-        .add(RegFirstNameTyped(firstName: firstName));
+        .read<RegistrationBloc>()
+        .add(RegistrationFirstNameTyped(firstName: firstName));
   }
 
   void _onLastNameTyped(BuildContext context, String lastName) {
     context
-        .read<PassengerRegistrationBloc>()
-        .add(RegLastNameTyped(lastName: lastName));
+        .read<RegistrationBloc>()
+        .add(RegistrationLastNameTyped(lastName: lastName));
   }
 }

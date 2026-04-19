@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/features/registration/passenger/presentation/bloc/passenger_registration_bloc.dart';
+import 'package:mobile/features/registration/shared/bloc/registration_bloc.dart';
+import 'package:mobile/features/registration/shared/bloc/registration_event.dart';
+import 'package:mobile/features/registration/shared/bloc/registration_state.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class NotificationsPage extends StatelessWidget {
@@ -7,7 +9,7 @@ class NotificationsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PassengerRegistrationBloc, PassengerRegistrationState>(
+    return BlocBuilder<RegistrationBloc, RegistrationState>(
       builder: (context, state) {
         return PopScope(
           canPop: false,
@@ -112,18 +114,18 @@ class NotificationsPage extends StatelessWidget {
   }
 
   void _onBackPressed(BuildContext context) {
-    context.read<PassengerRegistrationBloc>().add(const RegBackPressed());
+    context.read<RegistrationBloc>().add(const RegistrationBackPressed());
   }
 
   void _onNotificationPermissionRequested(BuildContext context) {
-    context.read<PassengerRegistrationBloc>().add(
-      const RegNotificationPermissionRequested(),
-    );
+    context
+        .read<RegistrationBloc>()
+        .add(const RegistrationNotificationPermissionRequested());
   }
 
   void _onNotificationPermissionSkipped(BuildContext context) {
-    context.read<PassengerRegistrationBloc>().add(
-      const RegNotificationPermissionSkipped(),
-    );
+    context
+        .read<RegistrationBloc>()
+        .add(const RegistrationNotificationPermissionSkipped());
   }
 }

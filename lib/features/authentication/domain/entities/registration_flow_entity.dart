@@ -1,8 +1,21 @@
 import 'package:equatable/equatable.dart';
 
+// Dart equivalent of TypeScript's:
+//   type RegistrationStep = PassengerRegistrationStep | DriverRegistrationStep
+// Both enums implement this interface, making them interchangeable as fromStep
+// in RegistrationFlowUpdate without sacrificing enum type safety.
+abstract interface class RegistrationStep {
+  // Backend UPPER_SNAKE_CASE string for this step — used in PATCH /v1/registration-flows/me.
+  String serialize();
+
+  RegistrationStep? get next;
+
+  RegistrationStep? get previous;
+}
+
 // Each role gets its own step enum.
 // A passenger can never end up on a driver-only step — invalid states are impossible.
-enum PassengerRegistrationStep {
+enum PassengerRegistrationStep implements RegistrationStep {
   socialLink,
   email,
   name,
@@ -25,8 +38,57 @@ enum PassengerRegistrationStep {
         name       => email,
         complete   => name,
       };
+
+  @override
+  String serialize() => switch (this) {
+        socialLink => 'SOCIAL_LINK',
+        email      => 'EMAIL',
+        name       => 'NAME',
+        complete   => 'COMPLETE',
+      };
 }
-// enum DriverRegistrationStep { email, name, license, vehicleInfo, complete }
+
+enum DriverRegistrationStep implements RegistrationStep {
+  socialLink,
+  email,
+  name,
+  documents,       // étape spécifique chauffeur (upload des documents)
+  pendingReview,   // documents soumis — en attente de validation admin
+  documentsCorrection, // admin a rejeté au moins un document — le chauffeur doit corriger
+  complete;
+
+  /// Null pour [pendingReview] : la transition suivante est déclenchée par l'admin.
+  DriverRegistrationStep? get next => switch (this) {
+        socialLink           => email,
+        email                => name,
+        name                 => documents,
+        documents            => pendingReview,
+        pendingReview        => null,
+        documentsCorrection  => pendingReview,
+        complete             => null,
+      };
+
+  DriverRegistrationStep? get previous => switch (this) {
+        socialLink           => null,
+        email                => socialLink,
+        name                 => email,
+        documents            => name,
+        pendingReview        => null,
+        documentsCorrection  => name,
+        complete             => pendingReview,
+      };
+
+  @override
+  String serialize() => switch (this) {
+        socialLink           => 'SOCIAL_LINK',
+        email                => 'EMAIL',
+        name                 => 'NAME',
+        documents            => 'DOCUMENTS',
+        pendingReview        => 'PENDING_REVIEW',
+        documentsCorrection  => 'DOCUMENTS_CORRECTION',
+        complete             => 'COMPLETE',
+      };
+}
 
 // Dart's equivalent of a TypeScript discriminated union.
 // The compiler knows every possible subtype (PassengerRegistrationFlowEntity,
@@ -59,6 +121,21 @@ base class PassengerRegistrationFlowEntity extends RegistrationFlowEntity {
   });
 
   final PassengerRegistrationStep currentStep;
+
+  @override
+  List<Object?> get props => [userId, currentStep, email, firstName, lastName];
+}
+
+base class DriverRegistrationFlowEntity extends RegistrationFlowEntity {
+  const DriverRegistrationFlowEntity({
+    required super.userId,
+    required this.currentStep,
+    super.email,
+    super.firstName,
+    super.lastName,
+  });
+
+  final DriverRegistrationStep currentStep;
 
   @override
   List<Object?> get props => [userId, currentStep, email, firstName, lastName];

@@ -1,18 +1,18 @@
-part of 'passenger_registration_bloc.dart';
+import 'package:equatable/equatable.dart';
+import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 
-// currentStep est désormais la boussole portée par chaque état —
-// le BLoC n'a plus de variables privées et le State est la seule source de vérité.
-// Les données du formulaire (email, firstName, lastName) sont dans la classe de base
-// pour être accessibles via state.email sans type-check depuis l'UI.
-sealed class PassengerRegistrationState extends Equatable {
-  const PassengerRegistrationState({
+// Abstract (not sealed) so concrete blocs can define extra states in their own files.
+// currentStep est porté dans le state — comme phoneNumber dans AuthState —
+// ce qui permet au bloc de base de piloter la navigation arrière sans hook.
+abstract class RegistrationState extends Equatable {
+  const RegistrationState({
     required this.currentStep,
     this.email = '',
     this.firstName = '',
     this.lastName = '',
   });
 
-  final PassengerRegistrationStep currentStep;
+  final RegistrationStep currentStep;
   final String email;
   final String firstName;
   final String lastName;
@@ -21,8 +21,8 @@ sealed class PassengerRegistrationState extends Equatable {
   List<Object?> get props => [currentStep, email, firstName, lastName];
 }
 
-final class RegSocialLinkReady extends PassengerRegistrationState {
-  const RegSocialLinkReady({
+final class RegistrationSocialLinkReady extends RegistrationState {
+  const RegistrationSocialLinkReady({
     required super.currentStep,
     super.email,
     super.firstName,
@@ -30,8 +30,8 @@ final class RegSocialLinkReady extends PassengerRegistrationState {
   });
 }
 
-final class RegGoogleSignInLoading extends PassengerRegistrationState {
-  const RegGoogleSignInLoading({
+final class RegistrationGoogleSignInLoading extends RegistrationState {
+  const RegistrationGoogleSignInLoading({
     required super.currentStep,
     super.email,
     super.firstName,
@@ -39,8 +39,8 @@ final class RegGoogleSignInLoading extends PassengerRegistrationState {
   });
 }
 
-final class RegEmailInputReady extends PassengerRegistrationState {
-  const RegEmailInputReady({
+final class RegistrationEmailInputReady extends RegistrationState {
+  const RegistrationEmailInputReady({
     required super.currentStep,
     super.email,
     super.firstName,
@@ -50,13 +50,13 @@ final class RegEmailInputReady extends PassengerRegistrationState {
 
   final bool isFormatValid;
 
-  RegEmailInputReady copyWith({
+  RegistrationEmailInputReady copyWith({
     String? email,
     String? firstName,
     String? lastName,
     bool? isFormatValid,
   }) =>
-      RegEmailInputReady(
+      RegistrationEmailInputReady(
         currentStep: currentStep,
         email: email ?? this.email,
         firstName: firstName ?? this.firstName,
@@ -68,8 +68,8 @@ final class RegEmailInputReady extends PassengerRegistrationState {
   List<Object?> get props => [currentStep, email, firstName, lastName, isFormatValid];
 }
 
-final class RegEmailChecking extends PassengerRegistrationState {
-  const RegEmailChecking({
+final class RegistrationEmailChecking extends RegistrationState {
+  const RegistrationEmailChecking({
     required super.currentStep,
     super.email,
     super.firstName,
@@ -77,8 +77,8 @@ final class RegEmailChecking extends PassengerRegistrationState {
   });
 }
 
-final class RegEmailTaken extends PassengerRegistrationState {
-  const RegEmailTaken({
+final class RegistrationEmailTaken extends RegistrationState {
+  const RegistrationEmailTaken({
     required super.currentStep,
     super.email,
     super.firstName,
@@ -86,8 +86,8 @@ final class RegEmailTaken extends PassengerRegistrationState {
   });
 }
 
-final class RegNameInputReady extends PassengerRegistrationState {
-  const RegNameInputReady({
+final class RegistrationNameInputReady extends RegistrationState {
+  const RegistrationNameInputReady({
     required super.currentStep,
     required super.email,
     super.firstName,
@@ -97,12 +97,12 @@ final class RegNameInputReady extends PassengerRegistrationState {
 
   final bool isFormValid;
 
-  RegNameInputReady copyWith({
+  RegistrationNameInputReady copyWith({
     String? firstName,
     String? lastName,
     bool? isFormValid,
   }) =>
-      RegNameInputReady(
+      RegistrationNameInputReady(
         currentStep: currentStep,
         email: email,
         firstName: firstName ?? this.firstName,
@@ -114,8 +114,8 @@ final class RegNameInputReady extends PassengerRegistrationState {
   List<Object?> get props => [currentStep, email, firstName, lastName, isFormValid];
 }
 
-final class RegRegistering extends PassengerRegistrationState {
-  const RegRegistering({
+final class RegistrationRegistering extends RegistrationState {
+  const RegistrationRegistering({
     required super.currentStep,
     super.email,
     super.firstName,
@@ -123,8 +123,8 @@ final class RegRegistering extends PassengerRegistrationState {
   });
 }
 
-final class RegNotificationReady extends PassengerRegistrationState {
-  const RegNotificationReady({
+final class RegistrationNotificationReady extends RegistrationState {
+  const RegistrationNotificationReady({
     required super.currentStep,
     super.email,
     super.firstName,
@@ -132,8 +132,8 @@ final class RegNotificationReady extends PassengerRegistrationState {
   });
 }
 
-final class RegAuthenticated extends PassengerRegistrationState {
-  const RegAuthenticated({
+final class RegistrationAuthenticated extends RegistrationState {
+  const RegistrationAuthenticated({
     required super.currentStep,
     super.email,
     super.firstName,
@@ -141,8 +141,8 @@ final class RegAuthenticated extends PassengerRegistrationState {
   });
 }
 
-final class RegError extends PassengerRegistrationState {
-  const RegError({
+final class RegistrationError extends RegistrationState {
+  const RegistrationError({
     required this.message,
     required super.currentStep,
     super.email,

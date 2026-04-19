@@ -1,16 +1,17 @@
 import 'package:flow_builder/flow_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
-import 'package:mobile/features/registration/passenger/domain/usecases/check_email_availability_usecase.dart';
-import 'package:mobile/features/registration/passenger/domain/usecases/create_passenger_usecase.dart';
 import 'package:mobile/features/registration/passenger/domain/usecases/request_notification_permission_usecase.dart';
-import 'package:mobile/features/registration/passenger/domain/usecases/update_registration_flow_usecase.dart';
 import 'package:mobile/features/registration/passenger/presentation/bloc/passenger_registration_bloc.dart';
-import 'package:mobile/features/registration/passenger/presentation/pages/email_page.dart';
-import 'package:mobile/features/registration/passenger/presentation/pages/name_page.dart';
-import 'package:mobile/features/registration/passenger/presentation/pages/notifications_page.dart';
-import 'package:mobile/features/registration/passenger/presentation/pages/social_link_page.dart';
+import 'package:mobile/features/registration/shared/bloc/registration_bloc.dart';
+import 'package:mobile/features/registration/shared/bloc/registration_state.dart';
+import 'package:mobile/features/registration/shared/domain/usecases/update_registration_flow_usecase.dart';
+import 'package:mobile/features/registration/shared/pages/email_page.dart';
+import 'package:mobile/features/registration/shared/pages/name_page.dart';
+import 'package:mobile/features/registration/shared/pages/notifications_page.dart';
+import 'package:mobile/features/registration/shared/pages/social_link_page.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart'
     show Basic, ButtonSize, PrimaryButton, SurfaceCard, Text, showToast;
 
@@ -21,7 +22,6 @@ class PassengerRegistrationNavigator extends StatefulWidget {
     super.key,
     required this.registrationFlow,
     required this.updateRegistrationFlowUseCase,
-    required this.createPassengerUseCase,
     required this.requestNotificationPermissionUseCase,
     required this.checkEmailAvailabilityUseCase,
     required this.onAuthenticated,
@@ -29,7 +29,6 @@ class PassengerRegistrationNavigator extends StatefulWidget {
 
   final PassengerRegistrationFlowEntity registrationFlow;
   final UpdateRegistrationFlowUseCase updateRegistrationFlowUseCase;
-  final CreatePassengerUseCase createPassengerUseCase;
   final RequestNotificationPermissionUseCase requestNotificationPermissionUseCase;
   final CheckEmailAvailabilityUseCase checkEmailAvailabilityUseCase;
 
@@ -52,7 +51,6 @@ class _PassengerRegistrationNavigatorState
     _bloc = PassengerRegistrationBloc(
       registrationFlow: widget.registrationFlow,
       updateRegistrationFlowUseCase: widget.updateRegistrationFlowUseCase,
-      createPassengerUseCase: widget.createPassengerUseCase,
       requestNotificationPermissionUseCase:
           widget.requestNotificationPermissionUseCase,
       checkEmailAvailabilityUseCase: widget.checkEmailAvailabilityUseCase,
@@ -67,16 +65,18 @@ class _PassengerRegistrationNavigatorState
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<PassengerRegistrationBloc>.value(
+    // BlocProvider<RegistrationBloc> expose le bloc concret via son type abstrait —
+    // les pages partagées lisent RegistrationBloc sans connaître PassengerRegistrationBloc.
+    return BlocProvider<RegistrationBloc>.value(
       value: _bloc,
-      child: BlocListener<PassengerRegistrationBloc, PassengerRegistrationState>(
+      child: BlocListener<RegistrationBloc, RegistrationState>(
         listener: _onRegistrationStateChanged,
         // BlocBuilder passe le dernier état au FlowBuilder à chaque émission.
         // FlowBuilder diffe les deux listes et joue push ou pop automatiquement —
         // sans aucun appel impératif.
-        child: BlocBuilder<PassengerRegistrationBloc, PassengerRegistrationState>(
+        child: BlocBuilder<RegistrationBloc, RegistrationState>(
           builder: (context, state) {
-            return FlowBuilder<PassengerRegistrationState>(
+            return FlowBuilder<RegistrationState>(
               state: state,
               onGeneratePages: _onGeneratePages,
             );
@@ -88,19 +88,19 @@ class _PassengerRegistrationNavigatorState
 
   void _onRegistrationStateChanged(
     BuildContext context,
-    PassengerRegistrationState state,
+    RegistrationState state,
   ) {
     switch (state) {
-      case RegAuthenticated():
+      case RegistrationAuthenticated():
         widget.onAuthenticated();
-      case RegError():
+      case RegistrationError():
         _onRegistrationError(context, state);
       case _:
         break;
     }
   }
 
-  void _onRegistrationError(BuildContext context, RegError error) {
+  void _onRegistrationError(BuildContext context, RegistrationError error) {
     showToast(
       context: context,
       builder: (ctx, overlay) => SurfaceCard(
@@ -120,37 +120,49 @@ class _PassengerRegistrationNavigatorState
   /// Les [ValueKey] stables permettent au Navigator de choisir automatiquement
   /// l'animation push (page ajoutée en fin) ou pop (page retirée en fin).
   ///
-  /// [pages] est utilisé uniquement pour [RegError] : erreur transitoire —
+  /// [pages] est utilisé uniquement pour [RegistrationError] : erreur transitoire —
   /// le [BlocListener] affiche le toast sans changer la stack.
   List<Page<void>> _onGeneratePages(
-    PassengerRegistrationState state,
+    RegistrationState state,
     List<Page<void>> pages,
   ) {
     const socialPage = MaterialPage<void>(
-      key: ValueKey(PassengerRegistrationStep.socialLink),
+      key: ValueKey('passenger-social-link'),
       child: SocialLinkPage(),
     );
     const emailPage = MaterialPage<void>(
-      key: ValueKey(PassengerRegistrationStep.email),
+      key: ValueKey('passenger-email'),
       child: EmailPage(),
     );
     const namePage = MaterialPage<void>(
-      key: ValueKey(PassengerRegistrationStep.name),
+      key: ValueKey('passenger-name'),
       child: NamePage(),
     );
     const notificationsPage = MaterialPage<void>(
-      key: ValueKey(PassengerRegistrationStep.complete),
+      key: ValueKey('passenger-notifications'),
       child: NotificationsPage(),
     );
 
-    // RegError ne change pas la stack : le BlocListener se charge du toast.
-    if (state is RegError) return pages.isNotEmpty ? pages : [socialPage];
+    // RegistrationError ne change pas la stack : le BlocListener se charge du toast.
+    if (state is RegistrationError) {
+      return pages.isNotEmpty ? pages : [socialPage];
+    }
 
-    return switch (state.currentStep) {
-      PassengerRegistrationStep.socialLink => [socialPage],
-      PassengerRegistrationStep.email     => [socialPage, emailPage],
-      PassengerRegistrationStep.name      => [socialPage, emailPage, namePage],
-      PassengerRegistrationStep.complete  => [socialPage, emailPage, namePage, notificationsPage],
+    return switch (state) {
+      RegistrationSocialLinkReady() ||
+      RegistrationGoogleSignInLoading() =>
+        [socialPage],
+      RegistrationEmailInputReady() ||
+      RegistrationEmailChecking() ||
+      RegistrationEmailTaken() =>
+        [socialPage, emailPage],
+      RegistrationNameInputReady() ||
+      RegistrationRegistering() =>
+        [socialPage, emailPage, namePage],
+      RegistrationNotificationReady() ||
+      RegistrationAuthenticated() =>
+        [socialPage, emailPage, namePage, notificationsPage],
+      _ => pages.isNotEmpty ? pages : [socialPage],
     };
   }
 }
