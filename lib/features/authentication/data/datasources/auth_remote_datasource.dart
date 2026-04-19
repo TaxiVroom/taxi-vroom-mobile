@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mobile/features/authentication/data/models/user_model.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/authentication/domain/entities/user_role.dart';
+import 'package:mobile/features/registration/driver/data/models/driver_registration_flow_model.dart';
 import 'package:mobile/features/registration/passenger/data/models/passenger_registration_flow_model.dart';
 
 // TODO: Violation SRP + ISP (SOLID) — ce datasource mélange deux responsabilités :
@@ -104,10 +105,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       queryParameters: {'role': role.name.toUpperCase(), 'phone': phone},
     );
     final json = response.data!;
-    // Switch sur 'role' — le backend indique quel type de flow retourner.
-    // Ajouter un case 'driver' ici quand DriverRegistrationFlowModel existera.
     return switch (json['role'] as String) {
       'PASSENGER' => PassengerRegistrationFlowModel.fromJson(json, userId: userId),
+      'DRIVER'    => DriverRegistrationFlowModel.fromJson(json, userId: userId),
       final unknownRole => throw UnimplementedError('Unknown registration flow role: $unknownRole'),
     };
   }

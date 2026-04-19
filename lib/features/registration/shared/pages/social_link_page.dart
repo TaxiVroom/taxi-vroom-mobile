@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/features/authentication/presentation/widgets/auth_provider_button.dart';
-import 'package:mobile/features/registration/passenger/presentation/bloc/passenger_registration_bloc.dart';
+import 'package:mobile/features/registration/shared/bloc/registration_bloc.dart';
+import 'package:mobile/features/registration/shared/bloc/registration_event.dart';
+import 'package:mobile/features/registration/shared/bloc/registration_state.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class SocialLinkPage extends StatelessWidget {
@@ -8,9 +10,9 @@ class SocialLinkPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PassengerRegistrationBloc, PassengerRegistrationState>(
+    return BlocBuilder<RegistrationBloc, RegistrationState>(
       builder: (context, state) {
-        final isGoogleLoading = state is RegGoogleSignInLoading;
+        final isGoogleLoading = state is RegistrationGoogleSignInLoading;
 
         return PopScope(
           canPop: false,
@@ -111,13 +113,13 @@ class SocialLinkPage extends StatelessWidget {
 
   void _onGoogleSignInRequested(BuildContext context) {
     context
-        .read<PassengerRegistrationBloc>()
-        .add(const RegGoogleSignInRequested());
+        .read<RegistrationBloc>()
+        .add(const RegistrationGoogleSignInRequested());
   }
 
   void _onEmailOptionSelected(BuildContext context) {
     context
-        .read<PassengerRegistrationBloc>()
-        .add(const RegEmailOptionSelected());
+        .read<RegistrationBloc>()
+        .add(const RegistrationEmailOptionSelected());
   }
 }

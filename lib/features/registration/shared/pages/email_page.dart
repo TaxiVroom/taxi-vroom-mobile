@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/features/registration/passenger/presentation/bloc/passenger_registration_bloc.dart';
+import 'package:mobile/features/registration/shared/bloc/registration_bloc.dart';
+import 'package:mobile/features/registration/shared/bloc/registration_event.dart';
+import 'package:mobile/features/registration/shared/bloc/registration_state.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class EmailPage extends StatefulWidget {
@@ -16,7 +18,7 @@ class _EmailPageState extends State<EmailPage> {
   void initState() {
     super.initState();
     _controller = TextEditingController(
-      text: context.read<PassengerRegistrationBloc>().state.email,
+      text: context.read<RegistrationBloc>().state.email,
     );
   }
 
@@ -28,11 +30,11 @@ class _EmailPageState extends State<EmailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PassengerRegistrationBloc, PassengerRegistrationState>(
+    return BlocBuilder<RegistrationBloc, RegistrationState>(
       builder: (context, state) {
-        final isCheckingAvailability = state is RegEmailChecking;
-        final isEmailAlreadyTaken = state is RegEmailTaken;
-        final canSubmitEmail = state is RegEmailInputReady &&
+        final isCheckingAvailability = state is RegistrationEmailChecking;
+        final isEmailAlreadyTaken = state is RegistrationEmailTaken;
+        final canSubmitEmail = state is RegistrationEmailInputReady &&
             state.isFormatValid &&
             !isCheckingAvailability;
 
@@ -149,14 +151,16 @@ class _EmailPageState extends State<EmailPage> {
   }
 
   void _onBackPressed() {
-    context.read<PassengerRegistrationBloc>().add(const RegBackPressed());
+    context.read<RegistrationBloc>().add(const RegistrationBackPressed());
   }
 
   void _onEmailSubmitted() {
-    context.read<PassengerRegistrationBloc>().add(const RegEmailSubmitted());
+    context.read<RegistrationBloc>().add(const RegistrationEmailSubmitted());
   }
 
   void _onEmailTyped(String email) {
-    context.read<PassengerRegistrationBloc>().add(RegEmailTyped(email: email));
+    context
+        .read<RegistrationBloc>()
+        .add(RegistrationEmailTyped(email: email));
   }
 }

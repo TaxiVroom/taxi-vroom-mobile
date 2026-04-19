@@ -116,23 +116,7 @@ class WelcomePage extends StatelessWidget {
     context.read<AuthBloc>().add(const AuthRoleChosen(role: UserRole.passenger));
   }
 
-  void _onBecomeDriverPressed(BuildContext context) =>
-      _showDriverComingSoonToast(context);
-
-  void _showDriverComingSoonToast(BuildContext context) {
-    showToast(
-      context: context,
-      builder: (context, overlay) => SurfaceCard(
-        child: Basic(
-          title: const Text('Ça arrive chef !'),
-          subtitle: const Text('Le tunnel chauffeur arrive prochainement.'),
-          trailing: PrimaryButton(
-            size: ButtonSize.small,
-            onPressed: overlay.close,
-            child: const Text('OK'),
-          ),
-        ),
-      ),
-    );
+  void _onBecomeDriverPressed(BuildContext context) {
+    context.read<AuthBloc>().add(const AuthRoleChosen(role: UserRole.driver));
   }
 }

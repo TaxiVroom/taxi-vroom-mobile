@@ -1,17 +1,22 @@
 import 'package:flow_builder/flow_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:mobile/features/authentication/presentation/pages/home_page.dart';
 import 'package:mobile/features/authentication/presentation/pages/otp_verification_page.dart';
 import 'package:mobile/features/authentication/presentation/pages/phone_number_page.dart';
 import 'package:mobile/features/authentication/presentation/pages/welcome_page.dart';
-import 'package:mobile/features/registration/passenger/domain/usecases/check_email_availability_usecase.dart';
-import 'package:mobile/features/registration/passenger/domain/usecases/create_passenger_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/get_document_types_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/get_uploaded_documents_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/request_driver_notification_permission_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/upload_registration_document_usecase.dart';
+import 'package:mobile/features/registration/driver/presentation/navigator/driver_registration_navigator.dart';
 import 'package:mobile/features/registration/passenger/domain/usecases/request_notification_permission_usecase.dart';
-import 'package:mobile/features/registration/passenger/domain/usecases/update_registration_flow_usecase.dart';
 import 'package:mobile/features/registration/passenger/presentation/navigator/passenger_registration_navigator.dart';
+import 'package:mobile/features/registration/shared/domain/usecases/update_registration_flow_usecase.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart'
     show Basic, ButtonSize, PrimaryButton, SurfaceCard, Text, showToast;
 
@@ -21,18 +26,34 @@ import 'package:shadcn_flutter/shadcn_flutter.dart'
 class AuthNavigator extends StatelessWidget {
   const AuthNavigator({
     super.key,
-    required this.updateRegistrationFlowUseCase,
-    required this.createPassengerUseCase,
+    required this.passengerUpdateRegistrationFlowUseCase,
     required this.requestNotificationPermissionUseCase,
+    required this.driverUpdateRegistrationFlowUseCase,
+    required this.requestDriverNotificationPermissionUseCase,
     required this.checkEmailAvailabilityUseCase,
+    required this.getDocumentTypesUseCase,
+    required this.uploadRegistrationDocumentUseCase,
+    required this.getUploadedDocumentsUseCase,
+    required this.getDocumentSignedUrlUseCase,
   });
 
-  // Use cases transmis au navigator d'inscription correspondant.
+  // Use cases passager transmis au PassengerRegistrationNavigator.
   // AuthBloc n'en a plus besoin — ils appartiennent au flow d'inscription.
-  final UpdateRegistrationFlowUseCase updateRegistrationFlowUseCase;
-  final CreatePassengerUseCase createPassengerUseCase;
+  final UpdateRegistrationFlowUseCase passengerUpdateRegistrationFlowUseCase;
   final RequestNotificationPermissionUseCase requestNotificationPermissionUseCase;
+
+  // Use cases chauffeur transmis au DriverRegistrationNavigator.
+  final UpdateRegistrationFlowUseCase driverUpdateRegistrationFlowUseCase;
+  final RequestDriverNotificationPermissionUseCase requestDriverNotificationPermissionUseCase;
+
+  // Partagé entre passager et chauffeur — même endpoint de vérification.
   final CheckEmailAvailabilityUseCase checkEmailAvailabilityUseCase;
+
+  // Use cases documents chauffeur transmis au DriverRegistrationNavigator.
+  final GetDocumentTypesUseCase getDocumentTypesUseCase;
+  final UploadRegistrationDocumentUseCase uploadRegistrationDocumentUseCase;
+  final GetUploadedDocumentsUseCase getUploadedDocumentsUseCase;
+  final GetDocumentSignedUrlUseCase getDocumentSignedUrlUseCase;
 
   @override
   Widget build(BuildContext context) {
@@ -95,18 +116,32 @@ class AuthNavigator extends StatelessWidget {
         ],
       AuthOtpVerified(:final registrationFlow) => [
           switch (registrationFlow) {
-            // TODO: ajouter case DriverRegistrationFlowEntity() → DriverRegistrationNavigator
             PassengerRegistrationFlowEntity() => MaterialPage<void>(
                 key: const ValueKey('passenger-registration'),
                 child: PassengerRegistrationNavigator(
                   registrationFlow: registrationFlow,
-                  updateRegistrationFlowUseCase: updateRegistrationFlowUseCase,
-                  createPassengerUseCase: createPassengerUseCase,
+                  updateRegistrationFlowUseCase:
+                      passengerUpdateRegistrationFlowUseCase,
                   requestNotificationPermissionUseCase:
                       requestNotificationPermissionUseCase,
                   checkEmailAvailabilityUseCase: checkEmailAvailabilityUseCase,
-                  // onAuthenticated remonte l'événement à AuthBloc —
-                  // c'est lui qui pilote la transition finale vers HomePage.
+                  onAuthenticated: () => _onRegistrationCompleted(context),
+                ),
+              ),
+            DriverRegistrationFlowEntity() => MaterialPage<void>(
+                key: const ValueKey('driver-registration'),
+                child: DriverRegistrationNavigator(
+                  registrationFlow: registrationFlow,
+                  updateRegistrationFlowUseCase:
+                      driverUpdateRegistrationFlowUseCase,
+                  requestDriverNotificationPermissionUseCase:
+                      requestDriverNotificationPermissionUseCase,
+                  checkEmailAvailabilityUseCase: checkEmailAvailabilityUseCase,
+                  getDocumentTypesUseCase: getDocumentTypesUseCase,
+                  uploadRegistrationDocumentUseCase:
+                      uploadRegistrationDocumentUseCase,
+                  getUploadedDocumentsUseCase: getUploadedDocumentsUseCase,
+                  getDocumentSignedUrlUseCase: getDocumentSignedUrlUseCase,
                   onAuthenticated: () => _onRegistrationCompleted(context),
                 ),
               ),
