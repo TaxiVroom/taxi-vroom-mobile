@@ -3,17 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
+import 'package:mobile/features/authentication/domain/entities/user_role.dart';
 import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:mobile/features/authentication/presentation/pages/home_page.dart';
 import 'package:mobile/features/authentication/presentation/pages/otp_verification_page.dart';
 import 'package:mobile/features/authentication/presentation/pages/phone_number_page.dart';
 import 'package:mobile/features/authentication/presentation/pages/welcome_page.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
+import 'package:mobile/features/passenger_home/presentation/pages/passenger_home_page.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_types_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_uploaded_documents_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/request_driver_notification_permission_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/upload_registration_document_usecase.dart';
 import 'package:mobile/features/registration/driver/presentation/navigator/driver_registration_navigator.dart';
+import 'package:mobile/features/registration/passenger/domain/usecases/complete_passenger_registration_usecase.dart';
 import 'package:mobile/features/registration/passenger/domain/usecases/request_notification_permission_usecase.dart';
 import 'package:mobile/features/registration/passenger/presentation/navigator/passenger_registration_navigator.dart';
 import 'package:mobile/features/registration/shared/domain/usecases/update_registration_flow_usecase.dart';
@@ -28,6 +32,7 @@ class AuthNavigator extends StatelessWidget {
     super.key,
     required this.passengerUpdateRegistrationFlowUseCase,
     required this.requestNotificationPermissionUseCase,
+    required this.completePassengerRegistrationUseCase,
     required this.driverUpdateRegistrationFlowUseCase,
     required this.requestDriverNotificationPermissionUseCase,
     required this.checkEmailAvailabilityUseCase,
@@ -35,12 +40,14 @@ class AuthNavigator extends StatelessWidget {
     required this.uploadRegistrationDocumentUseCase,
     required this.getUploadedDocumentsUseCase,
     required this.getDocumentSignedUrlUseCase,
+    required this.loadPassengerHomeUseCase,
   });
 
   // Use cases passager transmis au PassengerRegistrationNavigator.
   // AuthBloc n'en a plus besoin — ils appartiennent au flow d'inscription.
   final UpdateRegistrationFlowUseCase passengerUpdateRegistrationFlowUseCase;
   final RequestNotificationPermissionUseCase requestNotificationPermissionUseCase;
+  final CompletePassengerRegistrationUseCase completePassengerRegistrationUseCase;
 
   // Use cases chauffeur transmis au DriverRegistrationNavigator.
   final UpdateRegistrationFlowUseCase driverUpdateRegistrationFlowUseCase;
@@ -54,6 +61,9 @@ class AuthNavigator extends StatelessWidget {
   final UploadRegistrationDocumentUseCase uploadRegistrationDocumentUseCase;
   final GetUploadedDocumentsUseCase getUploadedDocumentsUseCase;
   final GetDocumentSignedUrlUseCase getDocumentSignedUrlUseCase;
+
+  // Use case de l'accueil passager, transmis à PassengerHomePage.
+  final LoadPassengerHomeUseCase loadPassengerHomeUseCase;
 
   @override
   Widget build(BuildContext context) {
@@ -125,6 +135,8 @@ class AuthNavigator extends StatelessWidget {
                   requestNotificationPermissionUseCase:
                       requestNotificationPermissionUseCase,
                   checkEmailAvailabilityUseCase: checkEmailAvailabilityUseCase,
+                  completePassengerRegistrationUseCase:
+                      completePassengerRegistrationUseCase,
                   onAuthenticated: () => _onRegistrationCompleted(context),
                 ),
               ),
@@ -146,6 +158,14 @@ class AuthNavigator extends StatelessWidget {
                 ),
               ),
           },
+        ],
+      AuthAuthenticated(role: UserRole.passenger) => [
+          MaterialPage<void>(
+            key: const ValueKey('passenger-home'),
+            child: PassengerHomePage(
+              loadPassengerHomeUseCase: loadPassengerHomeUseCase,
+            ),
+          ),
         ],
       AuthAuthenticated() => [homePage],
       _ => [welcomePage],

@@ -9,6 +9,9 @@ import 'package:mobile/env/app_config.dart';
 class _FakeAppConfig implements AppConfig {
   @override
   String get apiBaseUrl => 'https://test-api.example.com';
+
+  @override
+  String get mapboxAccessToken => 'pk.test';
 }
 
 void main() {

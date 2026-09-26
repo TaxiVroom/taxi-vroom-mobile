@@ -11,3 +11,8 @@ class ServerFailure extends Failure {
 class NetworkFailure extends Failure {
   const NetworkFailure(super.message);
 }
+
+// Location unavailable: permission denied or location services turned off.
+class LocationFailure extends Failure {
+  const LocationFailure(super.message);
+}

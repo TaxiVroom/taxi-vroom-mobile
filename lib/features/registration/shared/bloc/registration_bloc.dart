@@ -5,6 +5,7 @@ import 'dart:developer';
 import 'package:bloc/bloc.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/core/utils/email_validator.dart';
+import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/registration/shared/bloc/registration_event.dart';
 import 'package:mobile/features/registration/shared/bloc/registration_state.dart';
@@ -60,6 +61,9 @@ abstract class RegistrationBloc
 
   // Each role has its own notification permission system.
   Future<void> notifyPermissionGranted();
+
+  // Each role finalizes its registration its own way when leaving the notifications screen.
+  Future<Result<void>> completeRegistration();
 
   // Concrete — même logique pour tous les rôles : PATCH /v1/registration-flows/me.
   Future<void> persistEmailUpdate(String email) =>
@@ -249,7 +253,6 @@ abstract class RegistrationBloc
       })}');
       await persistNameUpdate(state.firstName, state.lastName);
       // TODO: Remplacer par updatedFlow.currentStep quand le backend renvoie le flow mis à jour.
-      // Le backend crée le compte automatiquement via RegistrationCompletedDomainEvent.
       emit(stateForStep(_nameStep.next!));
     } catch (e) {
       emit(RegistrationError(
@@ -284,23 +287,40 @@ abstract class RegistrationBloc
     Emitter<RegistrationState> emit,
   ) async {
     await notifyPermissionGranted();
-    emit(RegistrationAuthenticated(
-      currentStep: _completeStep,
-      email: state.email,
-      firstName: state.firstName,
-      lastName: state.lastName,
-    ));
+    await _finalizeRegistration(emit);
   }
 
-  void _onNotificationPermissionSkipped(
+  Future<void> _onNotificationPermissionSkipped(
     RegistrationNotificationPermissionSkipped event,
     Emitter<RegistrationState> emit,
-  ) {
-    emit(RegistrationAuthenticated(
-      currentStep: _completeStep,
-      email: state.email,
-      firstName: state.firstName,
-      lastName: state.lastName,
-    ));
+  ) async {
+    await _finalizeRegistration(emit);
+  }
+
+  Future<void> _finalizeRegistration(Emitter<RegistrationState> emit) async {
+    final result = await completeRegistration();
+    switch (result) {
+      case Ok():
+        emit(RegistrationAuthenticated(
+          currentStep: _completeStep,
+          email: state.email,
+          firstName: state.firstName,
+          lastName: state.lastName,
+        ));
+      case Error(:final error):
+        emit(RegistrationError(
+          message: error.message,
+          currentStep: _completeStep,
+          email: state.email,
+          firstName: state.firstName,
+          lastName: state.lastName,
+        ));
+        emit(RegistrationNotificationReady(
+          currentStep: _completeStep,
+          email: state.email,
+          firstName: state.firstName,
+          lastName: state.lastName,
+        ));
+    }
   }
 }

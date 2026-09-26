@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
+import 'package:mobile/features/registration/passenger/domain/usecases/complete_passenger_registration_usecase.dart';
 import 'package:mobile/features/registration/passenger/domain/usecases/request_notification_permission_usecase.dart';
 import 'package:mobile/features/registration/passenger/presentation/bloc/passenger_registration_bloc.dart';
 import 'package:mobile/features/registration/shared/bloc/registration_bloc.dart';
@@ -24,6 +25,7 @@ class PassengerRegistrationNavigator extends StatefulWidget {
     required this.updateRegistrationFlowUseCase,
     required this.requestNotificationPermissionUseCase,
     required this.checkEmailAvailabilityUseCase,
+    required this.completePassengerRegistrationUseCase,
     required this.onAuthenticated,
   });
 
@@ -31,6 +33,7 @@ class PassengerRegistrationNavigator extends StatefulWidget {
   final UpdateRegistrationFlowUseCase updateRegistrationFlowUseCase;
   final RequestNotificationPermissionUseCase requestNotificationPermissionUseCase;
   final CheckEmailAvailabilityUseCase checkEmailAvailabilityUseCase;
+  final CompletePassengerRegistrationUseCase completePassengerRegistrationUseCase;
 
   /// Permet au parent ([AuthNavigator]) de naviguer vers l'écran principal
   /// sans que ce widget ait besoin de connaître la navigation extérieure.
@@ -54,6 +57,8 @@ class _PassengerRegistrationNavigatorState
       requestNotificationPermissionUseCase:
           widget.requestNotificationPermissionUseCase,
       checkEmailAvailabilityUseCase: widget.checkEmailAvailabilityUseCase,
+      completePassengerRegistrationUseCase:
+          widget.completePassengerRegistrationUseCase,
     );
   }
 

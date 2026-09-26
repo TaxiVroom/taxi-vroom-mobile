@@ -4,7 +4,9 @@ import 'dart:developer';
 import 'package:bloc/bloc.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/core/utils/email_validator.dart';
+import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
+import 'package:mobile/features/registration/passenger/domain/usecases/complete_passenger_registration_usecase.dart';
 import 'package:mobile/features/registration/passenger/domain/usecases/request_notification_permission_usecase.dart';
 import 'package:mobile/features/registration/shared/bloc/registration_bloc.dart';
 import 'package:mobile/features/registration/shared/bloc/registration_state.dart';
@@ -16,8 +18,11 @@ class PassengerRegistrationBloc extends RegistrationBloc {
     required UpdateRegistrationFlowUseCase updateRegistrationFlowUseCase,
     required RequestNotificationPermissionUseCase requestNotificationPermissionUseCase,
     required CheckEmailAvailabilityUseCase checkEmailAvailabilityUseCase,
+    required CompletePassengerRegistrationUseCase completePassengerRegistrationUseCase,
   })  : _requestNotificationPermissionUseCase =
             requestNotificationPermissionUseCase,
+        _completePassengerRegistrationUseCase =
+            completePassengerRegistrationUseCase,
         super(
           userId: registrationFlow.userId,
           emailStep: PassengerRegistrationStep.email,
@@ -34,6 +39,8 @@ class PassengerRegistrationBloc extends RegistrationBloc {
 
   final RequestNotificationPermissionUseCase
       _requestNotificationPermissionUseCase;
+  final CompletePassengerRegistrationUseCase
+      _completePassengerRegistrationUseCase;
 
   static RegistrationState _initialState(
     PassengerRegistrationFlowEntity flow,
@@ -107,4 +114,8 @@ class PassengerRegistrationBloc extends RegistrationBloc {
   @override
   Future<void> notifyPermissionGranted() =>
       _requestNotificationPermissionUseCase();
+
+  @override
+  Future<Result<void>> completeRegistration() =>
+      _completePassengerRegistrationUseCase();
 }

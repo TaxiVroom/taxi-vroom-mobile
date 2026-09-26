@@ -1,3 +1,6 @@
+import 'package:dio/dio.dart';
+import 'package:mobile/core/errors/dio_exception_failure.dart';
+import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/authentication/domain/entities/user_entity.dart';
 import 'package:mobile/features/registration/passenger/data/datasources/registration_remote_datasource.dart';
 import 'package:mobile/features/registration/passenger/domain/repositories/registration_repository.dart';
@@ -29,4 +32,13 @@ class RegistrationRepositoryImpl implements RegistrationRepository {
   }) =>
       _dataSource.updateRegistrationFlow(userId: userId, update: update);
 
+  @override
+  Future<Result<void>> completeRegistration() async {
+    try {
+      await _dataSource.completeRegistration();
+      return const Result.ok(null);
+    } on DioException catch (e) {
+      return Result.error(e.toFailure());
+    }
+  }
 }

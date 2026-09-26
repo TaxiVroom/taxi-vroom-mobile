@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:bloc/bloc.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/core/utils/email_validator.dart';
+import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/registration/driver/domain/entities/document_type.dart';
 import 'package:mobile/features/registration/driver/domain/entities/document_signed_urls.dart';
@@ -446,4 +447,9 @@ class DriverRegistrationBloc extends RegistrationBloc {
   @override
   Future<void> notifyPermissionGranted() =>
       _requestDriverNotificationPermissionUseCase();
+
+  // No-op: the driver flow never shows the notifications screen, its registration
+  // is completed by the admin's document validation.
+  @override
+  Future<Result<void>> completeRegistration() async => const Result.ok(null);
 }

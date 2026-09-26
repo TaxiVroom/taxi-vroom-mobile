@@ -29,4 +29,7 @@ class RegistrationRemoteDataSourceFake implements RegistrationRemoteDataSource {
   }) =>
       Future<void>.delayed(const Duration(milliseconds: 400));
 
+  @override
+  Future<void> completeRegistration() =>
+      Future<void>.delayed(const Duration(milliseconds: 400));
 }

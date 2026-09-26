@@ -15,6 +15,7 @@ abstract class RegistrationRemoteDataSource {
     required RegistrationFlowUpdate update,
   });
 
+  Future<void> completeRegistration();
 }
 
 class RegistrationRemoteDataSourceImpl implements RegistrationRemoteDataSource {
@@ -63,4 +64,9 @@ class RegistrationRemoteDataSourceImpl implements RegistrationRemoteDataSource {
     await _dio.patch<void>('/v1/registration-flows/me', data: body);
   }
 
+  // Finalizes the registration: the backend sets the step to COMPLETE and creates the user.
+  @override
+  Future<void> completeRegistration() async {
+    await _dio.post<void>('/v1/passengers');
+  }
 }
