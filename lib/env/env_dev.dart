@@ -13,9 +13,15 @@ final class EnvDev implements AppConfig {
   @EnviedField(varName: 'MAPBOX_ACCESS_TOKEN')
   static final String _mapboxAccessToken = _EnvDev._mapboxAccessToken;
 
+  @EnviedField(varName: 'FIREBASE_DATABASE_URL')
+  static final String _firebaseDatabaseUrl = _EnvDev._firebaseDatabaseUrl;
+
   @override
   String get apiBaseUrl => _apiBaseUrl;
 
   @override
   String get mapboxAccessToken => _mapboxAccessToken;
+
+  @override
+  String get firebaseDatabaseUrl => _firebaseDatabaseUrl;
 }

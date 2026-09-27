@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
@@ -26,6 +28,7 @@ import 'package:mobile/features/driver_home/data/datasources/driver_account_remo
 import 'package:mobile/features/driver_home/data/datasources/driver_activity_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_booking_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_document_remote_datasource_fake.dart';
+import 'package:mobile/features/driver_home/data/datasources/driver_presence_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driving_position_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/earnings_remote_datasource_fake.dart';
@@ -36,6 +39,7 @@ import 'package:mobile/features/driver_home/data/repositories/driver_account_rep
 import 'package:mobile/features/driver_home/data/repositories/driver_activity_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_booking_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_document_repository_impl.dart';
+import 'package:mobile/features/driver_home/data/repositories/driver_presence_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_ride_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driving_position_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/earnings_repository_impl.dart';
@@ -54,6 +58,7 @@ import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_receives_bookings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifications_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/verify_boarding_code_usecase.dart';
@@ -218,6 +223,18 @@ class App extends StatelessWidget {
     final driverAccountRepo = DriverAccountRepositoryImpl(
       DriverAccountRemoteDataSourceFake(),
     );
+    // Présence des chauffeurs en ligne : Firebase Realtime Database, hors
+    // États-Unis, donc ouverte avec son URL.
+    // https://firebase.google.com/docs/database/flutter/start
+    final driverPresenceRepo = DriverPresenceRepositoryImpl(
+      DriverPresenceRemoteDataSourceImpl(
+        FirebaseDatabase.instanceFor(
+          app: Firebase.app(),
+          databaseURL: config.firebaseDatabaseUrl,
+        ),
+        FirebaseAuth.instance,
+      ),
+    );
     final loadDriverHomeUseCase = LoadDriverHomeUseCase(
       locationRepository: locationRepo,
       driverActivityRepository: driverActivityRepo,
@@ -294,7 +311,15 @@ class App extends StatelessWidget {
               driverDocumentRepo,
             ),
             loadDriverHomeUseCase: loadDriverHomeUseCase,
-            setOnlineUseCase: SetOnlineUseCase(driverActivityRepo),
+            setOnlineUseCase: SetOnlineUseCase(
+              locationRepository: locationRepo,
+              driverPresenceRepository: driverPresenceRepo,
+              driverActivityRepository: driverActivityRepo,
+            ),
+            shareDriverPositionUseCase: ShareDriverPositionUseCase(
+              locationRepository: locationRepo,
+              driverPresenceRepository: driverPresenceRepo,
+            ),
             setReceivesBookingsUseCase: SetReceivesBookingsUseCase(
               driverActivityRepo,
             ),

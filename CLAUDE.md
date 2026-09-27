@@ -7,7 +7,7 @@
 
 # Environment
 
-- Env files live at the repo root and are gitignored: `.env.dev`, `.env.stg`, `.env.prod` — not `.env.staging`, the names are hardcoded in `lib/env/env_*.dart`. Keys: `API_BASE_URL`, `MAPBOX_ACCESS_TOKEN` (the public `pk.` token only, never a secret one).
+- Env files live at the repo root and are gitignored: `.env.dev`, `.env.stg`, `.env.prod` — not `.env.staging`, the names are hardcoded in `lib/env/env_*.dart`. Keys: `API_BASE_URL`, `MAPBOX_ACCESS_TOKEN` (the public `pk.` token only, never a secret one), `FIREBASE_DATABASE_URL` (Realtime Database in `europe-west1`: the app must be given its URL).
 - `.env.dev` points to the backend on the dev machine's LAN IP, port 3000. When that IP changes, update it and rerun `build_runner`.
 - `main_staging.dart` uses the production Firebase options: no staging Firebase app exists yet.
 

@@ -32,6 +32,8 @@ dependencies:
   geolocator: ^14.1.0
   uuid: ^4.6.0
   stream_transform: ^2.1.2
+  firebase_database: ^12.6.0
+  flutter_geo_hash: ^0.0.7
 
 dev_dependencies:
   flutter_native_splash: ^2.4.6
@@ -43,6 +45,7 @@ dev_dependencies:
   mocktail: ^1.0.4
   very_good_analysis: ^10.1.0
   build_runner: ^2.11.1
+  fake_async: ^1.3.3
 
 flutter:
   generate: true

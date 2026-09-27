@@ -21,6 +21,7 @@ import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_receives_bookings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifications_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/verify_boarding_code_usecase.dart';
@@ -91,6 +92,7 @@ class AuthNavigator extends StatelessWidget {
     required this.loadDriverHomeUseCase,
     required this.setOnlineUseCase,
     required this.setReceivesBookingsUseCase,
+    required this.shareDriverPositionUseCase,
     required this.watchRideRequestsUseCase,
     required this.acceptRideRequestUseCase,
     required this.declineRideRequestUseCase,
@@ -153,6 +155,7 @@ class AuthNavigator extends StatelessWidget {
   final LoadDriverHomeUseCase loadDriverHomeUseCase;
   final SetOnlineUseCase setOnlineUseCase;
   final SetReceivesBookingsUseCase setReceivesBookingsUseCase;
+  final ShareDriverPositionUseCase shareDriverPositionUseCase;
   final WatchRideRequestsUseCase watchRideRequestsUseCase;
   final AcceptRideRequestUseCase acceptRideRequestUseCase;
   final DeclineRideRequestUseCase declineRideRequestUseCase;
@@ -291,6 +294,7 @@ class AuthNavigator extends StatelessWidget {
             loadDriverHomeUseCase: loadDriverHomeUseCase,
             setOnlineUseCase: setOnlineUseCase,
             setReceivesBookingsUseCase: setReceivesBookingsUseCase,
+            shareDriverPositionUseCase: shareDriverPositionUseCase,
             watchRideRequestsUseCase: watchRideRequestsUseCase,
             acceptRideRequestUseCase: acceptRideRequestUseCase,
             declineRideRequestUseCase: declineRideRequestUseCase,
