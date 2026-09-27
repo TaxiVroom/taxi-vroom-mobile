@@ -10,13 +10,6 @@ class PastRideModel {
     required this.totalCents,
   });
 
-  final String id;
-  final String originName;
-  final String destinationName;
-  final DateTime startedAt;
-  final String tariff;
-  final int totalCents;
-
   factory PastRideModel.fromJson(Map<String, dynamic> json) => PastRideModel(
     id: json['id'] as String,
     originName: json['originName'] as String,
@@ -25,6 +18,13 @@ class PastRideModel {
     tariff: json['tariff'] as String,
     totalCents: json['totalCents'] as int,
   );
+
+  final String id;
+  final String originName;
+  final String destinationName;
+  final DateTime startedAt;
+  final String tariff;
+  final int totalCents;
 
   PastRide toDomain() => PastRide(
     id: id,

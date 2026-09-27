@@ -1,4 +1,4 @@
-part of 'arrival_pickup_cubit.dart';
+part of 'arrival_pickup_bloc.dart';
 
 sealed class ArrivalPickupState extends Equatable {
   const ArrivalPickupState();

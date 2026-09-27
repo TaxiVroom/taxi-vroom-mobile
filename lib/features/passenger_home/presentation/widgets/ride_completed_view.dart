@@ -1,9 +1,9 @@
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
+import 'package:mobile/core/widgets/choice_button.dart';
+import 'package:mobile/core/widgets/section_label.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/choice_button.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/section_label.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Mockup screen 9: total and meter breakdown, then rating the driver and an
@@ -144,18 +144,15 @@ class _RideCompletedViewState extends State<RideCompletedView> {
   }
 
   Widget _buildStars() {
-    return Row(
-      children: [
-        for (var star = 1; star <= 5; star++)
-          GestureDetector(
-            onTap: () => setState(() => _stars = star),
-            child: Icon(
-              star <= _stars ? Icons.star : Icons.star_border,
-              size: 36,
-              color: AppColors.star,
-            ),
-          ),
-      ],
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: StarRating(
+        value: _stars.toDouble(),
+        step: 1,
+        starSize: 36,
+        activeColor: AppColors.star,
+        onChanged: (value) => setState(() => _stars = value.round()),
+      ),
     );
   }
 

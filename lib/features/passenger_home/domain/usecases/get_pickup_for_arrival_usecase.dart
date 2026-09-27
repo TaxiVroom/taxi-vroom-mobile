@@ -1,7 +1,7 @@
+import 'package:mobile/core/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/repositories/route_repository.dart';
 import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
-import 'package:mobile/features/passenger_home/domain/repositories/route_repository.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
 
 // "Arriver à" : finds the pickup time needed to arrive on time, with the

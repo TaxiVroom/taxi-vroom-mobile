@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/errors/dio_exception_failure.dart';
 import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/data/datasources/place_search_remote_datasource.dart';
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place_suggestion.dart';
 import 'package:mobile/features/passenger_home/domain/repositories/place_search_repository.dart';

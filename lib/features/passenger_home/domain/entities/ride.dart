@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/features/passenger_home/domain/entities/driver.dart';
 import 'package:mobile/features/passenger_home/domain/entities/fare_line.dart';
 import 'package:mobile/features/passenger_home/domain/entities/vehicle.dart';

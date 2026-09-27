@@ -1,4 +1,5 @@
 import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/core/utils/rating_formatter.dart';
 import 'package:mobile/features/passenger_home/domain/entities/driver.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -10,7 +11,7 @@ class DriverSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rating = driver.rating.toStringAsFixed(1).replaceAll('.', ',');
+    final rating = formatRating(driver.rating);
     return Row(
       children: [
         Avatar(initials: Avatar.getInitials(driver.name)),

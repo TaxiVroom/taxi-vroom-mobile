@@ -4,7 +4,7 @@ import 'package:mobile/features/passenger_home/data/models/recent_destination_mo
 /// Implémentation de développement avec données de test.
 class RecentDestinationRemoteDataSourceFake
     implements RecentDestinationRemoteDataSource {
-  static const _json = [
+  static const List<Map<String, Object>> _json = [
     {
       'name': 'Aéroport Strasbourg-Entzheim',
       'address': 'Entzheim',

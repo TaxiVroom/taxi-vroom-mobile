@@ -1,5 +1,5 @@
+import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride_history.dart';

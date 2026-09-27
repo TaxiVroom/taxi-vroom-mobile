@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
+import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/errors/dio_exception_failure.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/data/datasources/nearby_taxi_remote_datasource.dart';
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
 import 'package:mobile/features/passenger_home/domain/entities/nearby_taxi.dart';
 import 'package:mobile/features/passenger_home/domain/repositories/nearby_taxi_repository.dart';
 

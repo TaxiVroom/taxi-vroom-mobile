@@ -2,13 +2,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
+import 'package:mobile/core/widgets/choice_button.dart';
+import 'package:mobile/core/widgets/place_list_tile.dart';
+import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/passenger_home/domain/entities/booked_ride.dart';
 import 'package:mobile/features/passenger_home/domain/entities/past_ride.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride_history.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/ride_history_bloc.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/choice_button.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/place_list_tile.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/retry_message.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Mockup screen 10: booked rides first, then the past ones.

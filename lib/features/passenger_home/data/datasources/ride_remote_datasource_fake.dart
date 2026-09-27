@@ -309,7 +309,7 @@ class RideRemoteDataSourceFake implements RideRemoteDataSource {
     return sqrt(latitudeKm * latitudeKm + longitudeKm * longitudeKm);
   }
 
-  static const _driverAndVehicleJson = {
+  static const Map<String, Map<String, Object>> _driverAndVehicleJson = {
     'driver': {
       'name': 'Luc S.',
       'rating': 4.9,

@@ -5,25 +5,44 @@ import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dar
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/authentication/domain/entities/user_role.dart';
 import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
-import 'package:mobile/features/authentication/presentation/pages/home_page.dart';
 import 'package:mobile/features/authentication/presentation/pages/otp_verification_page.dart';
 import 'package:mobile/features/authentication/presentation/pages/phone_number_page.dart';
 import 'package:mobile/features/authentication/presentation/pages/welcome_page.dart';
+import 'package:mobile/features/driver_home/domain/usecases/accept_booking_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/accept_ride_request_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_driver_bookings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_driver_documents_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/set_receives_bookings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifications_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/verify_boarding_code_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_taximeter_usecase.dart';
+import 'package:mobile/features/driver_home/presentation/pages/driver_home_page.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_booking_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_usecase.dart';
-import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
-import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
-import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
-import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_account_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
-import 'package:mobile/features/passenger_home/domain/usecases/update_notifications_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/update_notifications_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/presentation/pages/passenger_home_page.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_types_usecase.dart';
@@ -43,7 +62,6 @@ import 'package:shadcn_flutter/shadcn_flutter.dart'
 /// n'exige qu'un seul case supplémentaire ici.
 class AuthNavigator extends StatelessWidget {
   const AuthNavigator({
-    super.key,
     required this.passengerUpdateRegistrationFlowUseCase,
     required this.requestNotificationPermissionUseCase,
     required this.completePassengerRegistrationUseCase,
@@ -69,6 +87,26 @@ class AuthNavigator extends StatelessWidget {
     required this.cancelBookingUseCase,
     required this.loadAccountUseCase,
     required this.updateNotificationsUseCase,
+    required this.loadDriverDocumentsUseCase,
+    required this.loadDriverHomeUseCase,
+    required this.setOnlineUseCase,
+    required this.setReceivesBookingsUseCase,
+    required this.watchRideRequestsUseCase,
+    required this.acceptRideRequestUseCase,
+    required this.declineRideRequestUseCase,
+    required this.watchGuidanceUseCase,
+    required this.verifyBoardingCodeUseCase,
+    required this.startRideUseCase,
+    required this.reportNoShowUseCase,
+    required this.watchTaximeterUseCase,
+    required this.loadRideCheckoutUseCase,
+    required this.completeRideUseCase,
+    required this.loadDriverBookingsUseCase,
+    required this.acceptBookingUseCase,
+    required this.loadWeeklyEarningsUseCase,
+    required this.loadDriverAccountUseCase,
+    required this.updateDriverNotificationsUseCase,
+    super.key,
   });
 
   // Use cases passager transmis au PassengerRegistrationNavigator.
@@ -110,6 +148,27 @@ class AuthNavigator extends StatelessWidget {
   final LoadAccountUseCase loadAccountUseCase;
   final UpdateNotificationsUseCase updateNotificationsUseCase;
 
+  // Use cases de l'accueil chauffeur, transmis à DriverHomePage.
+  final LoadDriverDocumentsUseCase loadDriverDocumentsUseCase;
+  final LoadDriverHomeUseCase loadDriverHomeUseCase;
+  final SetOnlineUseCase setOnlineUseCase;
+  final SetReceivesBookingsUseCase setReceivesBookingsUseCase;
+  final WatchRideRequestsUseCase watchRideRequestsUseCase;
+  final AcceptRideRequestUseCase acceptRideRequestUseCase;
+  final DeclineRideRequestUseCase declineRideRequestUseCase;
+  final WatchGuidanceUseCase watchGuidanceUseCase;
+  final VerifyBoardingCodeUseCase verifyBoardingCodeUseCase;
+  final StartRideUseCase startRideUseCase;
+  final ReportNoShowUseCase reportNoShowUseCase;
+  final WatchTaximeterUseCase watchTaximeterUseCase;
+  final LoadRideCheckoutUseCase loadRideCheckoutUseCase;
+  final CompleteRideUseCase completeRideUseCase;
+  final LoadDriverBookingsUseCase loadDriverBookingsUseCase;
+  final AcceptBookingUseCase acceptBookingUseCase;
+  final LoadWeeklyEarningsUseCase loadWeeklyEarningsUseCase;
+  final LoadDriverAccountUseCase loadDriverAccountUseCase;
+  final UpdateDriverNotificationsUseCase updateDriverNotificationsUseCase;
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
@@ -149,10 +208,6 @@ class AuthNavigator extends StatelessWidget {
     const otpPage = MaterialPage<void>(
       key: ValueKey('otp'),
       child: OtpVerificationPage(),
-    );
-    const homePage = MaterialPage<void>(
-      key: ValueKey('home'),
-      child: HomePage(),
     );
 
     // AuthError ne change pas la stack : le BlocListener se charge du toast.
@@ -228,7 +283,34 @@ class AuthNavigator extends StatelessWidget {
           ),
         ),
       ],
-      AuthAuthenticated() => [homePage],
+      AuthAuthenticated(role: UserRole.driver) => [
+        MaterialPage<void>(
+          key: const ValueKey('driver-home'),
+          child: DriverHomePage(
+            loadDriverDocumentsUseCase: loadDriverDocumentsUseCase,
+            loadDriverHomeUseCase: loadDriverHomeUseCase,
+            setOnlineUseCase: setOnlineUseCase,
+            setReceivesBookingsUseCase: setReceivesBookingsUseCase,
+            watchRideRequestsUseCase: watchRideRequestsUseCase,
+            acceptRideRequestUseCase: acceptRideRequestUseCase,
+            declineRideRequestUseCase: declineRideRequestUseCase,
+            watchGuidanceUseCase: watchGuidanceUseCase,
+            verifyBoardingCodeUseCase: verifyBoardingCodeUseCase,
+            startRideUseCase: startRideUseCase,
+            reportNoShowUseCase: reportNoShowUseCase,
+            watchTaximeterUseCase: watchTaximeterUseCase,
+            loadRideCheckoutUseCase: loadRideCheckoutUseCase,
+            completeRideUseCase: completeRideUseCase,
+            loadDriverBookingsUseCase: loadDriverBookingsUseCase,
+            acceptBookingUseCase: acceptBookingUseCase,
+            loadWeeklyEarningsUseCase: loadWeeklyEarningsUseCase,
+            loadDriverAccountUseCase: loadDriverAccountUseCase,
+            updateDriverNotificationsUseCase: updateDriverNotificationsUseCase,
+            onSignOutRequested: () =>
+                context.read<AuthBloc>().add(const AuthSignOutRequested()),
+          ),
+        ),
+      ],
       _ => [welcomePage],
     };
   }

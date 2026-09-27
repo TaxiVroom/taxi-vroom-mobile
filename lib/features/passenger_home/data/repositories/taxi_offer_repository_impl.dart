@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:mobile/core/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/entities/ride_route.dart';
 import 'package:mobile/core/errors/dio_exception_failure.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/data/datasources/taxi_offer_remote_datasource.dart';
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
-import 'package:mobile/features/passenger_home/domain/entities/ride_route.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_offer.dart';
 import 'package:mobile/features/passenger_home/domain/repositories/taxi_offer_repository.dart';
 

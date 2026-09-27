@@ -1,4 +1,4 @@
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 
 // One feature of the Mapbox Search Box API /retrieve FeatureCollection.
@@ -9,11 +9,6 @@ class PlaceModel {
     required this.latitude,
     required this.longitude,
   });
-
-  final String name;
-  final String address;
-  final double latitude;
-  final double longitude;
 
   factory PlaceModel.fromJson(Map<String, dynamic> feature) {
     final properties = feature['properties'] as Map<String, dynamic>;
@@ -29,6 +24,11 @@ class PlaceModel {
       latitude: (coordinates[1] as num).toDouble(),
     );
   }
+
+  final String name;
+  final String address;
+  final double latitude;
+  final double longitude;
 
   Place toDomain() => Place(
     name: name,

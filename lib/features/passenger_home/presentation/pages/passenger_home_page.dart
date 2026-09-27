@@ -1,6 +1,8 @@
 import 'package:flow_builder/flow_builder.dart';
-import 'package:flutter/material.dart' show MaterialPage;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/core/widgets/retry_message.dart';
+import 'package:mobile/features/authentication/presentation/navigator/auth_navigator.dart'
+    show AuthNavigator;
 import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_booking_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_usecase.dart';
@@ -17,7 +19,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinati
 import 'package:mobile/features/passenger_home/domain/usecases/update_notifications_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/account_bloc.dart';
-import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_cubit.dart';
+import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/passenger_home_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/ride_history_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/pages/destination_search_page.dart';
@@ -25,12 +27,11 @@ import 'package:mobile/features/passenger_home/presentation/pages/ride_page.dart
 import 'package:mobile/features/passenger_home/presentation/pages/taxi_choice_page.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/account_tab.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/passenger_home_map.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/retry_message.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/ride_history_tab.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/where_to_panel.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-/// Passenger area after login. [PassengerFlowCubit] states map to the page
+/// Passenger area after login. [PassengerFlowBloc] states map to the page
 /// stack: tabs (home) → destination search → taxi choice, then the ride.
 class PassengerHomePage extends StatelessWidget {
   const PassengerHomePage({
@@ -84,7 +85,7 @@ class PassengerHomePage extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) =>
-              PassengerFlowCubit(getPickupDaysUseCase: getPickupDaysUseCase),
+              PassengerFlowBloc(getPickupDaysUseCase: getPickupDaysUseCase),
         ),
         BlocProvider(
           create: (_) => RideHistoryBloc(
@@ -99,7 +100,7 @@ class PassengerHomePage extends StatelessWidget {
           )..add(const AccountRequested()),
         ),
       ],
-      child: BlocBuilder<PassengerFlowCubit, PassengerFlowState>(
+      child: BlocBuilder<PassengerFlowBloc, PassengerFlowState>(
         builder: (context, flowState) => FlowBuilder<PassengerFlowState>(
           state: flowState,
           onGeneratePages: (state, _) => _onGeneratePages(context, state),
@@ -179,9 +180,9 @@ class _PassengerTabs extends StatefulWidget {
 }
 
 class _PassengerTabsState extends State<_PassengerTabs> {
-  static const _homeTab = ValueKey('home');
-  static const _ridesTab = ValueKey('rides');
-  static const _accountTab = ValueKey('account');
+  static const ValueKey<String> _homeTab = ValueKey('home');
+  static const ValueKey<String> _ridesTab = ValueKey('rides');
+  static const ValueKey<String> _accountTab = ValueKey('account');
   static const List<Key> _tabs = [_homeTab, _ridesTab, _accountTab];
 
   Key _selectedTab = _homeTab;
@@ -214,7 +215,6 @@ class _PassengerTabsState extends State<_PassengerTabs> {
   Widget _buildTabBar() {
     return NavigationBar(
       alignment: NavigationBarAlignment.spaceEvenly,
-      labelType: NavigationLabelType.all,
       selectedKey: _selectedTab,
       onSelected: _onTabSelected,
       children: const [
@@ -267,9 +267,9 @@ class _HomeTab extends StatelessWidget {
               child: WhereToPanel(
                 recentDestinations: home.recentDestinations,
                 nearbyTaxiCount: home.nearbyTaxis.length,
-                onWhereToPressed: () => context
-                    .read<PassengerFlowCubit>()
-                    .destinationSearchOpened(),
+                onWhereToPressed: () => context.read<PassengerFlowBloc>().add(
+                  const PassengerDestinationSearchOpened(),
+                ),
               ),
             ),
           ],

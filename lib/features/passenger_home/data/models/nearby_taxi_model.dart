@@ -1,4 +1,4 @@
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/features/passenger_home/domain/entities/nearby_taxi.dart';
 
 class NearbyTaxiModel {
@@ -8,16 +8,16 @@ class NearbyTaxiModel {
     required this.longitude,
   });
 
-  final String id;
-  final double latitude;
-  final double longitude;
-
   factory NearbyTaxiModel.fromJson(Map<String, dynamic> json) =>
       NearbyTaxiModel(
         id: json['id'] as String,
         latitude: (json['latitude'] as num).toDouble(),
         longitude: (json['longitude'] as num).toDouble(),
       );
+
+  final String id;
+  final double latitude;
+  final double longitude;
 
   NearbyTaxi toDomain() => NearbyTaxi(
     id: id,

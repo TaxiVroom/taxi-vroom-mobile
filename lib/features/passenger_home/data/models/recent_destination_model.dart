@@ -7,16 +7,16 @@ class RecentDestinationModel {
     required this.distanceKm,
   });
 
-  final String name;
-  final String address;
-  final double distanceKm;
-
   factory RecentDestinationModel.fromJson(Map<String, dynamic> json) =>
       RecentDestinationModel(
         name: json['name'] as String,
         address: json['address'] as String,
         distanceKm: (json['distanceKm'] as num).toDouble(),
       );
+
+  final String name;
+  final String address;
+  final double distanceKm;
 
   RecentDestination toDomain() => RecentDestination(
     name: name,

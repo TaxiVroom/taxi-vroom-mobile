@@ -11,14 +11,6 @@ class TaxiOfferModel {
     this.priceNote,
   });
 
-  final String id;
-  final String name;
-  final String description;
-  final int pickupEtaMinutes;
-  final int minPriceCents;
-  final int maxPriceCents;
-  final String? priceNote;
-
   factory TaxiOfferModel.fromJson(Map<String, dynamic> json) => TaxiOfferModel(
     id: json['id'] as String,
     name: json['name'] as String,
@@ -28,6 +20,14 @@ class TaxiOfferModel {
     maxPriceCents: json['maxPriceCents'] as int,
     priceNote: json['priceNote'] as String?,
   );
+
+  final String id;
+  final String name;
+  final String description;
+  final int pickupEtaMinutes;
+  final int minPriceCents;
+  final int maxPriceCents;
+  final String? priceNote;
 
   TaxiOffer toDomain() => TaxiOffer(
     id: id,

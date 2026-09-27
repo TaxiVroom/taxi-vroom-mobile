@@ -1,15 +1,15 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
+import 'package:mobile/core/widgets/place_list_tile.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place_suggestion.dart';
 import 'package:mobile/features/passenger_home/domain/entities/recent_destination.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/destination_search_bloc.dart';
-import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_cubit.dart';
+import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/pickup_time_chip.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/place_list_tile.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Mockup screen 4: departure is the passenger's position, they type the
@@ -65,12 +65,14 @@ class _DestinationSearchViewState extends State<_DestinationSearchView> {
       listenWhen: (previous, current) =>
           current.selectedDestination != null &&
           current.selectedDestination != previous.selectedDestination,
-      listener: (context, state) => context
-          .read<PassengerFlowCubit>()
-          .destinationSelected(state.selectedDestination!),
+      listener: (context, state) => context.read<PassengerFlowBloc>().add(
+        PassengerDestinationSelected(
+          destination: state.selectedDestination!,
+        ),
+      ),
       child: PopScope(
         canPop: false,
-        // The hardware back goes through the flow cubit, not the Navigator.
+        // The hardware back goes through the flow bloc, not the Navigator.
         onPopInvokedWithResult: (didPop, _) {
           if (!didPop) _onBackPressed();
         },
@@ -215,6 +217,6 @@ class _DestinationSearchViewState extends State<_DestinationSearchView> {
   }
 
   void _onBackPressed() {
-    context.read<PassengerFlowCubit>().backPressed();
+    context.read<PassengerFlowBloc>().add(const PassengerFlowBackPressed());
   }
 }

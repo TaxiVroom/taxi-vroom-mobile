@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/entities/coordinates.dart';
 
 // A free taxi around the passenger.
 class NearbyTaxi extends Equatable {

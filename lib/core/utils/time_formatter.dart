@@ -25,8 +25,16 @@ const _shortMonths = [
 
 // "Ven. 25 sept., 18:42".
 String formatShortDateTime(DateTime time) =>
-    '${_weekdays[time.weekday - 1].substring(0, 3)}. ${time.day} '
+    '${formatShortWeekday(time)}. ${time.day} '
     '${_shortMonths[time.month - 1]}, ${formatClockTime(time)}';
+
+// "Ven", e.g. under a chart bar.
+String formatShortWeekday(DateTime day) =>
+    _weekdays[day.weekday - 1].substring(0, 3);
+
+// "Lundi 28 sept.".
+String formatLongDate(DateTime day) =>
+    '${_weekdays[day.weekday - 1]} ${day.day} ${_shortMonths[day.month - 1]}';
 
 // 15:01 -> "15:01".
 String formatClockTime(DateTime time) =>
@@ -54,3 +62,17 @@ String formatPickupTime(DateTime? scheduledPickup, {required DateTime now}) =>
     ? 'Maintenant'
     : '${formatDayLabel(scheduledPickup, now: now)} '
           '${formatClockTime(scheduledPickup)}';
+
+// Same, inside a sentence: "Réserver pour demain 06:15".
+String formatPickupTimeInSentence(
+  DateTime? scheduledPickup, {
+  required DateTime now,
+}) {
+  final label = formatPickupTime(scheduledPickup, now: now);
+  return '${label[0].toLowerCase()}${label.substring(1)}';
+}
+
+// Time waited: 72 seconds -> "1:12".
+String formatWaitingTime(Duration waited) =>
+    '${waited.inMinutes}:'
+    '${(waited.inSeconds % 60).toString().padLeft(2, '0')}';

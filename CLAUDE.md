@@ -13,6 +13,7 @@
 
 # Architecture
 
+- State management is Bloc only (sealed events + states), never `Cubit`. A bloc never exposes methods returning data: put it in the state.
 - Business logic belongs in domain use cases, never in blocs. Existing blocs still contain some (see their `FIXME`s): don't copy that pattern.
 - Errors in new code: repositories return `Result<T>` (`lib/core/utils/result.dart`), catching technical exceptions (`DioException`, `FirebaseAuthException`) and returning `Result.error(<Failure>)` (`core/errors/failures.dart`); blocs `switch` on the result instead of using try/catch. Existing try/catch + `e.toString()` code will be migrated later: don't copy it.
 - API mapping (see `document_type_model.dart`): datasources return data models built with `fromJson`; the repository calls the model's `toDomain()` and only returns domain entities. Models must not extend domain entities. Older models still do: migrate them when touched.

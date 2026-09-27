@@ -5,9 +5,6 @@ import 'package:mobile/features/passenger_home/domain/entities/ride_history.dart
 class RideHistoryModel {
   const RideHistoryModel({required this.upcoming, required this.past});
 
-  final List<BookedRideModel> upcoming;
-  final List<PastRideModel> past;
-
   factory RideHistoryModel.fromJson(Map<String, dynamic> json) =>
       RideHistoryModel(
         upcoming: [
@@ -19,6 +16,9 @@ class RideHistoryModel {
             PastRideModel.fromJson(ride as Map<String, dynamic>),
         ],
       );
+
+  final List<BookedRideModel> upcoming;
+  final List<PastRideModel> past;
 
   RideHistory toDomain() => RideHistory(
     upcoming: upcoming.map((ride) => ride.toDomain()).toList(),

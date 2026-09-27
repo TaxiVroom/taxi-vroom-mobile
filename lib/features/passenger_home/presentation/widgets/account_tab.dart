@@ -1,10 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/core/widgets/place_list_tile.dart';
+import 'package:mobile/core/widgets/retry_message.dart';
+import 'package:mobile/core/widgets/section_label.dart';
 import 'package:mobile/features/passenger_home/domain/entities/passenger_account.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/account_bloc.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/place_list_tile.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/retry_message.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/section_label.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// The passenger's profile, saved addresses, preferences and sign out.

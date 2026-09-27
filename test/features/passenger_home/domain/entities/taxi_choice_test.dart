@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/features/passenger_home/domain/entities/ride_route.dart';
+import 'package:mobile/core/domain/entities/ride_route.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_choice.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_offer.dart';
 

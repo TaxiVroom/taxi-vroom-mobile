@@ -1,8 +1,8 @@
+import 'package:mobile/core/domain/repositories/route_repository.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
 import 'package:mobile/features/passenger_home/domain/entities/tracked_ride.dart';
 import 'package:mobile/features/passenger_home/domain/repositories/ride_repository.dart';
-import 'package:mobile/features/passenger_home/domain/repositories/route_repository.dart';
 
 // Follows a ride. Once the passenger is in the taxi, each update also brings
 // the road left from the taxi to the destination.

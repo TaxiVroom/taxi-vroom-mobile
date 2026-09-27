@@ -1,9 +1,9 @@
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
+import 'package:mobile/core/widgets/bottom_panel.dart';
+import 'package:mobile/core/widgets/place_list_tile.dart';
 import 'package:mobile/features/passenger_home/domain/entities/recent_destination.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/bottom_panel.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/pickup_time_chip.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/place_list_tile.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Bottom panel of the home screen: one question, "Où allez-vous ?".

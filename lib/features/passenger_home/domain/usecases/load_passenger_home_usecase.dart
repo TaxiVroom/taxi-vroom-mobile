@@ -1,9 +1,9 @@
+import 'package:mobile/core/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/repositories/location_repository.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
 import 'package:mobile/features/passenger_home/domain/entities/nearby_taxi.dart';
 import 'package:mobile/features/passenger_home/domain/entities/passenger_home.dart';
 import 'package:mobile/features/passenger_home/domain/entities/recent_destination.dart';
-import 'package:mobile/features/passenger_home/domain/repositories/location_repository.dart';
 import 'package:mobile/features/passenger_home/domain/repositories/nearby_taxi_repository.dart';
 import 'package:mobile/features/passenger_home/domain/repositories/recent_destination_repository.dart';
 

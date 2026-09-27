@@ -1,22 +1,23 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/core/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/entities/ride_route.dart';
 import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
+import 'package:mobile/core/widgets/bottom_panel.dart';
+import 'package:mobile/core/widgets/license_plate.dart';
+import 'package:mobile/core/widgets/map_pill.dart';
+import 'package:mobile/core/widgets/retry_message.dart';
+import 'package:mobile/core/widgets/ride_map.dart';
+import 'package:mobile/core/widgets/taxi_meter.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
-import 'package:mobile/features/passenger_home/domain/entities/ride_route.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
-import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_cubit.dart';
+import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/ride_bloc.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/bottom_panel.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/driver_summary.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/license_plate.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/map_pill.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/retry_message.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/ride_completed_view.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/ride_map.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/taxi_meter.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Follows an ordered ride: searching for a taxi, taxi approaching (mockup
@@ -52,7 +53,7 @@ class RidePage extends StatelessWidget {
       child: BlocListener<RideBloc, RideState>(
         listenWhen: (_, current) => current is RideEnded,
         listener: (context, _) =>
-            context.read<PassengerFlowCubit>().rideEnded(),
+            context.read<PassengerFlowBloc>().add(const PassengerRideEnded()),
         // An ordered ride is left through "Annuler la course" or "Terminer".
         child: PopScope(
           canPop: false,
@@ -218,7 +219,10 @@ class RidePage extends StatelessWidget {
           style: const TextStyle(color: AppColors.muted),
         ),
         const SizedBox(height: 12),
-        LicensePlate(vehicle: ride.vehicle),
+        LicensePlate(
+          plate: ride.vehicle.plate,
+          department: ride.vehicle.department,
+        ),
         const SizedBox(height: 12),
         DriverSummary(driver: ride.driver),
         const SizedBox(height: 12),
@@ -238,7 +242,12 @@ class RidePage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TaxiMeter(ride: ride),
+        TaxiMeter(
+          tariff: ride.tariff,
+          amountCents: ride.meterCents,
+          caption: 'Compteur',
+          detail: '${formatDistanceKm(ride.remainingKm)} restants',
+        ),
         const SizedBox(height: 12),
         DriverSummary(driver: ride.driver),
         const SizedBox(height: 12),

@@ -9,11 +9,6 @@ class PlaceSuggestionModel {
     this.distanceMeters,
   });
 
-  final String mapboxId;
-  final String name;
-  final String address;
-  final double? distanceMeters;
-
   factory PlaceSuggestionModel.fromJson(Map<String, dynamic> json) =>
       PlaceSuggestionModel(
         mapboxId: json['mapbox_id'] as String,
@@ -22,6 +17,11 @@ class PlaceSuggestionModel {
             (json['full_address'] ?? json['place_formatted'] ?? '') as String,
         distanceMeters: (json['distance'] as num?)?.toDouble(),
       );
+
+  final String mapboxId;
+  final String name;
+  final String address;
+  final double? distanceMeters;
 
   PlaceSuggestion toDomain() => PlaceSuggestion(
     id: mapboxId,

@@ -11,13 +11,6 @@ class PassengerAccountModel {
     required this.notificationsEnabled,
   });
 
-  final String firstName;
-  final String lastName;
-  final String phone;
-  final String email;
-  final List<({String label, String address})> savedPlaces;
-  final bool notificationsEnabled;
-
   factory PassengerAccountModel.fromJson(Map<String, dynamic> json) =>
       PassengerAccountModel(
         firstName: json['firstName'] as String,
@@ -33,6 +26,13 @@ class PassengerAccountModel {
         ],
         notificationsEnabled: json['notificationsEnabled'] as bool,
       );
+
+  final String firstName;
+  final String lastName;
+  final String phone;
+  final String email;
+  final List<({String label, String address})> savedPlaces;
+  final bool notificationsEnabled;
 
   PassengerAccount toDomain() => PassengerAccount(
     firstName: firstName,

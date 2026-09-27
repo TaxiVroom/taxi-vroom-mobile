@@ -1,23 +1,23 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
+import 'package:mobile/core/widgets/bottom_panel.dart';
+import 'package:mobile/core/widgets/map_pill.dart';
+import 'package:mobile/core/widgets/message_toast.dart';
+import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_choice.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
-import 'package:mobile/features/passenger_home/presentation/bloc/arrival_pickup_cubit.dart';
-import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_cubit.dart';
+import 'package:mobile/features/passenger_home/presentation/bloc/arrival_pickup_bloc.dart';
+import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/ride_history_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/taxi_choice_bloc.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/bottom_panel.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/map_pill.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/message_toast.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/pickup_time_chip.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/retry_message.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/route_map.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/taxi_offer_tile.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -63,7 +63,7 @@ class TaxiChoicePage extends StatelessWidget {
           )..add(const TaxiChoiceStarted()),
         ),
         BlocProvider(
-          create: (_) => ArrivalPickupCubit(
+          create: (_) => ArrivalPickupBloc(
             origin: origin,
             destination: destination.coordinates,
             getPickupForArrivalUseCase: getPickupForArrivalUseCase,
@@ -78,7 +78,7 @@ class TaxiChoicePage extends StatelessWidget {
             _onOrderConfirmed(context, state as TaxiChoiceReady),
         child: PopScope(
           canPop: false,
-          // The hardware back goes through the flow cubit, not the Navigator.
+          // The hardware back goes through the flow bloc, not the Navigator.
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop) _onBackPressed(context);
           },
@@ -231,11 +231,11 @@ class TaxiChoicePage extends StatelessWidget {
   // Ordered now: follow the ride. Booked: back home, it waits in
   // "Mes courses".
   void _onOrderConfirmed(BuildContext context, TaxiChoiceReady state) {
-    final flowCubit = context.read<PassengerFlowCubit>();
+    final flowBloc = context.read<PassengerFlowBloc>();
     final orderedRideId = state.orderedRideId;
     final pickup = scheduledPickup;
     if (orderedRideId != null) {
-      flowCubit.rideRequested(orderedRideId);
+      flowBloc.add(PassengerRideOrdered(rideId: orderedRideId));
       return;
     }
     if (pickup == null) return;
@@ -247,7 +247,7 @@ class TaxiChoicePage extends StatelessWidget {
           'Retrouvez-le dans Mes courses.',
     );
     context.read<RideHistoryBloc>().add(const RideHistoryRequested());
-    flowCubit.rideBooked();
+    flowBloc.add(const PassengerRideBooked());
   }
 
   // The passenger count is not built yet.
@@ -266,6 +266,6 @@ class TaxiChoicePage extends StatelessWidget {
   }
 
   void _onBackPressed(BuildContext context) {
-    context.read<PassengerFlowCubit>().backPressed();
+    context.read<PassengerFlowBloc>().add(const PassengerFlowBackPressed());
   }
 }

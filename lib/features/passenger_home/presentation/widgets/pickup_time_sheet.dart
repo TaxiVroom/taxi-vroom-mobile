@@ -1,38 +1,49 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart' show showModalBottomSheet;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
+import 'package:mobile/core/widgets/bottom_panel.dart';
+import 'package:mobile/core/widgets/choice_button.dart';
+import 'package:mobile/core/widgets/section_label.dart';
 import 'package:mobile/features/passenger_home/domain/entities/pickup_day.dart';
-import 'package:mobile/features/passenger_home/presentation/bloc/arrival_pickup_cubit.dart';
-import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_cubit.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/bottom_panel.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/choice_button.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/section_label.dart';
+import 'package:mobile/features/passenger_home/presentation/bloc/arrival_pickup_bloc.dart';
+import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_bloc.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Opens mockup screen 6 and stores the chosen pickup time in the flow.
 ///
-/// With an [arrivalPickupCubit] (the destination is known), the passenger can
+/// With an [arrivalPickupBloc] (the destination is known), the passenger can
 /// also choose an arrival time.
 Future<void> openPickupTimeSheet(
   BuildContext context, {
-  ArrivalPickupCubit? arrivalPickupCubit,
+  ArrivalPickupBloc? arrivalPickupBloc,
 }) async {
-  final flowCubit = context.read<PassengerFlowCubit>();
+  final flowBloc = context.read<PassengerFlowBloc>()
+    ..add(const PassengerPickupTimeSheetOpened());
   final choice = await showModalBottomSheet<({DateTime? scheduledPickup})>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => PickupTimeSheet(
-      pickupDays: flowCubit.availablePickupDays(),
-      scheduledPickup: flowCubit.state.scheduledPickup,
-      arrivalPickupCubit: arrivalPickupCubit,
+    builder: (_) => BlocBuilder<PassengerFlowBloc, PassengerFlowState>(
+      bloc: flowBloc,
+      // The sheet shows once its days are computed.
+      buildWhen: (previous, current) =>
+          previous.pickupDays.isEmpty && current.pickupDays.isNotEmpty,
+      builder: (_, flowState) => flowState.pickupDays.isEmpty
+          ? const SizedBox.shrink()
+          : PickupTimeSheet(
+              pickupDays: flowState.pickupDays,
+              scheduledPickup: flowState.scheduledPickup,
+              arrivalPickupBloc: arrivalPickupBloc,
+            ),
     ),
   );
   // Null choice: the sheet was closed without confirming.
-  if (choice != null) flowCubit.pickupTimeChanged(choice.scheduledPickup);
+  if (choice != null) {
+    flowBloc.add(
+      PassengerPickupTimeChanged(scheduledPickup: choice.scheduledPickup),
+    );
+  }
 }
 
 /// "Maintenant" or "Plus tard", with a day and a pickup (or arrival) time
@@ -41,13 +52,13 @@ class PickupTimeSheet extends StatefulWidget {
   const PickupTimeSheet({
     required this.pickupDays,
     required this.scheduledPickup,
-    this.arrivalPickupCubit,
+    this.arrivalPickupBloc,
     super.key,
   });
 
   final List<PickupDay> pickupDays;
   final DateTime? scheduledPickup;
-  final ArrivalPickupCubit? arrivalPickupCubit;
+  final ArrivalPickupBloc? arrivalPickupBloc;
 
   @override
   State<PickupTimeSheet> createState() => _PickupTimeSheetState();
@@ -62,7 +73,7 @@ class _PickupTimeSheetState extends State<PickupTimeSheet> {
   late int _dayIndex = _initialDayIndex();
 
   DateTime? get _previousArrival {
-    final arrivalPickup = widget.arrivalPickupCubit?.state;
+    final arrivalPickup = widget.arrivalPickupBloc?.state;
     return arrivalPickup is ArrivalPickupReady &&
             arrivalPickup.pickup == widget.scheduledPickup
         ? arrivalPickup.arrival
@@ -78,14 +89,14 @@ class _PickupTimeSheetState extends State<PickupTimeSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final arrivalPickupCubit = widget.arrivalPickupCubit;
+    final arrivalPickupBloc = widget.arrivalPickupBloc;
     return BottomPanel(
       child: SafeArea(
         top: false,
-        child: arrivalPickupCubit == null
+        child: arrivalPickupBloc == null
             ? _buildContent(null)
-            : BlocBuilder<ArrivalPickupCubit, ArrivalPickupState>(
-                bloc: arrivalPickupCubit,
+            : BlocBuilder<ArrivalPickupBloc, ArrivalPickupState>(
+                bloc: arrivalPickupBloc,
                 builder: (_, arrivalPickup) => _buildContent(arrivalPickup),
               ),
       ),
@@ -222,9 +233,9 @@ class _PickupTimeSheetState extends State<PickupTimeSheet> {
 
   void _onSlotSelected(DateTime slot) {
     setState(() => _slot = slot);
-    final arrivalPickupCubit = widget.arrivalPickupCubit;
-    if (_isArrival && arrivalPickupCubit != null) {
-      unawaited(arrivalPickupCubit.arrivalChanged(slot));
+    final arrivalPickupBloc = widget.arrivalPickupBloc;
+    if (_isArrival && arrivalPickupBloc != null) {
+      arrivalPickupBloc.add(ArrivalTimeChanged(arrival: slot));
     }
   }
 
@@ -287,8 +298,8 @@ class _PickupTimeSheetState extends State<PickupTimeSheet> {
   String _confirmLabel(DateTime? pickup) {
     if (!_isLater) return 'Partir maintenant';
     if (pickup == null) return 'Choisissez une heure';
-    final label = formatPickupTime(pickup, now: DateTime.now());
-    return 'Réserver pour ${label[0].toLowerCase()}${label.substring(1)}';
+    return 'Réserver pour '
+        '${formatPickupTimeInSentence(pickup, now: DateTime.now())}';
   }
 
   void _onConfirmed(DateTime? pickup) {

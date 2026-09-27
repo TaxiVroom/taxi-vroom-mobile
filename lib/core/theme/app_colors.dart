@@ -9,4 +9,8 @@ abstract final class AppColors {
   static const ink = Color(0xFF1C2127);
   static const plateBlue = Color(0xFF1F4AAE);
   static const star = Color(0xFFE8A317);
+  static const warning = Color(0xFFA8660B);
+  static const warningBackground = Color(0xFFFDF1DA);
+  static const danger = Color(0xFFD23B3B);
+  static const dangerBackground = Color(0xFFFCE6E4);
 }

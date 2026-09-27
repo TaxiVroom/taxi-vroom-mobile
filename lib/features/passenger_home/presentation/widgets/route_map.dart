@@ -1,9 +1,9 @@
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
     show CameraViewportState, LocationComponentSettings, MapWidget, MapboxMap;
-import 'package:mobile/features/passenger_home/domain/entities/ride_route.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/coordinates_mapbox.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/destination_marker.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/map_route.dart';
+import 'package:mobile/core/domain/entities/ride_route.dart';
+import 'package:mobile/core/widgets/coordinates_mapbox.dart';
+import 'package:mobile/core/widgets/destination_marker.dart';
+import 'package:mobile/core/widgets/map_route.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Full-screen map framed on the route, drawn from the passenger to the

@@ -11,14 +11,6 @@ class BookedRideModel {
     required this.maxPriceCents,
   });
 
-  final String id;
-  final String originName;
-  final String destinationName;
-  final DateTime scheduledPickup;
-  final String offerName;
-  final int minPriceCents;
-  final int maxPriceCents;
-
   factory BookedRideModel.fromJson(Map<String, dynamic> json) =>
       BookedRideModel(
         id: json['id'] as String,
@@ -29,6 +21,14 @@ class BookedRideModel {
         minPriceCents: json['minPriceCents'] as int,
         maxPriceCents: json['maxPriceCents'] as int,
       );
+
+  final String id;
+  final String originName;
+  final String destinationName;
+  final DateTime scheduledPickup;
+  final String offerName;
+  final int minPriceCents;
+  final int maxPriceCents;
 
   BookedRide toDomain() => BookedRide(
     id: id,

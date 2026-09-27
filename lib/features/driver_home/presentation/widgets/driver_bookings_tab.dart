@@ -1,0 +1,198 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/core/utils/distance_formatter.dart';
+import 'package:mobile/core/utils/price_formatter.dart';
+import 'package:mobile/core/utils/time_formatter.dart';
+import 'package:mobile/core/widgets/choice_button.dart';
+import 'package:mobile/core/widgets/retry_message.dart';
+import 'package:mobile/features/driver_home/domain/entities/driver_booking.dart';
+import 'package:mobile/features/driver_home/presentation/bloc/driver_bookings_bloc.dart';
+import 'package:mobile/features/driver_home/presentation/widgets/trip_stops.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
+
+/// Mockup screen 9: rides booked in advance, to pick or already accepted.
+class DriverBookingsTab extends StatefulWidget {
+  const DriverBookingsTab({super.key});
+
+  @override
+  State<DriverBookingsTab> createState() => _DriverBookingsTabState();
+}
+
+class _DriverBookingsTabState extends State<DriverBookingsTab> {
+  // Which list is shown: a display choice only, it stays in the widget.
+  bool _showsAccepted = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: BlocBuilder<DriverBookingsBloc, DriverBookingsState>(
+        builder: (context, state) => switch (state) {
+          DriverBookingsLoading() => const Center(
+            child: CircularProgressIndicator(),
+          ),
+          DriverBookingsFailure(:final message) => RetryMessage(
+            message: message,
+            onRetry: () => context.read<DriverBookingsBloc>().add(
+              const DriverBookingsRequested(),
+            ),
+          ),
+          DriverBookingsReady() => _buildReady(context, state),
+        },
+      ),
+    );
+  }
+
+  Widget _buildReady(BuildContext context, DriverBookingsReady state) {
+    final bookings = state.bookings;
+    final shown = _showsAccepted ? bookings.accepted : bookings.available;
+    final failureMessage = state.failureMessage;
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        const Text(
+          'Réservations',
+          style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: ChoiceButton(
+                label: 'Disponibles',
+                isSelected: !_showsAccepted,
+                onPressed: () => setState(() => _showsAccepted = false),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ChoiceButton(
+                label: 'Acceptées (${bookings.accepted.length})',
+                isSelected: _showsAccepted,
+                onPressed: () => setState(() => _showsAccepted = true),
+              ),
+            ),
+          ],
+        ),
+        if (failureMessage != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            failureMessage,
+            style: const TextStyle(fontSize: 13, color: AppColors.muted),
+          ),
+        ],
+        const SizedBox(height: 14),
+        if (shown.isEmpty)
+          Text(
+            _showsAccepted
+                ? 'Aucune réservation acceptée.'
+                : 'Aucune réservation dans votre zone pour l’instant.',
+            style: const TextStyle(color: AppColors.muted),
+          ),
+        for (final booking in shown)
+          _buildBooking(
+            context,
+            booking,
+            isAccepting: state.acceptingId == booking.id,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildBooking(
+    BuildContext context,
+    DriverBooking booking, {
+    required bool isAccepting,
+  }) {
+    final requirement = booking.requirement;
+    final luggage = switch (booking.luggageCount) {
+      0 => null,
+      1 => '1 bagage',
+      final count => '$count bagages',
+    };
+    final passengers = booking.passengerCount > 1
+        ? '${booking.passengerCount} passagers'
+        : '${booking.passengerCount} passager';
+    final details = [
+      formatDistanceKm(booking.distanceKm),
+      requirement ?? passengers,
+      if (requirement == null && luggage != null) luggage,
+    ].join(', ');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildPickupTime(booking),
+              Text(
+                formatEuroRange(booking.minPriceCents, booking.maxPriceCents),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          TripStops(
+            pickupName: booking.pickupName,
+            destinationName: booking.destinationName,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            details,
+            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+          ),
+          if (!_showsAccepted) ...[
+            const SizedBox(height: 10),
+            PrimaryButton(
+              onPressed: isAccepting
+                  ? null
+                  : () => context.read<DriverBookingsBloc>().add(
+                      DriverBookingAccepted(bookingId: booking.id),
+                    ),
+              alignment: Alignment.center,
+              trailing: isAccepting
+                  ? const AspectRatio(
+                      aspectRatio: 1,
+                      child: CircularProgressIndicator(onSurface: true),
+                    )
+                  : null,
+              child: const Text('Accepter'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // "Demain 06:15", green like the other bookings in the app.
+  Widget _buildPickupTime(DriverBooking booking) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.successBackground,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.event_outlined, size: 14, color: AppColors.freeTaxi),
+          const SizedBox(width: 6),
+          Text(
+            formatPickupTime(booking.scheduledPickup, now: DateTime.now()),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: AppColors.freeTaxi,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

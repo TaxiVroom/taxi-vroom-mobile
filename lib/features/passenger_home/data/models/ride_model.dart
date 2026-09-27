@@ -1,4 +1,4 @@
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/features/passenger_home/domain/entities/driver.dart';
 import 'package:mobile/features/passenger_home/domain/entities/fare_line.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
@@ -6,8 +6,6 @@ import 'package:mobile/features/passenger_home/domain/entities/vehicle.dart';
 
 sealed class RideModel {
   const RideModel({required this.id});
-
-  final String id;
 
   factory RideModel.fromJson(Map<String, dynamic> json) {
     final id = json['id'] as String;
@@ -20,6 +18,8 @@ sealed class RideModel {
       _ => throw FormatException('Statut de course inconnu : $status'),
     };
   }
+
+  final String id;
 
   Ride toDomain();
 }

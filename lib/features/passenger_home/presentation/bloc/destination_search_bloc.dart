@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place_suggestion.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
