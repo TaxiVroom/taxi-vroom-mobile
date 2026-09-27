@@ -10,8 +10,8 @@ part 'passenger_home_state.dart';
 class PassengerHomeBloc extends Bloc<PassengerHomeEvent, PassengerHomeState> {
   PassengerHomeBloc({
     required LoadPassengerHomeUseCase loadPassengerHomeUseCase,
-  })  : _loadPassengerHomeUseCase = loadPassengerHomeUseCase,
-        super(const PassengerHomeLoading()) {
+  }) : _loadPassengerHomeUseCase = loadPassengerHomeUseCase,
+       super(const PassengerHomeLoading()) {
     on<PassengerHomeStarted>(_onStarted);
   }
 

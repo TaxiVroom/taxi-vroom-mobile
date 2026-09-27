@@ -1,3 +1,4 @@
+import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/authentication/domain/entities/user_entity.dart';
 import 'package:mobile/features/authentication/domain/entities/user_role.dart';
@@ -12,5 +13,11 @@ abstract class AuthRepository {
 
   Future<UserEntity> linkGoogleAccount();
 
-  Future<RegistrationFlowEntity> getOrCreateRegistrationFlow({required String userId, required UserRole role, required String phone});
+  Future<RegistrationFlowEntity> getOrCreateRegistrationFlow({
+    required String userId,
+    required UserRole role,
+    required String phone,
+  });
+
+  Future<Result<void>> signOut();
 }

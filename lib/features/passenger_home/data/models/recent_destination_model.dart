@@ -19,8 +19,8 @@ class RecentDestinationModel {
       );
 
   RecentDestination toDomain() => RecentDestination(
-        name: name,
-        address: address,
-        distanceKm: distanceKm,
-      );
+    name: name,
+    address: address,
+    distanceKm: distanceKm,
+  );
 }

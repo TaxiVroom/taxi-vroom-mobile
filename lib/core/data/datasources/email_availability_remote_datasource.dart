@@ -4,7 +4,8 @@ abstract class EmailAvailabilityRemoteDataSource {
   Future<bool> checkEmailAvailability({required String email});
 }
 
-class EmailAvailabilityRemoteDataSourceImpl implements EmailAvailabilityRemoteDataSource {
+class EmailAvailabilityRemoteDataSourceImpl
+    implements EmailAvailabilityRemoteDataSource {
   const EmailAvailabilityRemoteDataSourceImpl(this._dio);
   final Dio _dio;
 
@@ -20,7 +21,8 @@ class EmailAvailabilityRemoteDataSourceImpl implements EmailAvailabilityRemoteDa
 
 /// Implémentation de développement avec données de test.
 /// À remplacer par [EmailAvailabilityRemoteDataSourceImpl] lorsque le backend est prêt.
-class EmailAvailabilityRemoteDataSourceFake implements EmailAvailabilityRemoteDataSource {
+class EmailAvailabilityRemoteDataSourceFake
+    implements EmailAvailabilityRemoteDataSource {
   static const _takenEmails = {'taken@example.com', 'test@test.com'};
 
   @override

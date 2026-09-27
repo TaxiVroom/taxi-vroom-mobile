@@ -7,7 +7,15 @@ class GetOrCreateRegistrationFlowUseCase {
 
   final AuthRepository _repository;
 
-  Future<RegistrationFlowEntity> call({required String userId, required UserRole role, required String phone}) {
-    return _repository.getOrCreateRegistrationFlow(userId: userId, role: role, phone: phone);
+  Future<RegistrationFlowEntity> call({
+    required String userId,
+    required UserRole role,
+    required String phone,
+  }) {
+    return _repository.getOrCreateRegistrationFlow(
+      userId: userId,
+      role: role,
+      phone: phone,
+    );
   }
 }

@@ -17,8 +17,9 @@ class OtpVerificationPage extends StatelessWidget {
     final phoneNumber = _getPhoneNumberFromState(state);
     final isVerifying = state is AuthOtpVerifying;
     final canResend = state is AuthOtpCountdown && state.isResendAvailable;
-    final remainingSeconds =
-        state is AuthOtpCountdown ? state.remainingSeconds : 0;
+    final remainingSeconds = state is AuthOtpCountdown
+        ? state.remainingSeconds
+        : 0;
 
     return PopScope(
       canPop: false,
@@ -26,50 +27,53 @@ class OtpVerificationPage extends StatelessWidget {
         if (!didPop) _onBackPressed(context);
       },
       child: Scaffold(
-      headers: [
-        AppBar(
-          leading: [
-            GhostButton(
-              density: ButtonDensity.icon,
-              onPressed: () => _onBackPressed(context),
-              child: const Icon(Icons.arrow_back),
-            ),
-          ],
-          title: const Text('Vérification'),
-        ),
-      ],
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 16),
-              const Text(
-                'Entrez le code',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Un code SMS a été envoyé au $phoneNumber',
-                style: const TextStyle(fontSize: 15, color: Color(0xFF6B7280)),
-              ),
-              const SizedBox(height: 40),
-              _buildOtpInput(context, phoneNumber),
-              const SizedBox(height: 32),
-              Center(
-                child: _buildResendControls(
-                  context,
-                  isVerifying: isVerifying,
-                  canResend: canResend,
-                  remainingSeconds: remainingSeconds,
-                  phoneNumber: phoneNumber,
-                ),
+        headers: [
+          AppBar(
+            leading: [
+              GhostButton(
+                density: ButtonDensity.icon,
+                onPressed: () => _onBackPressed(context),
+                child: const Icon(Icons.arrow_back),
               ),
             ],
+            title: const Text('Vérification'),
+          ),
+        ],
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 16),
+                const Text(
+                  'Entrez le code',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Un code SMS a été envoyé au $phoneNumber',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                _buildOtpInput(context, phoneNumber),
+                const SizedBox(height: 32),
+                Center(
+                  child: _buildResendControls(
+                    context,
+                    isVerifying: isVerifying,
+                    canResend: canResend,
+                    remainingSeconds: remainingSeconds,
+                    phoneNumber: phoneNumber,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -142,7 +146,9 @@ class OtpVerificationPage extends StatelessWidget {
   }
 
   void _onResendOtpRequested(BuildContext context, String phoneNumber) {
-    context.read<AuthBloc>().add(AuthOtpResendRequested(phoneNumber: phoneNumber));
+    context.read<AuthBloc>().add(
+      AuthOtpResendRequested(phoneNumber: phoneNumber),
+    );
   }
 
   // phoneNumber est garanti présent sur tout AuthRoleSelectedState.

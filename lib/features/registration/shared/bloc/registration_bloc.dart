@@ -298,6 +298,8 @@ abstract class RegistrationBloc
   }
 
   Future<void> _finalizeRegistration(Emitter<RegistrationState> emit) async {
+    // On failure the passenger stays on the notifications screen.
+    final notificationsStep = state.currentStep;
     final result = await completeRegistration();
     switch (result) {
       case Ok():
@@ -310,13 +312,13 @@ abstract class RegistrationBloc
       case Error(:final error):
         emit(RegistrationError(
           message: error.message,
-          currentStep: _completeStep,
+          currentStep: notificationsStep,
           email: state.email,
           firstName: state.firstName,
           lastName: state.lastName,
         ));
         emit(RegistrationNotificationReady(
-          currentStep: _completeStep,
+          currentStep: notificationsStep,
           email: state.email,
           firstName: state.firstName,
           lastName: state.lastName,

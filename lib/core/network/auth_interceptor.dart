@@ -10,8 +10,8 @@ class AuthInterceptor extends Interceptor {
   AuthInterceptor({
     required FirebaseAuth firebaseAuth,
     required Dio dio,
-  })  : _firebaseAuth = firebaseAuth,
-        _dio = dio;
+  }) : _firebaseAuth = firebaseAuth,
+       _dio = dio;
 
   final FirebaseAuth _firebaseAuth;
 

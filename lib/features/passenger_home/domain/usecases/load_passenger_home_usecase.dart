@@ -13,9 +13,9 @@ class LoadPassengerHomeUseCase {
     required LocationRepository locationRepository,
     required NearbyTaxiRepository nearbyTaxiRepository,
     required RecentDestinationRepository recentDestinationRepository,
-  })  : _locationRepository = locationRepository,
-        _nearbyTaxiRepository = nearbyTaxiRepository,
-        _recentDestinationRepository = recentDestinationRepository;
+  }) : _locationRepository = locationRepository,
+       _nearbyTaxiRepository = nearbyTaxiRepository,
+       _recentDestinationRepository = recentDestinationRepository;
 
   final LocationRepository _locationRepository;
   final NearbyTaxiRepository _nearbyTaxiRepository;

@@ -20,7 +20,7 @@ class NearbyTaxiModel {
       );
 
   NearbyTaxi toDomain() => NearbyTaxi(
-        id: id,
-        position: Coordinates(latitude: latitude, longitude: longitude),
-      );
+    id: id,
+    position: Coordinates(latitude: latitude, longitude: longitude),
+  );
 }

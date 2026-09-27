@@ -1,5 +1,9 @@
 import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/features/passenger_home/domain/entities/recent_destination.dart';
+import 'package:mobile/features/passenger_home/presentation/widgets/bottom_panel.dart';
+import 'package:mobile/features/passenger_home/presentation/widgets/pickup_time_chip.dart';
+import 'package:mobile/features/passenger_home/presentation/widgets/place_list_tile.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Bottom panel of the home screen: one question, "Où allez-vous ?".
@@ -7,23 +11,17 @@ class WhereToPanel extends StatelessWidget {
   const WhereToPanel({
     required this.recentDestinations,
     required this.nearbyTaxiCount,
+    required this.onWhereToPressed,
     super.key,
   });
 
   final List<RecentDestination> recentDestinations;
   final int nearbyTaxiCount;
+  final VoidCallback onWhereToPressed;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(color: Color(0x24000000), blurRadius: 24),
-        ],
-      ),
+    return BottomPanel(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -33,7 +31,13 @@ class WhereToPanel extends StatelessWidget {
           _buildShortcuts(),
           const SizedBox(height: 8),
           for (final destination in recentDestinations)
-            _buildRecentDestination(destination),
+            PlaceListTile(
+              icon: Icons.history,
+              title: destination.name,
+              subtitle:
+                  '${destination.address}, '
+                  '${formatDistanceKm(destination.distanceKm)}',
+            ),
           const SizedBox(height: 8),
           _buildFreeTaxiCount(),
         ],
@@ -41,24 +45,23 @@ class WhereToPanel extends StatelessWidget {
     );
   }
 
-  // The destination screen (mockup screen 4) is not built yet: taps do nothing.
   Widget _buildWhereToButton() {
-    return SecondaryButton(
-      onPressed: () {},
-      alignment: Alignment.centerLeft,
-      leading: const Icon(Icons.search),
-      trailing: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.schedule, size: 16),
-          SizedBox(width: 4),
-          Text('Maintenant'),
-        ],
-      ),
-      child: const Text(
-        'Où allez-vous ?',
-        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-      ),
+    return Row(
+      children: [
+        Expanded(
+          child: SecondaryButton(
+            onPressed: onWhereToPressed,
+            alignment: Alignment.centerLeft,
+            leading: const Icon(Icons.search),
+            child: const Text(
+              'Où allez-vous ?',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        const PickupTimeChip(),
+      ],
     );
   }
 
@@ -87,35 +90,6 @@ class WhereToPanel extends StatelessWidget {
             Text(label, maxLines: 1),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildRecentDestination(RecentDestination destination) {
-    final distance = destination.distanceKm.toStringAsFixed(1).replaceAll('.', ',');
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          const Icon(Icons.history, color: AppColors.muted),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  destination.name,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  '${destination.address}, $distance km',
-                  style: const TextStyle(fontSize: 13, color: AppColors.muted),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

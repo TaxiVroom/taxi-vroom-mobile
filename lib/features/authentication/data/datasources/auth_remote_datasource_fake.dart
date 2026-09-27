@@ -31,7 +31,11 @@ class AuthRemoteDataSourceFake implements AuthRemoteDataSource {
 
   @override
   // ignore: avoid_unused_constructor_parameters
-  Future<RegistrationFlowEntity> getOrCreateRegistrationFlow({required String userId, required UserRole role, required String phone}) async {
+  Future<RegistrationFlowEntity> getOrCreateRegistrationFlow({
+    required String userId,
+    required UserRole role,
+    required String phone,
+  }) async {
     await Future<void>.delayed(const Duration(milliseconds: 500));
     if (role == UserRole.driver) {
       // 🧪 Chauffeur — userId pilote l'étape de reprise :
@@ -41,30 +45,30 @@ class AuthRemoteDataSourceFake implements AuthRemoteDataSource {
       // tout autre id                → nouvel utilisateur, étape socialLink
       return switch (userId) {
         'fake-driver-documents-id' => DriverRegistrationFlowModel(
-            userId: userId,
-            currentStep: DriverRegistrationStep.documents,
-            email: 'driver@example.com',
-            firstName: 'Jean',
-            lastName: 'Dupont',
-          ),
+          userId: userId,
+          currentStep: DriverRegistrationStep.documents,
+          email: 'driver@example.com',
+          firstName: 'Jean',
+          lastName: 'Dupont',
+        ),
         'fake-driver-pending-id' => DriverRegistrationFlowModel(
-            userId: userId,
-            currentStep: DriverRegistrationStep.pendingReview,
-            email: 'driver@example.com',
-            firstName: 'Jean',
-            lastName: 'Dupont',
-          ),
+          userId: userId,
+          currentStep: DriverRegistrationStep.pendingReview,
+          email: 'driver@example.com',
+          firstName: 'Jean',
+          lastName: 'Dupont',
+        ),
         'fake-driver-correction-id' => DriverRegistrationFlowModel(
-            userId: userId,
-            currentStep: DriverRegistrationStep.documentsCorrection,
-            email: 'driver@example.com',
-            firstName: 'Jean',
-            lastName: 'Dupont',
-          ),
+          userId: userId,
+          currentStep: DriverRegistrationStep.documentsCorrection,
+          email: 'driver@example.com',
+          firstName: 'Jean',
+          lastName: 'Dupont',
+        ),
         _ => DriverRegistrationFlowModel(
-            userId: userId,
-            currentStep: DriverRegistrationStep.socialLink,
-          ),
+          userId: userId,
+          currentStep: DriverRegistrationStep.socialLink,
+        ),
       };
     }
     // 🧪 'fake-complete-id'       → inscription terminée
@@ -74,32 +78,36 @@ class AuthRemoteDataSourceFake implements AuthRemoteDataSource {
     // 🧪 tout autre id            → nouvel utilisateur, étape socialLink
     return switch (userId) {
       'fake-complete-id' => PassengerRegistrationFlowModel(
-          userId: userId,
-          currentStep: PassengerRegistrationStep.complete,
-          email: 'john@example.com',
-          firstName: 'John',
-          lastName: 'Doe',
-        ),
+        userId: userId,
+        currentStep: PassengerRegistrationStep.complete,
+        email: 'john@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+      ),
       'fake-name-id' => PassengerRegistrationFlowModel(
-          userId: userId,
-          currentStep: PassengerRegistrationStep.name,
-          email: 'john@example.com',
-        ),
+        userId: userId,
+        currentStep: PassengerRegistrationStep.name,
+        email: 'john@example.com',
+      ),
       'fake-semi-complete-id' => PassengerRegistrationFlowModel(
-          userId: userId,
-          currentStep: PassengerRegistrationStep.name,
-          email: 'john@example.com',
-          firstName: null,
-          lastName: null,
-        ),
+        userId: userId,
+        currentStep: PassengerRegistrationStep.name,
+        email: 'john@example.com',
+        firstName: null,
+        lastName: null,
+      ),
       'fake-email-id' => PassengerRegistrationFlowModel(
-          userId: userId,
-          currentStep: PassengerRegistrationStep.email,
-        ),
+        userId: userId,
+        currentStep: PassengerRegistrationStep.email,
+      ),
       _ => PassengerRegistrationFlowModel(
-          userId: userId,
-          currentStep: PassengerRegistrationStep.socialLink,
-        ),
+        userId: userId,
+        currentStep: PassengerRegistrationStep.socialLink,
+      ),
     };
   }
+
+  @override
+  Future<void> signOut() =>
+      Future<void>.delayed(const Duration(milliseconds: 300));
 }

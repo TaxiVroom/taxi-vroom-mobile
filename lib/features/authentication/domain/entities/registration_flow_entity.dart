@@ -19,75 +19,79 @@ enum PassengerRegistrationStep implements RegistrationStep {
   socialLink,
   email,
   name,
-  complete;
+  notifications, // last screen, before the registration is finalized
+  complete; // registration finalized: the passenger goes straight home
 
   /// The next data step in the passenger registration flow.
   /// Null when already at the last step.
   PassengerRegistrationStep? get next => switch (this) {
-        socialLink => email,
-        email      => name,
-        name       => complete,
-        complete   => null,
-      };
+    socialLink => email,
+    email => name,
+    name => notifications,
+    notifications => complete,
+    complete => null,
+  };
 
   /// The previous data step in the passenger registration flow.
   /// Null when already at the first step.
   PassengerRegistrationStep? get previous => switch (this) {
-        socialLink => null,
-        email      => socialLink,
-        name       => email,
-        complete   => name,
-      };
+    socialLink => null,
+    email => socialLink,
+    name => email,
+    notifications => name,
+    complete => notifications,
+  };
 
   @override
   String serialize() => switch (this) {
-        socialLink => 'SOCIAL_LINK',
-        email      => 'EMAIL',
-        name       => 'NAME',
-        complete   => 'COMPLETE',
-      };
+    socialLink => 'SOCIAL_LINK',
+    email => 'EMAIL',
+    name => 'NAME',
+    notifications => 'NOTIFICATIONS',
+    complete => 'COMPLETE',
+  };
 }
 
 enum DriverRegistrationStep implements RegistrationStep {
   socialLink,
   email,
   name,
-  documents,       // étape spécifique chauffeur (upload des documents)
-  pendingReview,   // documents soumis — en attente de validation admin
+  documents, // étape spécifique chauffeur (upload des documents)
+  pendingReview, // documents soumis — en attente de validation admin
   documentsCorrection, // admin a rejeté au moins un document — le chauffeur doit corriger
   complete;
 
   /// Null pour [pendingReview] : la transition suivante est déclenchée par l'admin.
   DriverRegistrationStep? get next => switch (this) {
-        socialLink           => email,
-        email                => name,
-        name                 => documents,
-        documents            => pendingReview,
-        pendingReview        => null,
-        documentsCorrection  => pendingReview,
-        complete             => null,
-      };
+    socialLink => email,
+    email => name,
+    name => documents,
+    documents => pendingReview,
+    pendingReview => null,
+    documentsCorrection => pendingReview,
+    complete => null,
+  };
 
   DriverRegistrationStep? get previous => switch (this) {
-        socialLink           => null,
-        email                => socialLink,
-        name                 => email,
-        documents            => name,
-        pendingReview        => null,
-        documentsCorrection  => name,
-        complete             => pendingReview,
-      };
+    socialLink => null,
+    email => socialLink,
+    name => email,
+    documents => name,
+    pendingReview => null,
+    documentsCorrection => name,
+    complete => pendingReview,
+  };
 
   @override
   String serialize() => switch (this) {
-        socialLink           => 'SOCIAL_LINK',
-        email                => 'EMAIL',
-        name                 => 'NAME',
-        documents            => 'DOCUMENTS',
-        pendingReview        => 'PENDING_REVIEW',
-        documentsCorrection  => 'DOCUMENTS_CORRECTION',
-        complete             => 'COMPLETE',
-      };
+    socialLink => 'SOCIAL_LINK',
+    email => 'EMAIL',
+    name => 'NAME',
+    documents => 'DOCUMENTS',
+    pendingReview => 'PENDING_REVIEW',
+    documentsCorrection => 'DOCUMENTS_CORRECTION',
+    complete => 'COMPLETE',
+  };
 }
 
 // Dart's equivalent of a TypeScript discriminated union.
@@ -106,6 +110,9 @@ sealed class RegistrationFlowEntity extends Equatable {
   final String? email;
   final String? firstName;
   final String? lastName;
+
+  // A finalized registration skips the registration screens entirely.
+  bool get isComplete;
 }
 
 // Direct subtypes of a sealed class must live in the same file.
@@ -123,6 +130,9 @@ base class PassengerRegistrationFlowEntity extends RegistrationFlowEntity {
   final PassengerRegistrationStep currentStep;
 
   @override
+  bool get isComplete => currentStep == PassengerRegistrationStep.complete;
+
+  @override
   List<Object?> get props => [userId, currentStep, email, firstName, lastName];
 }
 
@@ -136,6 +146,9 @@ base class DriverRegistrationFlowEntity extends RegistrationFlowEntity {
   });
 
   final DriverRegistrationStep currentStep;
+
+  @override
+  bool get isComplete => currentStep == DriverRegistrationStep.complete;
 
   @override
   List<Object?> get props => [userId, currentStep, email, firstName, lastName];

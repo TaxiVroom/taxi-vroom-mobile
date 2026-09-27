@@ -4,12 +4,11 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
         CircleAnnotationOptions,
         LocationComponentSettings,
         MapWidget,
-        MapboxMap,
-        Point,
-        Position;
+        MapboxMap;
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/features/passenger_home/domain/entities/coordinates.dart';
 import 'package:mobile/features/passenger_home/domain/entities/nearby_taxi.dart';
+import 'package:mobile/features/passenger_home/presentation/widgets/coordinates_mapbox.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Full-screen map centered on the passenger, with the free taxis around.
@@ -26,7 +25,7 @@ class PassengerHomeMap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MapWidget(
-      viewport: CameraViewportState(center: _toPoint(position), zoom: 15),
+      viewport: CameraViewportState(center: position.toPoint(), zoom: 15),
       onMapCreated: _onMapCreated,
     );
   }
@@ -39,7 +38,7 @@ class PassengerHomeMap extends StatelessWidget {
     await taxiMarkers.createMulti([
       for (final taxi in nearbyTaxis)
         CircleAnnotationOptions(
-          geometry: _toPoint(taxi.position),
+          geometry: taxi.position.toPoint(),
           circleColor: AppColors.freeTaxi.toARGB32(),
           circleRadius: 7,
           circleStrokeColor: Colors.white.toARGB32(),
@@ -47,8 +46,4 @@ class PassengerHomeMap extends StatelessWidget {
         ),
     ]);
   }
-
-  static Point _toPoint(Coordinates coordinates) => Point(
-        coordinates: Position(coordinates.longitude, coordinates.latitude),
-      );
 }

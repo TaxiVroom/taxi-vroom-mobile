@@ -22,13 +22,12 @@ final class PassengerRegistrationFlowModel extends PassengerRegistrationFlowEnti
     );
   }
 
-  // Backend uses UPPER_SNAKE_CASE values. NOTIFICATIONS is a mobile-only UI step —
-  // if the user resumes from that point, we show the notifications screen (complete).
+  // Backend uses UPPER_SNAKE_CASE values.
   static PassengerRegistrationStep _parseStep(String value) => switch (value) {
         'SOCIAL_LINK'   => PassengerRegistrationStep.socialLink,
         'EMAIL'         => PassengerRegistrationStep.email,
         'NAME'          => PassengerRegistrationStep.name,
-        'NOTIFICATIONS' => PassengerRegistrationStep.complete,
+        'NOTIFICATIONS' => PassengerRegistrationStep.notifications,
         'COMPLETE'      => PassengerRegistrationStep.complete,
         _               => throw UnimplementedError('Unknown registration step: $value'),
       };

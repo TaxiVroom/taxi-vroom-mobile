@@ -28,8 +28,8 @@ class PhoneNumberPage extends StatelessWidget {
                 padding: EdgeInsets.fromLTRB(24, 0, 24, 24),
                 child: Text(
                   'En continuant, vous acceptez nos Conditions '
-                      "d'utilisation et notre Politique de "
-                      'confidentialité.',
+                  "d'utilisation et notre Politique de "
+                  'confidentialité.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 11,

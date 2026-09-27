@@ -5,4 +5,8 @@ abstract final class AppColors {
   static const successBackground = Color(0xFFDCFCE7);
   static const muted = Color(0xFF6B7280);
   static const freeTaxi = Color(0xFF0B8A5B);
+  static const border = Color(0xFFE5E7EB);
+  static const ink = Color(0xFF1C2127);
+  static const plateBlue = Color(0xFF1F4AAE);
+  static const star = Color(0xFFE8A317);
 }

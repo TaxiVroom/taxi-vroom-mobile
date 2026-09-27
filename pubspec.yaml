@@ -30,6 +30,8 @@ dependencies:
   flutter_screenutil: ^5.9.3
   mapbox_maps_flutter: ^2.31.1
   geolocator: ^14.1.0
+  uuid: ^4.6.0
+  stream_transform: ^2.1.2
 
 dev_dependencies:
   flutter_native_splash: ^2.4.6

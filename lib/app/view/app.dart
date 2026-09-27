@@ -10,16 +10,41 @@ import 'package:mobile/features/authentication/data/datasources/auth_remote_data
 import 'package:mobile/features/authentication/data/repositories/auth_repository_impl.dart';
 import 'package:mobile/features/authentication/domain/usecases/get_or_create_registration_flow_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/send_otp_usecase.dart';
+import 'package:mobile/features/authentication/domain/usecases/sign_out_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/verify_otp_usecase.dart';
 import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:mobile/features/authentication/presentation/navigator/auth_navigator.dart';
+import 'package:mobile/features/passenger_home/data/datasources/account_remote_datasource_fake.dart';
 import 'package:mobile/features/passenger_home/data/datasources/device_location_datasource.dart';
+import 'package:mobile/features/passenger_home/data/repositories/account_repository_impl.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_account_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/update_notifications_usecase.dart';
 import 'package:mobile/features/passenger_home/data/datasources/nearby_taxi_remote_datasource_fake.dart';
+import 'package:mobile/features/passenger_home/data/datasources/place_search_remote_datasource.dart';
+import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource_fake.dart';
+import 'package:mobile/features/passenger_home/data/datasources/route_remote_datasource.dart';
+import 'package:mobile/features/passenger_home/data/datasources/taxi_offer_remote_datasource_fake.dart';
 import 'package:mobile/features/passenger_home/data/datasources/recent_destination_remote_datasource_fake.dart';
 import 'package:mobile/features/passenger_home/data/repositories/location_repository_impl.dart';
 import 'package:mobile/features/passenger_home/data/repositories/nearby_taxi_repository_impl.dart';
+import 'package:mobile/features/passenger_home/data/repositories/place_search_repository_impl.dart';
+import 'package:mobile/features/passenger_home/data/repositories/ride_repository_impl.dart';
+import 'package:mobile/features/passenger_home/data/repositories/route_repository_impl.dart';
+import 'package:mobile/features/passenger_home/data/repositories/taxi_offer_repository_impl.dart';
 import 'package:mobile/features/passenger_home/data/repositories/recent_destination_repository_impl.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/cancel_booking_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
 import 'package:mobile/features/registration/driver/data/datasources/driver_registration_remote_datasource.dart';
 import 'package:mobile/features/registration/driver/data/datasources/registration_document_remote_datasource.dart';
 import 'package:mobile/features/registration/driver/data/repositories/driver_notification_repository_impl.dart';
@@ -37,7 +62,8 @@ import 'package:mobile/features/registration/passenger/domain/usecases/complete_
 import 'package:mobile/features/registration/passenger/domain/usecases/request_notification_permission_usecase.dart';
 import 'package:mobile/features/registration/shared/domain/usecases/update_registration_flow_usecase.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' show MapboxOptions;
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
+    show MapboxOptions;
 import 'package:mobile/l10n/l10n.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -57,39 +83,81 @@ class App extends StatelessWidget {
     final authDataSource = AuthRemoteDataSourceImpl(FirebaseAuth.instance, dio);
     final authRepo = AuthRepositoryImpl(authDataSource);
 
-    final emailAvailabilityDataSource =
-        EmailAvailabilityRemoteDataSourceImpl(dio);
-    final emailAvailabilityRepo =
-        EmailAvailabilityRepositoryImpl(emailAvailabilityDataSource);
-    final checkEmailAvailabilityUseCase =
-        CheckEmailAvailabilityUseCase(emailAvailabilityRepo);
+    final emailAvailabilityDataSource = EmailAvailabilityRemoteDataSourceImpl(
+      dio,
+    );
+    final emailAvailabilityRepo = EmailAvailabilityRepositoryImpl(
+      emailAvailabilityDataSource,
+    );
+    final checkEmailAvailabilityUseCase = CheckEmailAvailabilityUseCase(
+      emailAvailabilityRepo,
+    );
 
     // Passager.
     final registrationDataSource = RegistrationRemoteDataSourceImpl(dio);
     final registrationRepo = RegistrationRepositoryImpl(registrationDataSource);
     final passengerNotifRepo = NotificationRepositoryImpl();
 
+    // Recherche d'adresses : appel direct à Mapbox, sans l'intercepteur Firebase
+    // (le token d'auth de l'app ne doit pas partir chez Mapbox).
+    final mapboxDio = Dio(BaseOptions(baseUrl: 'https://api.mapbox.com'));
+    final placeSearchRepo = PlaceSearchRepositoryImpl(
+      PlaceSearchRemoteDataSourceImpl(
+        mapboxDio,
+        accessToken: config.mapboxAccessToken,
+      ),
+    );
+
+    // Itinéraires réels via Mapbox : choix du taxi et suivi de la course.
+    final routeRepo = RouteRepositoryImpl(
+      RouteRemoteDataSourceImpl(
+        mapboxDio,
+        accessToken: config.mapboxAccessToken,
+      ),
+    );
+
+    // Choix du taxi : offres et prix fake en attendant l'endpoint backend.
+    final loadTaxiChoiceUseCase = LoadTaxiChoiceUseCase(
+      routeRepository: routeRepo,
+      taxiOfferRepository: TaxiOfferRepositoryImpl(
+        TaxiOfferRemoteDataSourceFake(),
+      ),
+    );
+
+    // Course : pas encore d'endpoint backend, la course est simulée. Une seule
+    // instance, partagée par la commande, le suivi et l'annulation.
+    final rideRepo = RideRepositoryImpl(RideRemoteDataSourceFake());
+
+    // Compte passager : pas encore d'endpoint backend, profil fake.
+    final accountRepo = AccountRepositoryImpl(AccountRemoteDataSourceFake());
+
     // Accueil passager. Pas encore d'endpoint backend : taxis et destinations sont fake.
     final loadPassengerHomeUseCase = LoadPassengerHomeUseCase(
-      locationRepository:
-          const LocationRepositoryImpl(DeviceLocationDataSourceImpl()),
-      nearbyTaxiRepository:
-          NearbyTaxiRepositoryImpl(NearbyTaxiRemoteDataSourceFake()),
-      recentDestinationRepository:
-          RecentDestinationRepositoryImpl(RecentDestinationRemoteDataSourceFake()),
+      locationRepository: const LocationRepositoryImpl(
+        DeviceLocationDataSourceImpl(),
+      ),
+      nearbyTaxiRepository: NearbyTaxiRepositoryImpl(
+        NearbyTaxiRemoteDataSourceFake(),
+      ),
+      recentDestinationRepository: RecentDestinationRepositoryImpl(
+        RecentDestinationRemoteDataSourceFake(),
+      ),
     );
 
     // Chauffeur.
-    final driverRegistrationDataSource =
-        DriverRegistrationRemoteDataSourceImpl(dio);
-    final driverRegistrationRepo =
-        DriverRegistrationRepositoryImpl(driverRegistrationDataSource);
+    final driverRegistrationDataSource = DriverRegistrationRemoteDataSourceImpl(
+      dio,
+    );
+    final driverRegistrationRepo = DriverRegistrationRepositoryImpl(
+      driverRegistrationDataSource,
+    );
     final driverNotifRepo = DriverNotificationRepositoryImpl();
 
     final registrationDocumentDataSource =
         RegistrationDocumentRemoteDataSourceImpl(dio);
-    final registrationDocumentRepo =
-        RegistrationDocumentRepositoryImpl(registrationDocumentDataSource);
+    final registrationDocumentRepo = RegistrationDocumentRepositoryImpl(
+      registrationDocumentDataSource,
+    );
 
     return ScreenUtilInit(
       designSize: const Size(390, 844),
@@ -100,19 +168,20 @@ class App extends StatelessWidget {
           verifyOtpUseCase: VerifyOtpUseCase(authRepo),
           getOrCreateRegistrationFlowUseCase:
               GetOrCreateRegistrationFlowUseCase(authRepo),
+          signOutUseCase: SignOutUseCase(authRepo),
         ),
         child: ShadcnApp(
-        debugShowCheckedModeBanner: false,
-        title: 'TaxiApp',
-        theme: ThemeData(
-          colorScheme: ColorSchemes.lightZinc.copyWith(
-            primary: () => const Color(0xFF0066FF),
-            primaryForeground: () => const Color(0xFFFFFFFF),
-            ring: () => const Color(0xFF0066FF),
+          debugShowCheckedModeBanner: false,
+          title: 'TaxiApp',
+          theme: ThemeData(
+            colorScheme: ColorSchemes.lightZinc.copyWith(
+              primary: () => const Color(0xFF0066FF),
+              primaryForeground: () => const Color(0xFFFFFFFF),
+              ring: () => const Color(0xFF0066FF),
+            ),
           ),
-        ),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: AuthNavigator(
             passengerUpdateRegistrationFlowUseCase:
                 UpdateRegistrationFlowUseCase(registrationRepo),
@@ -121,19 +190,42 @@ class App extends StatelessWidget {
             completePassengerRegistrationUseCase:
                 CompletePassengerRegistrationUseCase(registrationRepo),
             loadPassengerHomeUseCase: loadPassengerHomeUseCase,
-            driverUpdateRegistrationFlowUseCase:
-                UpdateRegistrationFlowUseCase(driverRegistrationRepo),
+            suggestDestinationsUseCase: SuggestDestinationsUseCase(
+              placeSearchRepo,
+            ),
+            selectDestinationUseCase: SelectDestinationUseCase(placeSearchRepo),
+            loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
+            getPickupDaysUseCase: const GetPickupDaysUseCase(),
+            requestRideUseCase: RequestRideUseCase(rideRepo),
+            watchRideUseCase: WatchRideUseCase(
+              rideRepository: rideRepo,
+              routeRepository: routeRepo,
+            ),
+            cancelRideUseCase: CancelRideUseCase(rideRepo),
+            rateRideUseCase: RateRideUseCase(rideRepo),
+            bookRideUseCase: BookRideUseCase(rideRepo),
+            getPickupForArrivalUseCase: GetPickupForArrivalUseCase(routeRepo),
+            loadRideHistoryUseCase: LoadRideHistoryUseCase(rideRepo),
+            cancelBookingUseCase: CancelBookingUseCase(rideRepo),
+            loadAccountUseCase: LoadAccountUseCase(accountRepo),
+            updateNotificationsUseCase: UpdateNotificationsUseCase(accountRepo),
+            driverUpdateRegistrationFlowUseCase: UpdateRegistrationFlowUseCase(
+              driverRegistrationRepo,
+            ),
             requestDriverNotificationPermissionUseCase:
                 RequestDriverNotificationPermissionUseCase(driverNotifRepo),
             checkEmailAvailabilityUseCase: checkEmailAvailabilityUseCase,
-            getDocumentTypesUseCase:
-                GetDocumentTypesUseCase(registrationDocumentRepo),
+            getDocumentTypesUseCase: GetDocumentTypesUseCase(
+              registrationDocumentRepo,
+            ),
             uploadRegistrationDocumentUseCase:
                 UploadRegistrationDocumentUseCase(registrationDocumentRepo),
-            getUploadedDocumentsUseCase:
-                GetUploadedDocumentsUseCase(registrationDocumentRepo),
-            getDocumentSignedUrlUseCase:
-                GetDocumentSignedUrlUseCase(registrationDocumentRepo),
+            getUploadedDocumentsUseCase: GetUploadedDocumentsUseCase(
+              registrationDocumentRepo,
+            ),
+            getDocumentSignedUrlUseCase: GetDocumentSignedUrlUseCase(
+              registrationDocumentRepo,
+            ),
           ),
         ),
       ),

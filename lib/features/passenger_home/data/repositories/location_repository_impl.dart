@@ -26,7 +26,9 @@ class LocationRepositoryImpl implements LocationRepository {
       );
     } on PermissionDeniedException {
       return const Result.error(
-        LocationFailure('Autorisez l’accès à votre position pour trouver un taxi.'),
+        LocationFailure(
+          'Autorisez l’accès à votre position pour trouver un taxi.',
+        ),
       );
     }
   }

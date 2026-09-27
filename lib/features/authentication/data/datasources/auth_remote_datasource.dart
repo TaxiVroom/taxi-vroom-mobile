@@ -14,9 +14,17 @@ import 'package:mobile/features/registration/passenger/data/models/passenger_reg
 //  À scinder en FirebaseAuthDataSource et BootstrapDataSource si nécessaire.
 abstract class AuthRemoteDataSource {
   Future<void> sendOtp({required String phoneNumber});
-  Future<UserModel> verifyOtp({required String phoneNumber, required String otp});
+  Future<UserModel> verifyOtp({
+    required String phoneNumber,
+    required String otp,
+  });
   Future<UserModel> linkGoogleAccount();
-  Future<RegistrationFlowEntity> getOrCreateRegistrationFlow({required String userId, required UserRole role, required String phone});
+  Future<RegistrationFlowEntity> getOrCreateRegistrationFlow({
+    required String userId,
+    required UserRole role,
+    required String phone,
+  });
+  Future<void> signOut();
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -73,8 +81,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       smsCode: otp,
     );
 
-    final userCredential =
-        await _firebaseAuth.signInWithCredential(credential);
+    final userCredential = await _firebaseAuth.signInWithCredential(credential);
 
     final firebaseUser = userCredential.user;
     if (firebaseUser == null) {
@@ -97,7 +104,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<RegistrationFlowEntity> getOrCreateRegistrationFlow({required String userId, required UserRole role, required String phone}) async {
+  Future<RegistrationFlowEntity> getOrCreateRegistrationFlow({
+    required String userId,
+    required UserRole role,
+    required String phone,
+  }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/v1/registration-flows/me',
       // Le rôle et le téléphone sont envoyés en query param pour que le backend
@@ -106,9 +117,17 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     );
     final json = response.data!;
     return switch (json['role'] as String) {
-      'PASSENGER' => PassengerRegistrationFlowModel.fromJson(json, userId: userId),
-      'DRIVER'    => DriverRegistrationFlowModel.fromJson(json, userId: userId),
-      final unknownRole => throw UnimplementedError('Unknown registration flow role: $unknownRole'),
+      'PASSENGER' => PassengerRegistrationFlowModel.fromJson(
+        json,
+        userId: userId,
+      ),
+      'DRIVER' => DriverRegistrationFlowModel.fromJson(json, userId: userId),
+      final unknownRole => throw UnimplementedError(
+        'Unknown registration flow role: $unknownRole',
+      ),
     };
   }
+
+  @override
+  Future<void> signOut() => _firebaseAuth.signOut();
 }

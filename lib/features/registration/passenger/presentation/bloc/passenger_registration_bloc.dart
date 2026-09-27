@@ -68,7 +68,14 @@ class PassengerRegistrationBloc extends RegistrationBloc {
           firstName: flow.firstName ?? '',
           lastName: flow.lastName ?? '',
         ),
-      PassengerRegistrationStep.complete => RegistrationNotificationReady(
+      PassengerRegistrationStep.notifications => RegistrationNotificationReady(
+          currentStep: flow.currentStep,
+          email: flow.email ?? '',
+          firstName: flow.firstName ?? '',
+          lastName: flow.lastName ?? '',
+        ),
+      // Normally never reached: AuthBloc sends a finalized passenger home.
+      PassengerRegistrationStep.complete => RegistrationAuthenticated(
           currentStep: flow.currentStep,
           email: flow.email ?? '',
           firstName: flow.firstName ?? '',
@@ -100,7 +107,13 @@ class PassengerRegistrationBloc extends RegistrationBloc {
             isFormValid:
                 state.firstName.isNotEmpty && state.lastName.isNotEmpty,
           ),
-        PassengerRegistrationStep.complete => RegistrationNotificationReady(
+        PassengerRegistrationStep.notifications => RegistrationNotificationReady(
+            currentStep: step,
+            email: state.email,
+            firstName: state.firstName,
+            lastName: state.lastName,
+          ),
+        PassengerRegistrationStep.complete => RegistrationAuthenticated(
             currentStep: step,
             email: state.email,
             firstName: state.firstName,

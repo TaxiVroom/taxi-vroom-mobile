@@ -12,6 +12,11 @@ class NetworkFailure extends Failure {
   const NetworkFailure(super.message);
 }
 
+// The request breaks a business rule (e.g. a pickup time too soon).
+class ValidationFailure extends Failure {
+  const ValidationFailure(super.message);
+}
+
 // Location unavailable: permission denied or location services turned off.
 class LocationFailure extends Failure {
   const LocationFailure(super.message);

@@ -78,7 +78,12 @@ final class AuthOtpCountdown extends AuthRoleSelectedState {
   }
 
   @override
-  List<Object> get props => [role, phoneNumber, remainingSeconds, isResendAvailable];
+  List<Object> get props => [
+    role,
+    phoneNumber,
+    remainingSeconds,
+    isResendAvailable,
+  ];
 }
 
 final class AuthOtpVerifying extends AuthRoleSelectedState {
@@ -101,7 +106,11 @@ final class AuthOtpVerified extends AuthRoleSelectedState {
 }
 
 final class AuthError extends AuthRoleSelectedState {
-  const AuthError({required this.message, required super.role, super.phoneNumber});
+  const AuthError({
+    required this.message,
+    required super.role,
+    super.phoneNumber,
+  });
 
   final String message;
 

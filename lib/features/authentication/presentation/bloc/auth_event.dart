@@ -73,3 +73,7 @@ final class AuthBackPressed extends AuthEvent {
 final class AuthRegistrationCompleted extends AuthEvent {
   const AuthRegistrationCompleted();
 }
+
+final class AuthSignOutRequested extends AuthEvent {
+  const AuthSignOutRequested();
+}

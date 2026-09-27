@@ -9,7 +9,21 @@ import 'package:mobile/features/authentication/presentation/pages/home_page.dart
 import 'package:mobile/features/authentication/presentation/pages/otp_verification_page.dart';
 import 'package:mobile/features/authentication/presentation/pages/phone_number_page.dart';
 import 'package:mobile/features/authentication/presentation/pages/welcome_page.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/cancel_booking_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_account_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/update_notifications_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
 import 'package:mobile/features/passenger_home/presentation/pages/passenger_home_page.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_types_usecase.dart';
@@ -41,17 +55,34 @@ class AuthNavigator extends StatelessWidget {
     required this.getUploadedDocumentsUseCase,
     required this.getDocumentSignedUrlUseCase,
     required this.loadPassengerHomeUseCase,
+    required this.suggestDestinationsUseCase,
+    required this.selectDestinationUseCase,
+    required this.loadTaxiChoiceUseCase,
+    required this.getPickupDaysUseCase,
+    required this.requestRideUseCase,
+    required this.watchRideUseCase,
+    required this.cancelRideUseCase,
+    required this.rateRideUseCase,
+    required this.bookRideUseCase,
+    required this.getPickupForArrivalUseCase,
+    required this.loadRideHistoryUseCase,
+    required this.cancelBookingUseCase,
+    required this.loadAccountUseCase,
+    required this.updateNotificationsUseCase,
   });
 
   // Use cases passager transmis au PassengerRegistrationNavigator.
   // AuthBloc n'en a plus besoin — ils appartiennent au flow d'inscription.
   final UpdateRegistrationFlowUseCase passengerUpdateRegistrationFlowUseCase;
-  final RequestNotificationPermissionUseCase requestNotificationPermissionUseCase;
-  final CompletePassengerRegistrationUseCase completePassengerRegistrationUseCase;
+  final RequestNotificationPermissionUseCase
+  requestNotificationPermissionUseCase;
+  final CompletePassengerRegistrationUseCase
+  completePassengerRegistrationUseCase;
 
   // Use cases chauffeur transmis au DriverRegistrationNavigator.
   final UpdateRegistrationFlowUseCase driverUpdateRegistrationFlowUseCase;
-  final RequestDriverNotificationPermissionUseCase requestDriverNotificationPermissionUseCase;
+  final RequestDriverNotificationPermissionUseCase
+  requestDriverNotificationPermissionUseCase;
 
   // Partagé entre passager et chauffeur — même endpoint de vérification.
   final CheckEmailAvailabilityUseCase checkEmailAvailabilityUseCase;
@@ -62,8 +93,22 @@ class AuthNavigator extends StatelessWidget {
   final GetUploadedDocumentsUseCase getUploadedDocumentsUseCase;
   final GetDocumentSignedUrlUseCase getDocumentSignedUrlUseCase;
 
-  // Use case de l'accueil passager, transmis à PassengerHomePage.
+  // Use cases de l'accueil passager, transmis à PassengerHomePage.
   final LoadPassengerHomeUseCase loadPassengerHomeUseCase;
+  final SuggestDestinationsUseCase suggestDestinationsUseCase;
+  final SelectDestinationUseCase selectDestinationUseCase;
+  final LoadTaxiChoiceUseCase loadTaxiChoiceUseCase;
+  final GetPickupDaysUseCase getPickupDaysUseCase;
+  final RequestRideUseCase requestRideUseCase;
+  final WatchRideUseCase watchRideUseCase;
+  final CancelRideUseCase cancelRideUseCase;
+  final RateRideUseCase rateRideUseCase;
+  final BookRideUseCase bookRideUseCase;
+  final GetPickupForArrivalUseCase getPickupForArrivalUseCase;
+  final LoadRideHistoryUseCase loadRideHistoryUseCase;
+  final CancelBookingUseCase cancelBookingUseCase;
+  final LoadAccountUseCase loadAccountUseCase;
+  final UpdateNotificationsUseCase updateNotificationsUseCase;
 
   @override
   Widget build(BuildContext context) {
@@ -116,57 +161,73 @@ class AuthNavigator extends StatelessWidget {
     return switch (state) {
       AuthInitial() || AuthGoogleSignInLoading() => [welcomePage],
       AuthPhoneNumberInputReady() || AuthPhoneNumberLoading() => [
-          welcomePage,
-          phonePage,
-        ],
+        welcomePage,
+        phonePage,
+      ],
       AuthOtpSent() || AuthOtpCountdown() || AuthOtpVerifying() => [
-          welcomePage,
-          phonePage,
-          otpPage,
-        ],
+        welcomePage,
+        phonePage,
+        otpPage,
+      ],
       AuthOtpVerified(:final registrationFlow) => [
-          switch (registrationFlow) {
-            PassengerRegistrationFlowEntity() => MaterialPage<void>(
-                key: const ValueKey('passenger-registration'),
-                child: PassengerRegistrationNavigator(
-                  registrationFlow: registrationFlow,
-                  updateRegistrationFlowUseCase:
-                      passengerUpdateRegistrationFlowUseCase,
-                  requestNotificationPermissionUseCase:
-                      requestNotificationPermissionUseCase,
-                  checkEmailAvailabilityUseCase: checkEmailAvailabilityUseCase,
-                  completePassengerRegistrationUseCase:
-                      completePassengerRegistrationUseCase,
-                  onAuthenticated: () => _onRegistrationCompleted(context),
-                ),
-              ),
-            DriverRegistrationFlowEntity() => MaterialPage<void>(
-                key: const ValueKey('driver-registration'),
-                child: DriverRegistrationNavigator(
-                  registrationFlow: registrationFlow,
-                  updateRegistrationFlowUseCase:
-                      driverUpdateRegistrationFlowUseCase,
-                  requestDriverNotificationPermissionUseCase:
-                      requestDriverNotificationPermissionUseCase,
-                  checkEmailAvailabilityUseCase: checkEmailAvailabilityUseCase,
-                  getDocumentTypesUseCase: getDocumentTypesUseCase,
-                  uploadRegistrationDocumentUseCase:
-                      uploadRegistrationDocumentUseCase,
-                  getUploadedDocumentsUseCase: getUploadedDocumentsUseCase,
-                  getDocumentSignedUrlUseCase: getDocumentSignedUrlUseCase,
-                  onAuthenticated: () => _onRegistrationCompleted(context),
-                ),
-              ),
-          },
-        ],
-      AuthAuthenticated(role: UserRole.passenger) => [
-          MaterialPage<void>(
-            key: const ValueKey('passenger-home'),
-            child: PassengerHomePage(
-              loadPassengerHomeUseCase: loadPassengerHomeUseCase,
+        switch (registrationFlow) {
+          PassengerRegistrationFlowEntity() => MaterialPage<void>(
+            key: const ValueKey('passenger-registration'),
+            child: PassengerRegistrationNavigator(
+              registrationFlow: registrationFlow,
+              updateRegistrationFlowUseCase:
+                  passengerUpdateRegistrationFlowUseCase,
+              requestNotificationPermissionUseCase:
+                  requestNotificationPermissionUseCase,
+              checkEmailAvailabilityUseCase: checkEmailAvailabilityUseCase,
+              completePassengerRegistrationUseCase:
+                  completePassengerRegistrationUseCase,
+              onAuthenticated: () => _onRegistrationCompleted(context),
             ),
           ),
-        ],
+          DriverRegistrationFlowEntity() => MaterialPage<void>(
+            key: const ValueKey('driver-registration'),
+            child: DriverRegistrationNavigator(
+              registrationFlow: registrationFlow,
+              updateRegistrationFlowUseCase:
+                  driverUpdateRegistrationFlowUseCase,
+              requestDriverNotificationPermissionUseCase:
+                  requestDriverNotificationPermissionUseCase,
+              checkEmailAvailabilityUseCase: checkEmailAvailabilityUseCase,
+              getDocumentTypesUseCase: getDocumentTypesUseCase,
+              uploadRegistrationDocumentUseCase:
+                  uploadRegistrationDocumentUseCase,
+              getUploadedDocumentsUseCase: getUploadedDocumentsUseCase,
+              getDocumentSignedUrlUseCase: getDocumentSignedUrlUseCase,
+              onAuthenticated: () => _onRegistrationCompleted(context),
+            ),
+          ),
+        },
+      ],
+      AuthAuthenticated(role: UserRole.passenger) => [
+        MaterialPage<void>(
+          key: const ValueKey('passenger-home'),
+          child: PassengerHomePage(
+            loadPassengerHomeUseCase: loadPassengerHomeUseCase,
+            suggestDestinationsUseCase: suggestDestinationsUseCase,
+            selectDestinationUseCase: selectDestinationUseCase,
+            loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
+            getPickupDaysUseCase: getPickupDaysUseCase,
+            requestRideUseCase: requestRideUseCase,
+            watchRideUseCase: watchRideUseCase,
+            cancelRideUseCase: cancelRideUseCase,
+            rateRideUseCase: rateRideUseCase,
+            bookRideUseCase: bookRideUseCase,
+            getPickupForArrivalUseCase: getPickupForArrivalUseCase,
+            loadRideHistoryUseCase: loadRideHistoryUseCase,
+            cancelBookingUseCase: cancelBookingUseCase,
+            loadAccountUseCase: loadAccountUseCase,
+            updateNotificationsUseCase: updateNotificationsUseCase,
+            onSignOutRequested: () =>
+                context.read<AuthBloc>().add(const AuthSignOutRequested()),
+          ),
+        ),
+      ],
       AuthAuthenticated() => [homePage],
       _ => [welcomePage],
     };

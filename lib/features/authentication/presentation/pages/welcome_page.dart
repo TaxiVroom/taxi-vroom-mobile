@@ -113,7 +113,9 @@ class WelcomePage extends StatelessWidget {
   }
 
   void _onPassengerRoleSelected(BuildContext context) {
-    context.read<AuthBloc>().add(const AuthRoleChosen(role: UserRole.passenger));
+    context.read<AuthBloc>().add(
+      const AuthRoleChosen(role: UserRole.passenger),
+    );
   }
 
   void _onBecomeDriverPressed(BuildContext context) {

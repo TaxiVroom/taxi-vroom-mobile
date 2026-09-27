@@ -25,11 +25,10 @@
 
 # Domain gotchas
 
-- The mobile step enums have no notifications value: `PassengerRegistrationStep.complete` / `DriverRegistrationStep.complete` is the notifications screen, and the backend steps `NOTIFICATIONS` and `COMPLETE` both parse to it (`*_registration_flow_model.dart`). On mobile, `complete` does not mean the registration is finalized server-side.
+- Passenger registration: the last screen is the `notifications` step; leaving it calls `POST /v1/passengers`, which finalizes the registration (`COMPLETE`) and creates the user. A finalized registration skips the registration screens: `AuthBloc` checks `RegistrationFlowEntity.isComplete` and goes home.
 
 # Known issues
 
-- `test/app/view/app_test.dart` is stale: it expects `CounterPage`, but `App` now builds `AuthNavigator` and needs Firebase. Run targeted test files.
 - CI (`.github/workflows/main.yaml`) only runs on push / PR to `main` and pins Flutter `3.35.x`, while `pubspec.yaml` requires `flutter: ^3.38.1`.
 
 # Repo conventions
