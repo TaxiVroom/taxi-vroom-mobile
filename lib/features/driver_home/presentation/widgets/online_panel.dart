@@ -9,6 +9,7 @@ class OnlinePanel extends StatelessWidget {
   const OnlinePanel({
     required this.demand,
     required this.receivesBookings,
+    required this.isConnected,
     required this.isSwitching,
     required this.onGoOfflinePressed,
     required this.onReceivesBookingsChanged,
@@ -18,6 +19,9 @@ class OnlinePanel extends StatelessWidget {
 
   final DemandOverview demand;
   final bool receivesBookings;
+
+  // Without connection, passengers no longer see the driver.
+  final bool isConnected;
   final bool isSwitching;
   final VoidCallback onGoOfflinePressed;
   final ValueChanged<bool> onReceivesBookingsChanged;
@@ -30,6 +34,10 @@ class OnlinePanel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (!isConnected) ...[
+            _buildConnectionLost(),
+            const SizedBox(height: 12),
+          ],
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -70,6 +78,42 @@ class OnlinePanel extends StatelessWidget {
             onPressed: isSwitching ? null : onGoOfflinePressed,
             alignment: Alignment.center,
             child: const Text('Passer hors ligne'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Firebase writes the driver back by itself once reconnected.
+  Widget _buildConnectionLost() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.warningBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'Connexion perdue. ',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(
+                    text:
+                        'Vous n’êtes plus visible des passagers. '
+                        'Reconnexion automatique…',
+                  ),
+                ],
+              ),
+              style: TextStyle(fontSize: 13, color: AppColors.warning),
+            ),
           ),
         ],
       ),

@@ -10,4 +10,8 @@ abstract class DriverPresenceRepository {
   Future<Result<void>> updatePosition(Coordinates position);
 
   Future<Result<void>> goOffline();
+
+  // Whether the device reaches the server: while it does not, the driver is
+  // no longer seen, and comes back by themself once reconnected.
+  Stream<bool> watchConnection();
 }

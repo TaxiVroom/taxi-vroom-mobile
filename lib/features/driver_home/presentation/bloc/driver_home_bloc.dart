@@ -8,6 +8,7 @@ import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_use
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_receives_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_driver_connection_usecase.dart';
 
 part 'driver_home_event.dart';
 part 'driver_home_state.dart';
@@ -18,13 +19,16 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     required SetOnlineUseCase setOnlineUseCase,
     required SetReceivesBookingsUseCase setReceivesBookingsUseCase,
     required ShareDriverPositionUseCase shareDriverPositionUseCase,
+    required WatchDriverConnectionUseCase watchDriverConnectionUseCase,
   }) : _loadDriverHomeUseCase = loadDriverHomeUseCase,
        _setOnlineUseCase = setOnlineUseCase,
        _setReceivesBookingsUseCase = setReceivesBookingsUseCase,
        _shareDriverPositionUseCase = shareDriverPositionUseCase,
+       _watchDriverConnectionUseCase = watchDriverConnectionUseCase,
        super(const DriverHomeLoading()) {
     on<DriverHomeStarted>(_onStarted);
     on<DriverOnlineToggled>(_onOnlineToggled);
+    on<DriverConnectionChanged>(_onConnectionChanged);
     on<DriverBookingsToggled>(_onBookingsToggled);
   }
 
@@ -32,9 +36,12 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
   final SetOnlineUseCase _setOnlineUseCase;
   final SetReceivesBookingsUseCase _setReceivesBookingsUseCase;
   final ShareDriverPositionUseCase _shareDriverPositionUseCase;
+  final WatchDriverConnectionUseCase _watchDriverConnectionUseCase;
 
-  // Sends the driver's position while they are online.
+  // While the driver is online: sends their position, and follows the
+  // connection to warn them when passengers no longer see them.
   StreamSubscription<Result<void>>? _positionSharing;
+  StreamSubscription<bool>? _connection;
 
   Future<void> _onStarted(
     DriverHomeStarted event,
@@ -58,13 +65,19 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
       return;
     }
 
-    emit(DriverHomeReady(home: currentState.home, isSwitchingOnline: true));
+    emit(
+      DriverHomeReady(
+        home: currentState.home,
+        isSwitchingOnline: true,
+        isConnected: currentState.isConnected,
+      ),
+    );
     // Offline: stops sending before the entry is removed, so a late position
     // does not write it back.
-    if (!event.isOnline) await _stopSharingPosition();
+    if (!event.isOnline) await _stopBeingOnline();
     final result = await _setOnlineUseCase(isOnline: event.isOnline);
     // Still online after a failed "Passer hors ligne": keep sending.
-    if (event.isOnline == result is Ok) _startSharingPosition();
+    if (event.isOnline == result is Ok) _startBeingOnline();
     final home = currentState.home;
     emit(
       switch (result) {
@@ -76,8 +89,26 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
         Error(:final error) => DriverHomeReady(
           home: home,
           switchFailureMessage: error.message,
+          isConnected: currentState.isConnected,
         ),
       },
+    );
+  }
+
+  void _onConnectionChanged(
+    DriverConnectionChanged event,
+    Emitter<DriverHomeState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is! DriverHomeReady) return;
+
+    emit(
+      DriverHomeReady(
+        home: currentState.home,
+        isSwitchingOnline: currentState.isSwitchingOnline,
+        switchFailureMessage: currentState.switchFailureMessage,
+        isConnected: event.isConnected,
+      ),
     );
   }
 
@@ -97,6 +128,7 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
             receivesBookings: event.receivesBookings,
           ),
         ),
+        isConnected: currentState.isConnected,
       ),
     );
     final result = await _setReceivesBookingsUseCase(
@@ -106,18 +138,23 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
   }
 
   // A failed position is simply retried with the next one.
-  void _startSharingPosition() {
+  void _startBeingOnline() {
     _positionSharing ??= _shareDriverPositionUseCase().listen((_) {});
+    _connection ??= _watchDriverConnectionUseCase().listen(
+      (isConnected) => add(DriverConnectionChanged(isConnected: isConnected)),
+    );
   }
 
-  Future<void> _stopSharingPosition() async {
+  Future<void> _stopBeingOnline() async {
     await _positionSharing?.cancel();
     _positionSharing = null;
+    await _connection?.cancel();
+    _connection = null;
   }
 
   @override
   Future<void> close() async {
-    await _stopSharingPosition();
+    await _stopBeingOnline();
     return super.close();
   }
 }

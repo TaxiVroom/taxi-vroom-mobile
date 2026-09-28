@@ -12,12 +12,14 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
         MapboxMap,
         PointAnnotationManager,
         PointAnnotationOptions,
-        PolylineAnnotationManager;
+        PolylineAnnotationManager,
+        ViewportState;
 import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/widgets/coordinates_mapbox.dart';
 import 'package:mobile/core/widgets/destination_marker.dart';
 import 'package:mobile/core/widgets/map_route.dart';
+import 'package:mobile/core/widgets/recenter_button.dart';
 import 'package:mobile/features/driver_home/domain/entities/demand_zone.dart';
 import 'package:mobile/features/driver_home/domain/entities/routed_ride_request.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -31,6 +33,7 @@ class DriverHomeMap extends StatefulWidget {
     required this.isOnline,
     required this.demandZones,
     required this.bottomPadding,
+    required this.panelHeight,
     this.offer,
     super.key,
   });
@@ -41,6 +44,9 @@ class DriverHomeMap extends StatefulWidget {
 
   // Keeps the request's roads visible above the request card.
   final double bottomPadding;
+
+  // Keeps the driver visible above the panel when recentering.
+  final double panelHeight;
 
   // The ride request waiting for the driver's answer, if any.
   final RoutedRideRequest? offer;
@@ -53,10 +59,12 @@ class _DriverHomeMapState extends State<DriverHomeMap> {
   static const _zoneRadius = 55.0;
   static const _zoom = 14.0;
   static const _cameraAnimation = Duration(milliseconds: 800);
+  static const _topBarHeight = 56.0;
 
-  // Created once: MapWidget moves the camera back to a new viewport on
-  // every rebuild, which would undo the framing of a request.
-  late final _viewport = CameraViewportState(
+  // Replaced only by the recenter button: MapWidget moves the camera back to
+  // a new viewport on every rebuild, which would undo the framing of a
+  // request.
+  late ViewportState _viewport = CameraViewportState(
     center: widget.position.toPoint(),
     zoom: _zoom,
   );
@@ -97,6 +105,20 @@ class _DriverHomeMapState extends State<DriverHomeMap> {
               child: ColoredBox(color: Colors.white.withValues(alpha: 0.45)),
             ),
           ),
+        // Below the page's top bar, whose right corner is taken.
+        Positioned(
+          top: _topBarHeight,
+          right: 16,
+          child: SafeArea(
+            child: RecenterButton(
+              onPressed: () => recenterOnDevice(
+                (viewport) => _viewport = viewport,
+                zoom: _zoom,
+                bottomPadding: widget.panelHeight,
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }

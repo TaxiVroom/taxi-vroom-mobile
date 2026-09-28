@@ -22,6 +22,16 @@ final class DriverOnlineToggled extends DriverHomeEvent {
   List<Object?> get props => [isOnline];
 }
 
+// While online, the device lost or got back its connection.
+final class DriverConnectionChanged extends DriverHomeEvent {
+  const DriverConnectionChanged({required this.isConnected});
+
+  final bool isConnected;
+
+  @override
+  List<Object?> get props => [isConnected];
+}
+
 // "Recevoir les réservations" switch.
 final class DriverBookingsToggled extends DriverHomeEvent {
   const DriverBookingsToggled({required this.receivesBookings});

@@ -13,6 +13,9 @@ abstract class DriverPresenceRemoteDataSource {
   });
 
   Future<void> goOffline();
+
+  // Whether this device is connected to the database, again at each change.
+  Stream<bool> watchConnection();
 }
 
 // Firebase Realtime Database, one entry per online driver at
@@ -88,9 +91,19 @@ class DriverPresenceRemoteDataSourceImpl
     _lastPosition = null;
     await _connection?.cancel();
     _connection = null;
-    await driverRef.onDisconnect().cancel();
-    await driverRef.remove();
+    // Not awaited: offline, Firebase queues these writes until the connection
+    // comes back. The driver is gone for passengers either way: removed once
+    // reconnected, or by the onDisconnect armed when going online.
+    driverRef.onDisconnect().cancel().ignore();
+    driverRef.remove().ignore();
   }
+
+  // "Detecting Connection State" in the offline capabilities docs.
+  @override
+  Stream<bool> watchConnection() => _database
+      .ref('.info/connected')
+      .onValue
+      .map((event) => event.snapshot.value as bool? ?? false);
 
   Map<String, Object> _entry(double latitude, double longitude) => {
     'latitude': latitude,

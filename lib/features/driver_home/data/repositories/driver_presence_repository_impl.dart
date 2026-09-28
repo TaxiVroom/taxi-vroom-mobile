@@ -29,6 +29,9 @@ class DriverPresenceRepositoryImpl implements DriverPresenceRepository {
   @override
   Future<Result<void>> goOffline() => _run(_dataSource.goOffline);
 
+  @override
+  Stream<bool> watchConnection() => _dataSource.watchConnection();
+
   Future<Result<void>> _run(Future<void> Function() operation) async {
     try {
       await operation();

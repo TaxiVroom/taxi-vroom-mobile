@@ -95,9 +95,11 @@ class WhereToPanel extends StatelessWidget {
   }
 
   Widget _buildFreeTaxiCount() {
-    final label = nearbyTaxiCount > 1
-        ? '$nearbyTaxiCount taxis libres autour de vous'
-        : '$nearbyTaxiCount taxi libre autour de vous';
+    final label = switch (nearbyTaxiCount) {
+      0 => 'Aucun taxi libre autour de vous',
+      1 => '1 taxi libre autour de vous',
+      _ => '$nearbyTaxiCount taxis libres autour de vous',
+    };
     return Row(
       children: [
         Container(

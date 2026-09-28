@@ -17,6 +17,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usec
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/update_notifications_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/watch_nearby_taxis_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/account_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_bloc.dart';
@@ -36,6 +37,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 class PassengerHomePage extends StatelessWidget {
   const PassengerHomePage({
     required this.loadPassengerHomeUseCase,
+    required this.watchNearbyTaxisUseCase,
     required this.suggestDestinationsUseCase,
     required this.selectDestinationUseCase,
     required this.loadTaxiChoiceUseCase,
@@ -55,6 +57,7 @@ class PassengerHomePage extends StatelessWidget {
   });
 
   final LoadPassengerHomeUseCase loadPassengerHomeUseCase;
+  final WatchNearbyTaxisUseCase watchNearbyTaxisUseCase;
   final SuggestDestinationsUseCase suggestDestinationsUseCase;
   final SelectDestinationUseCase selectDestinationUseCase;
   final LoadTaxiChoiceUseCase loadTaxiChoiceUseCase;
@@ -81,6 +84,7 @@ class PassengerHomePage extends StatelessWidget {
         BlocProvider(
           create: (_) => PassengerHomeBloc(
             loadPassengerHomeUseCase: loadPassengerHomeUseCase,
+            watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
           )..add(const PassengerHomeStarted()),
         ),
         BlocProvider(
@@ -241,6 +245,9 @@ class _PassengerTabsState extends State<_PassengerTabs> {
 class _HomeTab extends StatelessWidget {
   const _HomeTab();
 
+  // Height of the "Où allez-vous ?" panel over the map.
+  static const _panelHeight = 300.0;
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<PassengerHomeBloc, PassengerHomeState>(
@@ -254,19 +261,20 @@ class _HomeTab extends StatelessWidget {
             const PassengerHomeStarted(),
           ),
         ),
-        PassengerHomeReady(:final home) => Stack(
+        PassengerHomeReady(:final home, :final nearbyTaxis) => Stack(
           children: [
             Positioned.fill(
               child: PassengerHomeMap(
                 position: home.position,
-                nearbyTaxis: home.nearbyTaxis,
+                nearbyTaxis: nearbyTaxis,
+                bottomPadding: _panelHeight,
               ),
             ),
             Align(
               alignment: Alignment.bottomCenter,
               child: WhereToPanel(
                 recentDestinations: home.recentDestinations,
-                nearbyTaxiCount: home.nearbyTaxis.length,
+                nearbyTaxiCount: nearbyTaxis.length,
                 onWhereToPressed: () => context.read<PassengerFlowBloc>().add(
                   const PassengerDestinationSearchOpened(),
                 ),

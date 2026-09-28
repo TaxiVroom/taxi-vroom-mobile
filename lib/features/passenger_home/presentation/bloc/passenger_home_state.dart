@@ -12,12 +12,15 @@ final class PassengerHomeLoading extends PassengerHomeState {
 }
 
 final class PassengerHomeReady extends PassengerHomeState {
-  const PassengerHomeReady({required this.home});
+  const PassengerHomeReady({required this.home, this.nearbyTaxis = const []});
 
   final PassengerHome home;
 
+  // The free taxis the passenger can order, closest first.
+  final List<NearbyTaxi> nearbyTaxis;
+
   @override
-  List<Object?> get props => [home];
+  List<Object?> get props => [home, nearbyTaxis];
 }
 
 final class PassengerHomeFailure extends PassengerHomeState {

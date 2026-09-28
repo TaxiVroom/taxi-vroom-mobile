@@ -15,17 +15,19 @@ class NearbyTaxiRemoteDataSourceFake implements NearbyTaxiRemoteDataSource {
   ];
 
   @override
-  Future<List<NearbyTaxiModel>> getNearbyTaxis({
+  Stream<List<NearbyTaxiModel>> watchNearbyTaxis({
     required double latitude,
     required double longitude,
-  }) async {
+    required double radiusMeters,
+  }) async* {
     await Future<void>.delayed(const Duration(milliseconds: 400));
-    return [
+    yield [
       for (final (index, (latOffset, lngOffset)) in _offsets.indexed)
         NearbyTaxiModel.fromJson({
           'id': 'fake-taxi-$index',
           'latitude': latitude + latOffset,
           'longitude': longitude + lngOffset,
+          'available': true,
         }),
     ];
   }

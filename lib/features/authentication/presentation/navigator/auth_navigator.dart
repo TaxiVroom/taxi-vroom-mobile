@@ -25,6 +25,7 @@ import 'package:mobile/features/driver_home/domain/usecases/share_driver_positio
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifications_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/verify_boarding_code_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_driver_connection_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_taximeter_usecase.dart';
@@ -43,6 +44,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usec
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/update_notifications_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/watch_nearby_taxis_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/presentation/pages/passenger_home_page.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
@@ -74,6 +76,7 @@ class AuthNavigator extends StatelessWidget {
     required this.getUploadedDocumentsUseCase,
     required this.getDocumentSignedUrlUseCase,
     required this.loadPassengerHomeUseCase,
+    required this.watchNearbyTaxisUseCase,
     required this.suggestDestinationsUseCase,
     required this.selectDestinationUseCase,
     required this.loadTaxiChoiceUseCase,
@@ -93,6 +96,7 @@ class AuthNavigator extends StatelessWidget {
     required this.setOnlineUseCase,
     required this.setReceivesBookingsUseCase,
     required this.shareDriverPositionUseCase,
+    required this.watchDriverConnectionUseCase,
     required this.watchRideRequestsUseCase,
     required this.acceptRideRequestUseCase,
     required this.declineRideRequestUseCase,
@@ -135,6 +139,7 @@ class AuthNavigator extends StatelessWidget {
 
   // Use cases de l'accueil passager, transmis à PassengerHomePage.
   final LoadPassengerHomeUseCase loadPassengerHomeUseCase;
+  final WatchNearbyTaxisUseCase watchNearbyTaxisUseCase;
   final SuggestDestinationsUseCase suggestDestinationsUseCase;
   final SelectDestinationUseCase selectDestinationUseCase;
   final LoadTaxiChoiceUseCase loadTaxiChoiceUseCase;
@@ -156,6 +161,7 @@ class AuthNavigator extends StatelessWidget {
   final SetOnlineUseCase setOnlineUseCase;
   final SetReceivesBookingsUseCase setReceivesBookingsUseCase;
   final ShareDriverPositionUseCase shareDriverPositionUseCase;
+  final WatchDriverConnectionUseCase watchDriverConnectionUseCase;
   final WatchRideRequestsUseCase watchRideRequestsUseCase;
   final AcceptRideRequestUseCase acceptRideRequestUseCase;
   final DeclineRideRequestUseCase declineRideRequestUseCase;
@@ -267,6 +273,7 @@ class AuthNavigator extends StatelessWidget {
           key: const ValueKey('passenger-home'),
           child: PassengerHomePage(
             loadPassengerHomeUseCase: loadPassengerHomeUseCase,
+            watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
             suggestDestinationsUseCase: suggestDestinationsUseCase,
             selectDestinationUseCase: selectDestinationUseCase,
             loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
@@ -295,6 +302,7 @@ class AuthNavigator extends StatelessWidget {
             setOnlineUseCase: setOnlineUseCase,
             setReceivesBookingsUseCase: setReceivesBookingsUseCase,
             shareDriverPositionUseCase: shareDriverPositionUseCase,
+            watchDriverConnectionUseCase: watchDriverConnectionUseCase,
             watchRideRequestsUseCase: watchRideRequestsUseCase,
             acceptRideRequestUseCase: acceptRideRequestUseCase,
             declineRideRequestUseCase: declineRideRequestUseCase,

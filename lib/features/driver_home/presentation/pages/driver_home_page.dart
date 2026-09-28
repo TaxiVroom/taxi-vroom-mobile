@@ -23,6 +23,7 @@ import 'package:mobile/features/driver_home/domain/usecases/share_driver_positio
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifications_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/verify_boarding_code_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_driver_connection_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_taximeter_usecase.dart';
@@ -57,6 +58,7 @@ class DriverHomePage extends StatelessWidget {
     required this.setOnlineUseCase,
     required this.setReceivesBookingsUseCase,
     required this.shareDriverPositionUseCase,
+    required this.watchDriverConnectionUseCase,
     required this.watchRideRequestsUseCase,
     required this.acceptRideRequestUseCase,
     required this.declineRideRequestUseCase,
@@ -81,6 +83,7 @@ class DriverHomePage extends StatelessWidget {
   final SetOnlineUseCase setOnlineUseCase;
   final SetReceivesBookingsUseCase setReceivesBookingsUseCase;
   final ShareDriverPositionUseCase shareDriverPositionUseCase;
+  final WatchDriverConnectionUseCase watchDriverConnectionUseCase;
   final WatchRideRequestsUseCase watchRideRequestsUseCase;
   final AcceptRideRequestUseCase acceptRideRequestUseCase;
   final DeclineRideRequestUseCase declineRideRequestUseCase;
@@ -116,6 +119,7 @@ class DriverHomePage extends StatelessWidget {
             setOnlineUseCase: setOnlineUseCase,
             setReceivesBookingsUseCase: setReceivesBookingsUseCase,
             shareDriverPositionUseCase: shareDriverPositionUseCase,
+            watchDriverConnectionUseCase: watchDriverConnectionUseCase,
           )..add(const DriverHomeStarted()),
         ),
         BlocProvider(
@@ -372,6 +376,7 @@ class _DriveTab extends StatelessWidget {
 
   // Room kept for the request card when framing its roads on the map.
   static const _requestCardHeight = 470.0;
+  static const _panelHeight = 300.0;
 
   @override
   Widget build(BuildContext context) {
@@ -462,6 +467,7 @@ class _DriveTab extends StatelessWidget {
               isOnline: home.activity.isOnline,
               demandZones: home.demand.zones,
               bottomPadding: _requestCardHeight,
+              panelHeight: _panelHeight,
               offer: _offer(requestState),
             ),
           ),
@@ -543,6 +549,7 @@ class _DriveTab extends StatelessWidget {
     return OnlinePanel(
       demand: state.home.demand,
       receivesBookings: state.home.activity.receivesBookings,
+      isConnected: state.isConnected,
       isSwitching: state.isSwitchingOnline,
       failureMessage: state.switchFailureMessage,
       onGoOfflinePressed: () => context.read<DriverHomeBloc>().add(

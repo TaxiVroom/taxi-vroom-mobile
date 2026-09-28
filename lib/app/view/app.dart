@@ -62,11 +62,12 @@ import 'package:mobile/features/driver_home/domain/usecases/share_driver_positio
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifications_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/verify_boarding_code_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_driver_connection_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_taximeter_usecase.dart';
 import 'package:mobile/features/passenger_home/data/datasources/account_remote_datasource_fake.dart';
-import 'package:mobile/features/passenger_home/data/datasources/nearby_taxi_remote_datasource_fake.dart';
+import 'package:mobile/features/passenger_home/data/datasources/nearby_taxi_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/place_search_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/recent_destination_remote_datasource_fake.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource_fake.dart';
@@ -91,6 +92,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usec
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/update_notifications_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/watch_nearby_taxis_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
 import 'package:mobile/features/registration/driver/data/datasources/driver_registration_remote_datasource.dart';
 import 'package:mobile/features/registration/driver/data/datasources/registration_document_remote_datasource.dart';
@@ -178,14 +180,27 @@ class App extends StatelessWidget {
     // Position GPS, partagée par les accueils passager et chauffeur.
     const locationRepo = LocationRepositoryImpl(DeviceLocationDataSourceImpl());
 
-    // Accueil passager. Pas encore d'endpoint backend : taxis et destinations sont fake.
+    // Firebase Realtime Database, hors États-Unis, donc ouverte avec son URL.
+    // Partagée par la présence des chauffeurs et les taxis autour du passager.
+    // https://firebase.google.com/docs/database/flutter/start
+    final realtimeDatabase = FirebaseDatabase.instanceFor(
+      app: Firebase.app(),
+      databaseURL: config.firebaseDatabaseUrl,
+    );
+
+    // Accueil passager. Pas encore d'endpoint backend : destinations fake.
     final loadPassengerHomeUseCase = LoadPassengerHomeUseCase(
       locationRepository: locationRepo,
-      nearbyTaxiRepository: NearbyTaxiRepositoryImpl(
-        NearbyTaxiRemoteDataSourceFake(),
-      ),
       recentDestinationRepository: RecentDestinationRepositoryImpl(
         RecentDestinationRemoteDataSourceFake(),
+      ),
+    );
+    // Taxis autour du passager : les chauffeurs en ligne dans Firebase. Pour
+    // voir 6 taxis fake même sans chauffeur en ligne, remplacer la source par
+    // NearbyTaxiRemoteDataSourceFake().
+    final watchNearbyTaxisUseCase = WatchNearbyTaxisUseCase(
+      nearbyTaxiRepository: NearbyTaxiRepositoryImpl(
+        NearbyTaxiRemoteDataSourceImpl(realtimeDatabase),
       ),
     );
 
@@ -223,15 +238,10 @@ class App extends StatelessWidget {
     final driverAccountRepo = DriverAccountRepositoryImpl(
       DriverAccountRemoteDataSourceFake(),
     );
-    // Présence des chauffeurs en ligne : Firebase Realtime Database, hors
-    // États-Unis, donc ouverte avec son URL.
-    // https://firebase.google.com/docs/database/flutter/start
+    // Présence des chauffeurs en ligne, dans Firebase Realtime Database.
     final driverPresenceRepo = DriverPresenceRepositoryImpl(
       DriverPresenceRemoteDataSourceImpl(
-        FirebaseDatabase.instanceFor(
-          app: Firebase.app(),
-          databaseURL: config.firebaseDatabaseUrl,
-        ),
+        realtimeDatabase,
         FirebaseAuth.instance,
       ),
     );
@@ -288,6 +298,7 @@ class App extends StatelessWidget {
             completePassengerRegistrationUseCase:
                 CompletePassengerRegistrationUseCase(registrationRepo),
             loadPassengerHomeUseCase: loadPassengerHomeUseCase,
+            watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
             suggestDestinationsUseCase: SuggestDestinationsUseCase(
               placeSearchRepo,
             ),
@@ -318,6 +329,9 @@ class App extends StatelessWidget {
             ),
             shareDriverPositionUseCase: ShareDriverPositionUseCase(
               locationRepository: locationRepo,
+              driverPresenceRepository: driverPresenceRepo,
+            ),
+            watchDriverConnectionUseCase: WatchDriverConnectionUseCase(
               driverPresenceRepository: driverPresenceRepo,
             ),
             setReceivesBookingsUseCase: SetReceivesBookingsUseCase(

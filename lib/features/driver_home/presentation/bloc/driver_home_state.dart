@@ -16,6 +16,7 @@ final class DriverHomeReady extends DriverHomeState {
     required this.home,
     this.isSwitchingOnline = false,
     this.switchFailureMessage,
+    this.isConnected = true,
   });
 
   final DriverHome home;
@@ -26,8 +27,16 @@ final class DriverHomeReady extends DriverHomeState {
   // Why the last online/offline switch failed.
   final String? switchFailureMessage;
 
+  // Online but without connection: passengers no longer see the driver.
+  final bool isConnected;
+
   @override
-  List<Object?> get props => [home, isSwitchingOnline, switchFailureMessage];
+  List<Object?> get props => [
+    home,
+    isSwitchingOnline,
+    switchFailureMessage,
+    isConnected,
+  ];
 }
 
 final class DriverHomeFailure extends DriverHomeState {
