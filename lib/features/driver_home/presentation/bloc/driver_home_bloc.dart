@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_home.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_receives_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/watch_driver_connection_usecase.dart';
 
 part 'driver_home_event.dart';
 part 'driver_home_state.dart';
@@ -19,12 +19,12 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     required SetOnlineUseCase setOnlineUseCase,
     required SetReceivesBookingsUseCase setReceivesBookingsUseCase,
     required ShareDriverPositionUseCase shareDriverPositionUseCase,
-    required WatchDriverConnectionUseCase watchDriverConnectionUseCase,
+    required WatchConnectionUseCase watchConnectionUseCase,
   }) : _loadDriverHomeUseCase = loadDriverHomeUseCase,
        _setOnlineUseCase = setOnlineUseCase,
        _setReceivesBookingsUseCase = setReceivesBookingsUseCase,
        _shareDriverPositionUseCase = shareDriverPositionUseCase,
-       _watchDriverConnectionUseCase = watchDriverConnectionUseCase,
+       _watchConnectionUseCase = watchConnectionUseCase,
        super(const DriverHomeLoading()) {
     on<DriverHomeStarted>(_onStarted);
     on<DriverOnlineToggled>(_onOnlineToggled);
@@ -36,7 +36,7 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
   final SetOnlineUseCase _setOnlineUseCase;
   final SetReceivesBookingsUseCase _setReceivesBookingsUseCase;
   final ShareDriverPositionUseCase _shareDriverPositionUseCase;
-  final WatchDriverConnectionUseCase _watchDriverConnectionUseCase;
+  final WatchConnectionUseCase _watchConnectionUseCase;
 
   // While the driver is online: sends their position, and follows the
   // connection to warn them when passengers no longer see them.
@@ -140,7 +140,7 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
   // A failed position is simply retried with the next one.
   void _startBeingOnline() {
     _positionSharing ??= _shareDriverPositionUseCase().listen((_) {});
-    _connection ??= _watchDriverConnectionUseCase().listen(
+    _connection ??= _watchConnectionUseCase().listen(
       (isConnected) => add(DriverConnectionChanged(isConnected: isConnected)),
     );
   }

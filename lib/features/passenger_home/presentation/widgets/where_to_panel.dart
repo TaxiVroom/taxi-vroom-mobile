@@ -1,6 +1,7 @@
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/widgets/bottom_panel.dart';
+import 'package:mobile/core/widgets/connection_lost_banner.dart';
 import 'package:mobile/core/widgets/place_list_tile.dart';
 import 'package:mobile/features/passenger_home/domain/entities/recent_destination.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/pickup_time_chip.dart';
@@ -11,12 +12,16 @@ class WhereToPanel extends StatelessWidget {
   const WhereToPanel({
     required this.recentDestinations,
     required this.nearbyTaxiCount,
+    required this.isConnected,
     required this.onWhereToPressed,
     super.key,
   });
 
   final List<RecentDestination> recentDestinations;
   final int nearbyTaxiCount;
+
+  // Without connection, the taxis shown may no longer be where they are.
+  final bool isConnected;
   final VoidCallback onWhereToPressed;
 
   @override
@@ -26,6 +31,12 @@ class WhereToPanel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (!isConnected) ...[
+            const ConnectionLostBanner(
+              consequence: 'Les taxis affichés ne sont peut-être plus à jour.',
+            ),
+            const SizedBox(height: 12),
+          ],
           _buildWhereToButton(),
           const SizedBox(height: 12),
           _buildShortcuts(),

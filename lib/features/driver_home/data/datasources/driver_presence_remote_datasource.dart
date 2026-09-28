@@ -13,9 +13,6 @@ abstract class DriverPresenceRemoteDataSource {
   });
 
   Future<void> goOffline();
-
-  // Whether this device is connected to the database, again at each change.
-  Stream<bool> watchConnection();
 }
 
 // Firebase Realtime Database, one entry per online driver at
@@ -97,13 +94,6 @@ class DriverPresenceRemoteDataSourceImpl
     driverRef.onDisconnect().cancel().ignore();
     driverRef.remove().ignore();
   }
-
-  // "Detecting Connection State" in the offline capabilities docs.
-  @override
-  Stream<bool> watchConnection() => _database
-      .ref('.info/connected')
-      .onValue
-      .map((event) => event.snapshot.value as bool? ?? false);
 
   Map<String, Object> _entry(double latitude, double longitude) => {
     'latitude': latitude,

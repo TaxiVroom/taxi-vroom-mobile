@@ -1,5 +1,6 @@
 import 'package:flow_builder/flow_builder.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/widgets/map_pill.dart';
@@ -23,7 +24,6 @@ import 'package:mobile/features/driver_home/domain/usecases/share_driver_positio
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifications_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/verify_boarding_code_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/watch_driver_connection_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_taximeter_usecase.dart';
@@ -58,7 +58,7 @@ class DriverHomePage extends StatelessWidget {
     required this.setOnlineUseCase,
     required this.setReceivesBookingsUseCase,
     required this.shareDriverPositionUseCase,
-    required this.watchDriverConnectionUseCase,
+    required this.watchConnectionUseCase,
     required this.watchRideRequestsUseCase,
     required this.acceptRideRequestUseCase,
     required this.declineRideRequestUseCase,
@@ -83,7 +83,7 @@ class DriverHomePage extends StatelessWidget {
   final SetOnlineUseCase setOnlineUseCase;
   final SetReceivesBookingsUseCase setReceivesBookingsUseCase;
   final ShareDriverPositionUseCase shareDriverPositionUseCase;
-  final WatchDriverConnectionUseCase watchDriverConnectionUseCase;
+  final WatchConnectionUseCase watchConnectionUseCase;
   final WatchRideRequestsUseCase watchRideRequestsUseCase;
   final AcceptRideRequestUseCase acceptRideRequestUseCase;
   final DeclineRideRequestUseCase declineRideRequestUseCase;
@@ -119,7 +119,7 @@ class DriverHomePage extends StatelessWidget {
             setOnlineUseCase: setOnlineUseCase,
             setReceivesBookingsUseCase: setReceivesBookingsUseCase,
             shareDriverPositionUseCase: shareDriverPositionUseCase,
-            watchDriverConnectionUseCase: watchDriverConnectionUseCase,
+            watchConnectionUseCase: watchConnectionUseCase,
           )..add(const DriverHomeStarted()),
         ),
         BlocProvider(

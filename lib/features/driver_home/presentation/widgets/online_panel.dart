@@ -1,5 +1,6 @@
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/widgets/bottom_panel.dart';
+import 'package:mobile/core/widgets/connection_lost_banner.dart';
 import 'package:mobile/core/widgets/place_list_tile.dart';
 import 'package:mobile/features/driver_home/domain/entities/demand_overview.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -35,7 +36,9 @@ class OnlinePanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (!isConnected) ...[
-            _buildConnectionLost(),
+            const ConnectionLostBanner(
+              consequence: 'Vous n’êtes plus visible des passagers.',
+            ),
             const SizedBox(height: 12),
           ],
           const Row(
@@ -78,42 +81,6 @@ class OnlinePanel extends StatelessWidget {
             onPressed: isSwitching ? null : onGoOfflinePressed,
             alignment: Alignment.center,
             child: const Text('Passer hors ligne'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Firebase writes the driver back by itself once reconnected.
-  Widget _buildConnectionLost() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.warningBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.warning_amber_rounded, color: AppColors.warning),
-          SizedBox(width: 10),
-          Expanded(
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Connexion perdue. ',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  TextSpan(
-                    text:
-                        'Vous n’êtes plus visible des passagers. '
-                        'Reconnexion automatique…',
-                  ),
-                ],
-              ),
-              style: TextStyle(fontSize: 13, color: AppColors.warning),
-            ),
           ),
         ],
       ),

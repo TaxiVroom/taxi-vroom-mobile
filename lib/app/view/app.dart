@@ -6,13 +6,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
     show MapboxOptions;
+import 'package:mobile/core/data/datasources/connection_remote_datasource.dart';
 import 'package:mobile/core/data/datasources/device_location_datasource.dart';
 import 'package:mobile/core/data/datasources/email_availability_remote_datasource.dart';
 import 'package:mobile/core/data/datasources/route_remote_datasource.dart';
+import 'package:mobile/core/data/repositories/connection_repository_impl.dart';
 import 'package:mobile/core/data/repositories/email_availability_repository_impl.dart';
 import 'package:mobile/core/data/repositories/location_repository_impl.dart';
 import 'package:mobile/core/data/repositories/route_repository_impl.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
+import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
 import 'package:mobile/core/network/auth_interceptor.dart';
 import 'package:mobile/env/app_config.dart';
 import 'package:mobile/features/authentication/data/datasources/auth_remote_datasource.dart';
@@ -62,7 +65,6 @@ import 'package:mobile/features/driver_home/domain/usecases/share_driver_positio
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifications_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/verify_boarding_code_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/watch_driver_connection_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_taximeter_usecase.dart';
@@ -187,6 +189,13 @@ class App extends StatelessWidget {
       app: Firebase.app(),
       databaseURL: config.firebaseDatabaseUrl,
     );
+    // Connexion à Firebase, pour prévenir chauffeur et passager quand elle est
+    // perdue.
+    final watchConnectionUseCase = WatchConnectionUseCase(
+      ConnectionRepositoryImpl(
+        ConnectionRemoteDataSourceImpl(realtimeDatabase),
+      ),
+    );
 
     // Accueil passager. Pas encore d'endpoint backend : destinations fake.
     final loadPassengerHomeUseCase = LoadPassengerHomeUseCase(
@@ -299,6 +308,7 @@ class App extends StatelessWidget {
                 CompletePassengerRegistrationUseCase(registrationRepo),
             loadPassengerHomeUseCase: loadPassengerHomeUseCase,
             watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
+            watchConnectionUseCase: watchConnectionUseCase,
             suggestDestinationsUseCase: SuggestDestinationsUseCase(
               placeSearchRepo,
             ),
@@ -329,9 +339,6 @@ class App extends StatelessWidget {
             ),
             shareDriverPositionUseCase: ShareDriverPositionUseCase(
               locationRepository: locationRepo,
-              driverPresenceRepository: driverPresenceRepo,
-            ),
-            watchDriverConnectionUseCase: WatchDriverConnectionUseCase(
               driverPresenceRepository: driverPresenceRepo,
             ),
             setReceivesBookingsUseCase: SetReceivesBookingsUseCase(

@@ -36,9 +36,6 @@ class _FakeDriverPresenceRepository implements DriverPresenceRepository {
 
   @override
   Future<Result<void>> goOffline() => throw UnimplementedError();
-
-  @override
-  Stream<bool> watchConnection() => throw UnimplementedError();
 }
 
 void main() {

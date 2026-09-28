@@ -1,5 +1,6 @@
 import 'package:flow_builder/flow_builder.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/authentication/presentation/navigator/auth_navigator.dart'
     show AuthNavigator;
@@ -38,6 +39,7 @@ class PassengerHomePage extends StatelessWidget {
   const PassengerHomePage({
     required this.loadPassengerHomeUseCase,
     required this.watchNearbyTaxisUseCase,
+    required this.watchConnectionUseCase,
     required this.suggestDestinationsUseCase,
     required this.selectDestinationUseCase,
     required this.loadTaxiChoiceUseCase,
@@ -58,6 +60,7 @@ class PassengerHomePage extends StatelessWidget {
 
   final LoadPassengerHomeUseCase loadPassengerHomeUseCase;
   final WatchNearbyTaxisUseCase watchNearbyTaxisUseCase;
+  final WatchConnectionUseCase watchConnectionUseCase;
   final SuggestDestinationsUseCase suggestDestinationsUseCase;
   final SelectDestinationUseCase selectDestinationUseCase;
   final LoadTaxiChoiceUseCase loadTaxiChoiceUseCase;
@@ -85,6 +88,7 @@ class PassengerHomePage extends StatelessWidget {
           create: (_) => PassengerHomeBloc(
             loadPassengerHomeUseCase: loadPassengerHomeUseCase,
             watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
+            watchConnectionUseCase: watchConnectionUseCase,
           )..add(const PassengerHomeStarted()),
         ),
         BlocProvider(
@@ -261,27 +265,33 @@ class _HomeTab extends StatelessWidget {
             const PassengerHomeStarted(),
           ),
         ),
-        PassengerHomeReady(:final home, :final nearbyTaxis) => Stack(
-          children: [
-            Positioned.fill(
-              child: PassengerHomeMap(
-                position: home.position,
-                nearbyTaxis: nearbyTaxis,
-                bottomPadding: _panelHeight,
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: WhereToPanel(
-                recentDestinations: home.recentDestinations,
-                nearbyTaxiCount: nearbyTaxis.length,
-                onWhereToPressed: () => context.read<PassengerFlowBloc>().add(
-                  const PassengerDestinationSearchOpened(),
+        PassengerHomeReady(
+          :final home,
+          :final nearbyTaxis,
+          :final isConnected,
+        ) =>
+          Stack(
+            children: [
+              Positioned.fill(
+                child: PassengerHomeMap(
+                  position: home.position,
+                  nearbyTaxis: nearbyTaxis,
+                  bottomPadding: _panelHeight,
                 ),
               ),
-            ),
-          ],
-        ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: WhereToPanel(
+                  recentDestinations: home.recentDestinations,
+                  nearbyTaxiCount: nearbyTaxis.length,
+                  isConnected: isConnected,
+                  onWhereToPressed: () => context.read<PassengerFlowBloc>().add(
+                    const PassengerDestinationSearchOpened(),
+                  ),
+                ),
+              ),
+            ],
+          ),
       },
     );
   }
