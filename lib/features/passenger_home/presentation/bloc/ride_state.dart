@@ -20,7 +20,7 @@ final class RideTracking extends RideState {
 
   final Ride ride;
 
-  // Road left to the destination, once in the taxi.
+  // The taxi's road: to the passenger, then to the destination.
   final RideRoute? remainingRoute;
 
   // A cancellation or a rating is being sent.

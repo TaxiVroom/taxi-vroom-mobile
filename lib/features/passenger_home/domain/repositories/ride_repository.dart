@@ -6,11 +6,12 @@ import 'package:mobile/features/passenger_home/domain/entities/ride_history.dart
 import 'package:mobile/features/passenger_home/domain/entities/taxi_offer.dart';
 
 abstract class RideRepository {
-  // Returns the id of the created ride.
+  // Returns the id of the created ride. The offer's estimate goes with it: the
+  // real price comes from the meter.
   Future<Result<String>> requestRide({
     required Coordinates origin,
     required Place destination,
-    required String offerId,
+    required TaxiOffer offer,
   });
 
   // Emits the ride every time its status or position changes.

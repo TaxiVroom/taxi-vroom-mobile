@@ -139,9 +139,7 @@ class TaxiChoicePage extends StatelessWidget {
   }
 
   Widget _buildArrival(TaxiChoice choice, String? selectedOfferId) {
-    final selectedOffer = choice.offers
-        .where((offer) => offer.id == selectedOfferId)
-        .firstOrNull;
+    final selectedOffer = choice.offerById(selectedOfferId);
     if (selectedOffer == null) return const SizedBox.shrink();
     final arrival = choice.estimatedArrival(
       offer: selectedOffer,

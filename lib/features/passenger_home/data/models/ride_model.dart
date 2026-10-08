@@ -12,6 +12,7 @@ sealed class RideModel {
     final status = json['status'] as String;
     return switch (status) {
       'SEARCHING_DRIVER' => SearchingDriverRideModel(id: id),
+      'NO_DRIVER_FOUND' => NoDriverFoundRideModel(id: id),
       'DRIVER_APPROACHING' => DriverApproachingRideModel(json),
       'IN_PROGRESS' => InProgressRideModel(json),
       'COMPLETED' => CompletedRideModel(json),
@@ -31,6 +32,13 @@ final class SearchingDriverRideModel extends RideModel {
   Ride toDomain() => RideSearchingDriver(id: id);
 }
 
+final class NoDriverFoundRideModel extends RideModel {
+  const NoDriverFoundRideModel({required super.id});
+
+  @override
+  Ride toDomain() => RideNoDriverFound(id: id);
+}
+
 final class DriverApproachingRideModel extends RideModel {
   DriverApproachingRideModel(this._json) : super(id: _json['id'] as String);
 
@@ -41,8 +49,10 @@ final class DriverApproachingRideModel extends RideModel {
     id: id,
     driver: _driverFromJson(_json['driver']),
     vehicle: _vehicleFromJson(_json['vehicle']),
+    pickup: _coordinatesFromJson(_json['pickup']),
     driverPosition: _coordinatesFromJson(_json['driverPosition']),
-    etaMinutes: _json['etaMinutes'] as int,
+    // Known later, from the driver's road to the pickup.
+    etaMinutes: _json['etaMinutes'] as int?,
     boardingCode: _json['boardingCode'] as String,
   );
 }

@@ -1,7 +1,10 @@
+import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/features/driver_home/data/models/driver_ride_model.dart';
 import 'package:mobile/features/driver_home/data/models/ride_request_model.dart';
 
-// No backend endpoint yet: only the fake implementation exists.
 abstract class RideRequestRemoteDataSource {
   Stream<RideRequestModel> watchRideRequests({
     required double latitude,
@@ -11,4 +14,111 @@ abstract class RideRequestRemoteDataSource {
   Future<DriverRideModel> acceptRideRequest(String requestId);
 
   Future<void> declineRideRequest(String requestId);
+}
+
+// The backend chooses the driver and writes the ride proposed to them at
+// rideOffers/<uid>; the answer goes back through the API. A request's id is
+// its ride's id.
+// Docs: https://firebase.google.com/docs/database/flutter/read-and-write
+class RideRequestRemoteDataSourceImpl implements RideRequestRemoteDataSource {
+  const RideRequestRemoteDataSourceImpl(
+    this._database,
+    this._firebaseAuth,
+    this._dio,
+  );
+
+  final FirebaseDatabase _database;
+  final FirebaseAuth _firebaseAuth;
+  final Dio _dio;
+
+  // Unknown to the backend yet.
+  static const _unnamedPickup = 'Position du client';
+  static const _customerRating = 5.0;
+  static const _passengerCount = 1;
+  static const _luggageCount = 0;
+
+  String get _uid {
+    final uid = _firebaseAuth.currentUser?.uid;
+    if (uid == null) {
+      throw FirebaseException(
+        plugin: 'firebase_database',
+        code: 'unauthenticated',
+        message: 'Connectez-vous pour recevoir des courses.',
+      );
+    }
+    return uid;
+  }
+
+  // The driver's position is not needed: the backend already chose them.
+  @override
+  Stream<RideRequestModel> watchRideRequests({
+    required double latitude,
+    required double longitude,
+  }) => _database
+      .ref('rideOffers/$_uid')
+      .onValue
+      // Removed once answered or expired: the app expires it by itself.
+      .where((event) => event.snapshot.value != null)
+      .map((event) => RideRequestModel.fromJson(_requestJson(event.snapshot)));
+
+  @override
+  Future<DriverRideModel> acceptRideRequest(String requestId) async {
+    await _dio.post<void>('/v1/rides/$requestId/accept');
+    // Readable by the driver once the ride is theirs.
+    final ride = await _database.ref('rides/$requestId').get();
+    return DriverRideModel.fromJson(_driverRideJson(requestId, ride));
+  }
+
+  @override
+  Future<void> declineRideRequest(String requestId) =>
+      _dio.post<void>('/v1/rides/$requestId/decline');
+
+  Map<String, dynamic> _requestJson(DataSnapshot offer) {
+    final pickup = _place(offer.child('pickup'));
+    final destination = _place(offer.child('destination'));
+    return {
+      'id': offer.child('rideId').value! as String,
+      'sentAt': DateTime.fromMillisecondsSinceEpoch(
+        offer.child('offeredAt').value! as int,
+      ).toIso8601String(),
+      'minPriceCents': offer.child('estimatedPriceMinCents').value! as int,
+      'maxPriceCents': offer.child('estimatedPriceMaxCents').value! as int,
+      // As the crow flies: the road distance comes with the route.
+      'distanceKm':
+          _coordinates(pickup).distanceTo(_coordinates(destination)) / 1000,
+      'pickup': pickup,
+      'destination': destination,
+      'customer': {
+        'firstName': offer.child('passengerFirstName').value! as String,
+        'rating': _customerRating,
+      },
+      'passengerCount': _passengerCount,
+      'luggageCount': _luggageCount,
+    };
+  }
+
+  Map<String, dynamic> _driverRideJson(String rideId, DataSnapshot ride) {
+    final passenger = ride.child('passenger');
+    return {
+      'id': rideId,
+      'customer': {
+        'firstName': passenger.child('firstName').value! as String,
+        'lastName': passenger.child('lastName').value! as String,
+        'phone': passenger.child('phone').value! as String,
+      },
+      'pickup': _place(ride.child('pickup')),
+      'destination': _place(ride.child('destination')),
+    };
+  }
+
+  Map<String, dynamic> _place(DataSnapshot place) => {
+    'name': place.child('name').value as String? ?? _unnamedPickup,
+    'latitude': place.child('latitude').value! as num,
+    'longitude': place.child('longitude').value! as num,
+  };
+
+  Coordinates _coordinates(Map<String, dynamic> place) => Coordinates(
+    latitude: (place['latitude'] as num).toDouble(),
+    longitude: (place['longitude'] as num).toDouble(),
+  );
 }

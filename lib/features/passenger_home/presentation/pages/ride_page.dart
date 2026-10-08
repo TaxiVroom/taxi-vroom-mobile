@@ -115,7 +115,8 @@ class RidePage extends StatelessWidget {
     required bool isSubmitting,
   }) {
     final pill = switch (ride) {
-      RideDriverApproaching(:final etaMinutes) => 'Arrive dans $etaMinutes min',
+      RideDriverApproaching(:final etaMinutes?) =>
+        'Arrive dans $etaMinutes min',
       RideInProgress(:final estimatedArrival) =>
         'Arrivée vers ${formatClockTime(estimatedArrival)}',
       _ => null,
@@ -153,6 +154,7 @@ class RidePage extends StatelessWidget {
               children: [
                 switch (ride) {
                   RideSearchingDriver() => _buildSearching(),
+                  RideNoDriverFound() => _buildNoDriverFound(context),
                   RideDriverApproaching() => _buildApproaching(ride),
                   RideInProgress() => _buildInProgress(ride),
                   // Shown full screen, never on the map.
@@ -205,13 +207,40 @@ class RidePage extends StatelessWidget {
     );
   }
 
+  Widget _buildNoDriverFound(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Aucun taxi disponible',
+          style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Les taxis autour de vous sont occupés. Réessayez dans quelques '
+          'minutes.',
+          style: TextStyle(color: AppColors.muted),
+        ),
+        const SizedBox(height: 12),
+        PrimaryButton(
+          onPressed: () => context.read<RideBloc>().add(const RideLeft()),
+          alignment: Alignment.center,
+          child: const Text('Retour'),
+        ),
+      ],
+    );
+  }
+
   Widget _buildApproaching(RideDriverApproaching ride) {
     final firstName = ride.driver.name.split(' ').first;
+    final etaMinutes = ride.etaMinutes;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '$firstName arrive dans ${ride.etaMinutes} min',
+          etaMinutes == null
+              ? '$firstName est en route'
+              : '$firstName arrive dans $etaMinutes min',
           style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
         ),
         Text(

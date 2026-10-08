@@ -16,6 +16,11 @@ final class RideCancelRequested extends RideEvent {
   const RideCancelRequested();
 }
 
+// The passenger leaves a ride no driver took.
+final class RideLeft extends RideEvent {
+  const RideLeft();
+}
+
 // The passenger taps "Terminer" on the end-of-ride screen.
 final class RideRatingSubmitted extends RideEvent {
   const RideRatingSubmitted({

@@ -9,6 +9,10 @@ class TaxiChoice extends Equatable {
   final RideRoute route;
   final List<TaxiOffer> offers;
 
+  // The offer the passenger picked, if it is still among the offers.
+  TaxiOffer? offerById(String? id) =>
+      offers.where((offer) => offer.id == id).firstOrNull;
+
   // Right now, the taxi first drives to the passenger, then to the
   // destination. Booked in advance, the ride starts at the pickup time.
   DateTime estimatedArrival({

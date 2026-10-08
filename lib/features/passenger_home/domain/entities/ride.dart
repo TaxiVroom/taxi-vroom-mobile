@@ -19,29 +19,54 @@ final class RideSearchingDriver extends Ride {
   List<Object?> get props => [id];
 }
 
+// Every free taxi around was asked, none took the ride.
+final class RideNoDriverFound extends Ride {
+  const RideNoDriverFound({required super.id});
+
+  @override
+  List<Object?> get props => [id];
+}
+
 final class RideDriverApproaching extends Ride {
   const RideDriverApproaching({
     required super.id,
     required this.driver,
     required this.vehicle,
+    required this.pickup,
     required this.driverPosition,
-    required this.etaMinutes,
     required this.boardingCode,
+    this.etaMinutes,
   });
 
   final Driver driver;
   final Vehicle vehicle;
+
+  // Where the driver picks the passenger up.
+  final Coordinates pickup;
   final Coordinates driverPosition;
-  final int etaMinutes;
+
+  // From the driver's road to the pickup: null until it is known.
+  final int? etaMinutes;
 
   // Given to the driver when boarding, so the passenger takes the right taxi.
   final String boardingCode;
+
+  RideDriverApproaching withEtaMinutes(int etaMinutes) => RideDriverApproaching(
+    id: id,
+    driver: driver,
+    vehicle: vehicle,
+    pickup: pickup,
+    driverPosition: driverPosition,
+    boardingCode: boardingCode,
+    etaMinutes: etaMinutes,
+  );
 
   @override
   List<Object?> get props => [
     id,
     driver,
     vehicle,
+    pickup,
     driverPosition,
     etaMinutes,
     boardingCode,

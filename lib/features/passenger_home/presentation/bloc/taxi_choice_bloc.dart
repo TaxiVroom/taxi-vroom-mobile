@@ -73,27 +73,27 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
     Emitter<TaxiChoiceState> emit,
   ) async {
     final currentState = state;
-    if (currentState is! TaxiChoiceReady) return;
-    final offerId = currentState.selectedOfferId;
-    if (offerId == null || currentState.isOrdering) return;
+    if (currentState is! TaxiChoiceReady || currentState.isOrdering) return;
+    final offer = currentState.choice.offerById(currentState.selectedOfferId);
+    if (offer == null) return;
 
     emit(
       TaxiChoiceReady(
         choice: currentState.choice,
-        selectedOfferId: offerId,
+        selectedOfferId: offer.id,
         isOrdering: true,
       ),
     );
     switch (await _requestRideUseCase(
       origin: _origin,
       destination: _destination,
-      offerId: offerId,
+      offer: offer,
     )) {
       case Ok(:final value):
         emit(
           TaxiChoiceReady(
             choice: currentState.choice,
-            selectedOfferId: offerId,
+            selectedOfferId: offer.id,
             orderedRideId: value,
           ),
         );
@@ -101,7 +101,7 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
         emit(
           TaxiChoiceReady(
             choice: currentState.choice,
-            selectedOfferId: offerId,
+            selectedOfferId: offer.id,
             orderFailureMessage: error.message,
           ),
         );
@@ -114,9 +114,7 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
   ) async {
     final currentState = state;
     if (currentState is! TaxiChoiceReady || currentState.isOrdering) return;
-    final offer = currentState.choice.offers
-        .where((offer) => offer.id == currentState.selectedOfferId)
-        .firstOrNull;
+    final offer = currentState.choice.offerById(currentState.selectedOfferId);
     if (offer == null) return;
 
     emit(

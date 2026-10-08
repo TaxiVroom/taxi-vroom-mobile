@@ -24,6 +24,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
        super(const RideLoading()) {
     on<RideStarted>(_onStarted);
     on<RideCancelRequested>(_onCancelRequested);
+    on<RideLeft>(_onLeft);
     on<RideRatingSubmitted>(_onRatingSubmitted);
   }
 
@@ -63,6 +64,16 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       ),
     );
     _emitEndOrFailure(emit, await _cancelRideUseCase(_rideId));
+  }
+
+  // Nothing to tell the backend: the search already stopped.
+  void _onLeft(RideLeft event, Emitter<RideState> emit) {
+    final currentState = state;
+    if (currentState is! RideTracking ||
+        currentState.ride is! RideNoDriverFound) {
+      return;
+    }
+    emit(const RideEnded());
   }
 
   Future<void> _onRatingSubmitted(

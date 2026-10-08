@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/errors/dio_exception_failure.dart';
+import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
@@ -18,7 +22,7 @@ class RideRepositoryImpl implements RideRepository {
   Future<Result<String>> requestRide({
     required Coordinates origin,
     required Place destination,
-    required String offerId,
+    required TaxiOffer offer,
   }) async {
     try {
       final rideId = await _dataSource.requestRide(
@@ -27,7 +31,8 @@ class RideRepositoryImpl implements RideRepository {
         destinationLatitude: destination.coordinates.latitude,
         destinationLongitude: destination.coordinates.longitude,
         destinationName: destination.name,
-        offerId: offerId,
+        minPriceCents: offer.minPriceCents,
+        maxPriceCents: offer.maxPriceCents,
       );
       return Result.ok(rideId);
     } on DioException catch (e) {
@@ -35,16 +40,24 @@ class RideRepositoryImpl implements RideRepository {
     }
   }
 
+  // Not an async* with await for: its cancel would wait for the next update,
+  // which does not come while the taxi is stopped.
   @override
-  Stream<Result<Ride>> watchRide(String rideId) async* {
-    try {
-      await for (final model in _dataSource.watchRide(rideId)) {
-        yield Result.ok(model.toDomain());
-      }
-    } on DioException catch (e) {
-      yield Result.error(e.toFailure());
-    }
-  }
+  Stream<Result<Ride>> watchRide(String rideId) => _dataSource
+      .watchRide(rideId)
+      .transform(
+        StreamTransformer.fromHandlers(
+          handleData: (model, sink) => sink.add(Result.ok(model.toDomain())),
+          handleError: (error, stackTrace, sink) => switch (error) {
+            FirebaseException(:final message) => sink.add(
+              Result.error(
+                ServerFailure(message ?? 'Connexion au service impossible.'),
+              ),
+            ),
+            _ => sink.addError(error, stackTrace),
+          },
+        ),
+      );
 
   @override
   Future<Result<void>> cancelRide(String rideId) async {

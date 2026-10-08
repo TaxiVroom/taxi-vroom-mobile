@@ -35,7 +35,7 @@ import 'package:mobile/features/driver_home/data/datasources/driver_presence_rem
 import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driving_position_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/earnings_remote_datasource_fake.dart';
-import 'package:mobile/features/driver_home/data/datasources/ride_request_remote_datasource_fake.dart';
+import 'package:mobile/features/driver_home/data/datasources/ride_request_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/taximeter_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/repositories/demand_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_account_repository_impl.dart';
@@ -72,6 +72,7 @@ import 'package:mobile/features/passenger_home/data/datasources/account_remote_d
 import 'package:mobile/features/passenger_home/data/datasources/nearby_taxi_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/place_search_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/recent_destination_remote_datasource_fake.dart';
+import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource_fake.dart';
 import 'package:mobile/features/passenger_home/data/datasources/taxi_offer_remote_datasource_fake.dart';
 import 'package:mobile/features/passenger_home/data/repositories/account_repository_impl.dart';
@@ -172,10 +173,6 @@ class App extends StatelessWidget {
       ),
     );
 
-    // Course : pas encore d'endpoint backend, la course est simulée. Une seule
-    // instance, partagée par la commande, le suivi et l'annulation.
-    final rideRepo = RideRepositoryImpl(RideRemoteDataSourceFake());
-
     // Compte passager : pas encore d'endpoint backend, profil fake.
     final accountRepo = AccountRepositoryImpl(AccountRemoteDataSourceFake());
 
@@ -183,11 +180,24 @@ class App extends StatelessWidget {
     const locationRepo = LocationRepositoryImpl(DeviceLocationDataSourceImpl());
 
     // Firebase Realtime Database, hors États-Unis, donc ouverte avec son URL.
-    // Partagée par la présence des chauffeurs et les taxis autour du passager.
+    // Partagée par la présence des chauffeurs, les taxis autour du passager et
+    // le suivi des courses.
     // https://firebase.google.com/docs/database/flutter/start
     final realtimeDatabase = FirebaseDatabase.instanceFor(
       app: Firebase.app(),
       databaseURL: config.firebaseDatabaseUrl,
+    );
+
+    // Course : commandée via l'API, suivie dans Firebase. Annulation,
+    // notation, réservations et historique restent simulés. Une seule
+    // instance, partagée par la commande, le suivi et l'annulation. Pour tout
+    // simuler, utiliser directement RideRemoteDataSourceFake().
+    final rideRepo = RideRepositoryImpl(
+      RideRemoteDataSourceImpl(
+        realtimeDatabase,
+        dio,
+        RideRemoteDataSourceFake(),
+      ),
     );
     // Connexion à Firebase, pour prévenir chauffeur et passager quand elle est
     // perdue.
@@ -219,12 +229,16 @@ class App extends StatelessWidget {
     final driverActivityRepo = DriverActivityRepositoryImpl(
       DriverActivityRemoteDataSourceFake(),
     );
-    // Demandes de course : pas encore d'endpoint backend. Pour qu'une demande
-    // arrive quelques secondes après « Passer en ligne » : sendsRideRequests:
-    // true. Une seule instance, partagée par le suivi, l'acceptation et le
-    // refus.
+    // Demandes de course : proposées par le backend dans Firebase, réponses
+    // via l'API. Une seule instance, partagée par le suivi, l'acceptation et
+    // le refus. Pour tester sans passager, remplacer la source par
+    // RideRequestRemoteDataSourceFake(sendsRideRequests: true).
     final rideRequestRepo = RideRequestRepositoryImpl(
-      RideRequestRemoteDataSourceFake(sendsRideRequests: true),
+      RideRequestRemoteDataSourceImpl(
+        realtimeDatabase,
+        FirebaseAuth.instance,
+        dio,
+      ),
     );
     // Course acceptée : pas encore d'endpoint backend. Code de montée fake :
     // « 4817 ».

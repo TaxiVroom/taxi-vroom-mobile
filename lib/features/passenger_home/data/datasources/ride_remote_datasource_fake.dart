@@ -94,7 +94,8 @@ class RideRemoteDataSourceFake implements RideRemoteDataSource {
     required double destinationLatitude,
     required double destinationLongitude,
     required String destinationName,
-    required String offerId,
+    required int minPriceCents,
+    required int maxPriceCents,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     _originLatitude = originLatitude;
@@ -242,11 +243,12 @@ class RideRemoteDataSourceFake implements RideRemoteDataSource {
       'status': 'DRIVER_APPROACHING',
       'etaMinutes': etaMinutes,
       'boardingCode': '4817',
+      'pickup': {'latitude': _originLatitude, 'longitude': _originLongitude},
       'driverPosition': {
         'latitude': _originLatitude + _startLatitudeOffset * remainingShare,
         'longitude': _originLongitude + _startLongitudeOffset * remainingShare,
       },
-      ..._driverAndVehicleJson,
+      ...simulatedDriverAndVehicleJson,
     };
   }
 
@@ -275,7 +277,7 @@ class RideRemoteDataSourceFake implements RideRemoteDataSource {
       'estimatedArrival': DateTime.now()
           .add(Duration(minutes: (rideMinutes * (1 - doneShare)).round()))
           .toIso8601String(),
-      ..._driverAndVehicleJson,
+      ...simulatedDriverAndVehicleJson,
     };
   }
 
@@ -294,7 +296,7 @@ class RideRemoteDataSourceFake implements RideRemoteDataSource {
         {'label': 'Distance, $kilometers km', 'amountCents': distanceCents},
         {'label': 'Temps de ralenti', 'amountCents': _idleTimeCents},
       ],
-      ..._driverAndVehicleJson,
+      ...simulatedDriverAndVehicleJson,
     };
   }
 
@@ -309,19 +311,22 @@ class RideRemoteDataSourceFake implements RideRemoteDataSource {
     return sqrt(latitudeKm * latitudeKm + longitudeKm * longitudeKm);
   }
 
-  static const Map<String, Map<String, Object>> _driverAndVehicleJson = {
-    'driver': {
-      'name': 'Luc S.',
-      'rating': 4.9,
-      'completedRides': 2340,
-      'taxiNumber': '118',
-      'city': 'Strasbourg',
-    },
-    'vehicle': {
-      'model': 'Toyota Corolla Touring',
-      'color': 'noire',
-      'plate': 'GH-482-KZ',
-      'department': '67',
-    },
-  };
+  // Also used by the real ride source: the backend knows neither the vehicles
+  // nor the drivers' ratings yet.
+  static const Map<String, Map<String, Object>> simulatedDriverAndVehicleJson =
+      {
+        'driver': {
+          'name': 'Luc S.',
+          'rating': 4.9,
+          'completedRides': 2340,
+          'taxiNumber': '118',
+          'city': 'Strasbourg',
+        },
+        'vehicle': {
+          'model': 'Toyota Corolla Touring',
+          'color': 'noire',
+          'plate': 'GH-482-KZ',
+          'department': '67',
+        },
+      };
 }
