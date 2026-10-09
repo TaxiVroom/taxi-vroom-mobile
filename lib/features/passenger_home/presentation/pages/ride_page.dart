@@ -3,14 +3,16 @@ import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/domain/entities/ride_route.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
+import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
 import 'package:mobile/core/widgets/bottom_panel.dart';
 import 'package:mobile/core/widgets/license_plate.dart';
 import 'package:mobile/core/widgets/map_pill.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/core/widgets/ride_map.dart';
-import 'package:mobile/core/widgets/taxi_meter.dart';
+import 'package:mobile/features/passenger_home/domain/entities/driver.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
+import 'package:mobile/features/passenger_home/domain/entities/vehicle.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
@@ -76,16 +78,11 @@ class RidePage extends StatelessWidget {
                   RideCompletedView(
                     ride: ride,
                     isSubmitting: isSubmitting,
-                    onFinished:
-                        ({
-                          required stars,
-                          required compliments,
-                          required tipCents,
-                        }) => context.read<RideBloc>().add(
+                    onFinished: ({required stars, required compliments}) =>
+                        context.read<RideBloc>().add(
                           RideRatingSubmitted(
                             stars: stars,
                             compliments: compliments,
-                            tipCents: tipCents,
                           ),
                         ),
                   ),
@@ -117,13 +114,18 @@ class RidePage extends StatelessWidget {
     final pill = switch (ride) {
       RideDriverApproaching(:final etaMinutes?) =>
         'Arrive dans $etaMinutes min',
-      RideInProgress(:final estimatedArrival) =>
+      RideDriverArrived() => 'Votre taxi est arrivé',
+      RideInProgress(:final estimatedArrival?) =>
         'Arrivée vers ${formatClockTime(estimatedArrival)}',
       _ => null,
     };
     // Once in the taxi, the ride can't be cancelled from the app anymore.
-    final canCancel =
-        ride is RideSearchingDriver || ride is RideDriverApproaching;
+    final canCancel = switch (ride) {
+      RideSearchingDriver() ||
+      RideDriverApproaching() ||
+      RideDriverArrived() => true,
+      _ => false,
+    };
     return Stack(
       children: [
         Positioned.fill(
@@ -132,11 +134,15 @@ class RidePage extends StatelessWidget {
             bottomPadding: _panelHeight,
             remainingRoute: remainingRoute?.path,
             driverPosition: switch (ride) {
-              RideDriverApproaching(:final driverPosition) => driverPosition,
+              RideDriverApproaching(:final driverPosition) ||
+              RideDriverArrived(:final driverPosition) => driverPosition,
               RideInProgress(:final taxiPosition) => taxiPosition,
               _ => null,
             },
             destination: ride is RideInProgress ? ride.destination : null,
+            // In the taxi, the taxi marker alone shows where the passenger
+            // is: two GPS never quite agree.
+            showsDevicePosition: ride is! RideInProgress,
           ),
         ),
         if (pill != null)
@@ -154,9 +160,30 @@ class RidePage extends StatelessWidget {
               children: [
                 switch (ride) {
                   RideSearchingDriver() => _buildSearching(),
-                  RideNoDriverFound() => _buildNoDriverFound(context),
+                  RideNoDriverFound() => _buildStopped(
+                    context,
+                    title: 'Aucun taxi disponible',
+                    text:
+                        'Les taxis autour de vous sont occupés. Réessayez '
+                        'dans quelques minutes.',
+                  ),
+                  RidePassengerNoShow() => _buildStopped(
+                    context,
+                    title: 'Votre chauffeur ne vous a pas trouvé',
+                    text:
+                        'Il vous a attendu au point de prise en charge, '
+                        'puis a dû repartir.',
+                  ),
                   RideDriverApproaching() => _buildApproaching(ride),
-                  RideInProgress() => _buildInProgress(ride),
+                  RideDriverArrived() => _buildDriverComing(
+                    title:
+                        '${_firstName(ride.driver)} vous attend au point '
+                        'de prise en charge',
+                    driver: ride.driver,
+                    vehicle: ride.vehicle,
+                    boardingCode: ride.boardingCode,
+                  ),
+                  RideInProgress() => _buildInProgress(ride, remainingRoute),
                   // Shown full screen, never on the map.
                   RideCompleted() => const SizedBox.shrink(),
                 },
@@ -207,20 +234,21 @@ class RidePage extends StatelessWidget {
     );
   }
 
-  Widget _buildNoDriverFound(BuildContext context) {
+  // The ride stopped without the passenger: they can only go back.
+  Widget _buildStopped(
+    BuildContext context, {
+    required String title,
+    required String text,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Aucun taxi disponible',
-          style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Les taxis autour de vous sont occupés. Réessayez dans quelques '
-          'minutes.',
-          style: TextStyle(color: AppColors.muted),
-        ),
+        Text(text, style: const TextStyle(color: AppColors.muted)),
         const SizedBox(height: 12),
         PrimaryButton(
           onPressed: () => context.read<RideBloc>().add(const RideLeft()),
@@ -231,31 +259,45 @@ class RidePage extends StatelessWidget {
     );
   }
 
+  String _firstName(Driver driver) => driver.name.split(' ').first;
+
   Widget _buildApproaching(RideDriverApproaching ride) {
-    final firstName = ride.driver.name.split(' ').first;
+    final firstName = _firstName(ride.driver);
     final etaMinutes = ride.etaMinutes;
+    return _buildDriverComing(
+      title: etaMinutes == null
+          ? '$firstName est en route'
+          : '$firstName arrive dans $etaMinutes min',
+      driver: ride.driver,
+      vehicle: ride.vehicle,
+      boardingCode: ride.boardingCode,
+    );
+  }
+
+  // The taxi to look for, and the code to give its driver.
+  Widget _buildDriverComing({
+    required String title,
+    required Driver driver,
+    required Vehicle vehicle,
+    required String boardingCode,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          etaMinutes == null
-              ? '$firstName est en route'
-              : '$firstName arrive dans $etaMinutes min',
+          title,
           style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
         ),
         Text(
-          '${ride.vehicle.model} ${ride.vehicle.color}',
+          '${vehicle.model} ${vehicle.color}',
           style: const TextStyle(color: AppColors.muted),
         ),
         const SizedBox(height: 12),
-        LicensePlate(
-          plate: ride.vehicle.plate,
-          department: ride.vehicle.department,
-        ),
+        LicensePlate(plate: vehicle.plate, department: vehicle.department),
         const SizedBox(height: 12),
-        DriverSummary(driver: ride.driver),
+        DriverSummary(driver: driver),
         const SizedBox(height: 12),
-        _buildBoardingCode(ride.boardingCode),
+        _buildBoardingCode(boardingCode),
         const SizedBox(height: 12),
         // Calling, messaging and sharing the ride are not built yet.
         _buildActions(const [
@@ -267,15 +309,23 @@ class RidePage extends StatelessWidget {
     );
   }
 
-  Widget _buildInProgress(RideInProgress ride) {
+  // The meter is not connected yet: the price estimated when ordering.
+  Widget _buildInProgress(RideInProgress ride, RideRoute? remainingRoute) {
+    final estimate = formatEuroRange(ride.minPriceCents, ride.maxPriceCents);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TaxiMeter(
-          tariff: ride.tariff,
-          amountCents: ride.meterCents,
-          caption: 'Compteur',
-          detail: '${formatDistanceKm(ride.remainingKm)} restants',
+        const Text(
+          'En route vers votre destination',
+          style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+        ),
+        Text(
+          [
+            'Estimation $estimate',
+            if (remainingRoute != null)
+              '${formatDistanceKm(remainingRoute.distanceKm)} restants',
+          ].join(' · '),
+          style: const TextStyle(color: AppColors.muted),
         ),
         const SizedBox(height: 12),
         DriverSummary(driver: ride.driver),

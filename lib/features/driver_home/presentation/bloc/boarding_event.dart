@@ -36,6 +36,11 @@ final class BoardingNoShowRequested extends BoardingEvent {
   const BoardingNoShowRequested();
 }
 
+// "Se désister".
+final class BoardingWithdrawRequested extends BoardingEvent {
+  const BoardingWithdrawRequested();
+}
+
 // One second of waiting went by.
 final class _BoardingTicked extends BoardingEvent {
   const _BoardingTicked();

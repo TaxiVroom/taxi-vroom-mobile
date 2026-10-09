@@ -32,24 +32,23 @@ import 'package:mobile/features/driver_home/data/datasources/driver_activity_rem
 import 'package:mobile/features/driver_home/data/datasources/driver_booking_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_document_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_presence_remote_datasource.dart';
+import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource_fake.dart';
-import 'package:mobile/features/driver_home/data/datasources/driving_position_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/earnings_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/ride_request_remote_datasource.dart';
-import 'package:mobile/features/driver_home/data/datasources/taximeter_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/repositories/demand_repository_impl.dart';
+import 'package:mobile/features/driver_home/data/repositories/device_driving_position_repository.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_account_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_activity_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_booking_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_document_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_presence_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_ride_repository_impl.dart';
-import 'package:mobile/features/driver_home/data/repositories/driving_position_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/earnings_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/ride_request_repository_impl.dart';
-import 'package:mobile/features/driver_home/data/repositories/taximeter_repository_impl.dart';
 import 'package:mobile/features/driver_home/domain/usecases/accept_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/accept_ride_request_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/arrive_at_pickup_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
@@ -64,10 +63,10 @@ import 'package:mobile/features/driver_home/domain/usecases/set_receives_booking
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifications_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/verify_boarding_code_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_passenger_cancellation_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/watch_taximeter_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/data/datasources/account_remote_datasource_fake.dart';
 import 'package:mobile/features/passenger_home/data/datasources/nearby_taxi_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/place_search_remote_datasource.dart';
@@ -188,16 +187,15 @@ class App extends StatelessWidget {
       databaseURL: config.firebaseDatabaseUrl,
     );
 
-    // Course : commandée via l'API, suivie dans Firebase. Annulation,
-    // notation, réservations et historique restent simulés. Une seule
-    // instance, partagée par la commande, le suivi et l'annulation. Pour tout
-    // simuler, utiliser directement RideRemoteDataSourceFake().
+    // Course : commandée et annulée via l'API, suivie dans Firebase. Notation,
+    // réservations et historique restent simulés. Une seule instance,
+    // partagée par la commande, le suivi et l'annulation. Pour tout simuler,
+    // passer rideFake en premier argument aussi.
+    final rideFake = RideRemoteDataSourceFake();
     final rideRepo = RideRepositoryImpl(
-      RideRemoteDataSourceImpl(
-        realtimeDatabase,
-        dio,
-        RideRemoteDataSourceFake(),
-      ),
+      RideRemoteDataSourceImpl(realtimeDatabase, dio),
+      rideFake,
+      rideFake,
     );
     // Connexion à Firebase, pour prévenir chauffeur et passager quand elle est
     // perdue.
@@ -240,10 +238,13 @@ class App extends StatelessWidget {
         dio,
       ),
     );
-    // Course acceptée : pas encore d'endpoint backend. Code de montée fake :
-    // « 4817 ».
+    // Étapes de la course par l'API ; suppléments et note du client encore
+    // simulés. Le paiement se fait à bord, hors de l'app. Pour tout simuler (code de montée « 4817 »), passer
+    // driverRideFake en premier argument aussi.
+    final driverRideFake = DriverRideRemoteDataSourceFake();
     final driverRideRepo = DriverRideRepositoryImpl(
-      DriverRideRemoteDataSourceFake(),
+      DriverRideRemoteDataSourceImpl(realtimeDatabase, dio),
+      driverRideFake,
     );
     // Réservations chauffeur : une seule instance, partagée par l'accueil
     // (prochaine réservation) et l'onglet Réservations.
@@ -373,19 +374,19 @@ class App extends StatelessWidget {
             watchGuidanceUseCase: WatchGuidanceUseCase(
               locationRepository: locationRepo,
               routeRepository: routeRepo,
-              drivingPositionRepository: DrivingPositionRepositoryImpl(
-                DrivingPositionDataSourceFake(),
+              // Position réelle du téléphone. Pour simuler un trajet sans
+              // rouler : DrivingPositionRepositoryImpl(
+              // DrivingPositionDataSourceFake()).
+              drivingPositionRepository: const DeviceDrivingPositionRepository(
+                locationRepo,
               ),
             ),
-            verifyBoardingCodeUseCase: VerifyBoardingCodeUseCase(
-              driverRideRepo,
-            ),
+            arriveAtPickupUseCase: ArriveAtPickupUseCase(driverRideRepo),
             startRideUseCase: StartRideUseCase(driverRideRepo),
             reportNoShowUseCase: ReportNoShowUseCase(driverRideRepo),
-            // Taximètre simulé au tarif A, en attendant le taximètre connecté.
-            watchTaximeterUseCase: WatchTaximeterUseCase(
-              TaximeterRepositoryImpl(TaximeterDataSourceFake()),
-            ),
+            withdrawFromRideUseCase: WithdrawFromRideUseCase(driverRideRepo),
+            watchPassengerCancellationUseCase:
+                WatchPassengerCancellationUseCase(driverRideRepo),
             loadRideCheckoutUseCase: LoadRideCheckoutUseCase(driverRideRepo),
             completeRideUseCase: CompleteRideUseCase(driverRideRepo),
             loadDriverBookingsUseCase: LoadDriverBookingsUseCase(

@@ -1,36 +1,26 @@
 import 'package:mobile/features/driver_home/domain/entities/fare_supplement.dart';
 import 'package:mobile/features/driver_home/domain/entities/ride_checkout.dart';
 
-// The supplements allowed and the payment of a ride, from the server.
+// The supplements allowed for a ride, from the server.
 class RideCheckoutModel {
-  const RideCheckoutModel({
-    required this.supplements,
-    required this.paidInApp,
-    required this.paymentLabel,
-  });
+  const RideCheckoutModel({required this.supplements});
 
-  factory RideCheckoutModel.fromJson(Map<String, dynamic> json) {
-    final payment = json['payment'] as Map<String, dynamic>;
-    return RideCheckoutModel(
-      supplements: [
-        for (final supplement in json['supplements'] as List<dynamic>)
-          (
-            id: (supplement as Map<String, dynamic>)['id'] as String,
-            label: supplement['label'] as String,
-            amountCents: supplement['amountCents'] as int,
-          ),
-      ],
-      paidInApp: payment['paidInApp'] as bool,
-      paymentLabel: payment['label'] as String,
-    );
-  }
+  factory RideCheckoutModel.fromJson(Map<String, dynamic> json) =>
+      RideCheckoutModel(
+        supplements: [
+          for (final supplement in json['supplements'] as List<dynamic>)
+            (
+              id: (supplement as Map<String, dynamic>)['id'] as String,
+              label: supplement['label'] as String,
+              amountCents: supplement['amountCents'] as int,
+            ),
+        ],
+      );
 
   final List<({String id, String label, int amountCents})> supplements;
-  final bool paidInApp;
-  final String paymentLabel;
 
-  RideCheckout toDomain({required int meterCents}) => RideCheckout(
-    meterCents: meterCents,
+  // The meter amount is typed by the driver afterwards.
+  RideCheckout toDomain() => RideCheckout(
     supplements: [
       for (final supplement in supplements)
         FareSupplement(
@@ -39,7 +29,5 @@ class RideCheckoutModel {
           amountCents: supplement.amountCents,
         ),
     ],
-    paidInApp: paidInApp,
-    paymentLabel: paymentLabel,
   );
 }

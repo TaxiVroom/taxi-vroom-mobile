@@ -9,7 +9,14 @@ sealed class RideRequestState extends Equatable {
 
 // Online with no request on screen, or offline.
 final class RideRequestWaiting extends RideRequestState {
-  const RideRequestWaiting();
+  const RideRequestWaiting({this.notice});
+
+  // Why the request on screen was taken away, when the driver did not
+  // answer it.
+  final String? notice;
+
+  @override
+  List<Object?> get props => [notice];
 }
 
 // Mockup screen 4: a request waits for the driver's answer.

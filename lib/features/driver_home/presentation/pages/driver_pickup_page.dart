@@ -18,12 +18,18 @@ class DriverPickupPage extends StatelessWidget {
     required this.ride,
     required this.watchGuidanceUseCase,
     required this.onArrived,
+    required this.onWithdrawRequested,
+    this.isSubmitting = false,
+    this.failureMessage,
     super.key,
   });
 
   final DriverRide ride;
   final WatchGuidanceUseCase watchGuidanceUseCase;
   final VoidCallback onArrived;
+  final VoidCallback onWithdrawRequested;
+  final bool isSubmitting;
+  final String? failureMessage;
 
   // Room kept for the bottom panel when framing the route on the map.
   static const _panelHeight = 330.0;
@@ -34,7 +40,7 @@ class DriverPickupPage extends StatelessWidget {
       create: (_) =>
           GuidanceBloc(watchGuidanceUseCase: watchGuidanceUseCase)
             ..add(GuidanceStarted(to: ride.pickup)),
-      // The ride is left through "Je suis arrivé" only.
+      // The ride is left through "Je suis arrivé" or "Se désister" only.
       child: PopScope(
         canPop: false,
         child: Scaffold(
@@ -95,6 +101,7 @@ class DriverPickupPage extends StatelessWidget {
 
   Widget _buildPanel(Guidance? guidance) {
     final note = ride.customerNote;
+    final failureMessage = this.failureMessage;
     return BottomPanel(
       child: SafeArea(
         top: false,
@@ -123,8 +130,29 @@ class DriverPickupPage extends StatelessWidget {
                 ),
               ],
             ),
+            if (failureMessage != null) ...[
+              const SizedBox(height: 14),
+              Text(
+                failureMessage,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13, color: AppColors.danger),
+              ),
+            ],
             const SizedBox(height: 14),
-            GoButton.primary(label: 'Je suis arrivé', onPressed: onArrived),
+            GoButton.primary(
+              label: 'Je suis arrivé',
+              isLoading: isSubmitting,
+              onPressed: onArrived,
+            ),
+            const SizedBox(height: 4),
+            GhostButton(
+              onPressed: isSubmitting ? null : onWithdrawRequested,
+              alignment: Alignment.center,
+              child: const Text(
+                'Se désister',
+                style: TextStyle(color: AppColors.danger),
+              ),
+            ),
           ],
         ),
       ),

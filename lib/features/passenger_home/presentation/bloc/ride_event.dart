@@ -23,16 +23,11 @@ final class RideLeft extends RideEvent {
 
 // The passenger taps "Terminer" on the end-of-ride screen.
 final class RideRatingSubmitted extends RideEvent {
-  const RideRatingSubmitted({
-    required this.stars,
-    required this.compliments,
-    required this.tipCents,
-  });
+  const RideRatingSubmitted({required this.stars, required this.compliments});
 
   final int stars;
   final List<String> compliments;
-  final int tipCents;
 
   @override
-  List<Object?> get props => [stars, compliments, tipCents];
+  List<Object?> get props => [stars, compliments];
 }

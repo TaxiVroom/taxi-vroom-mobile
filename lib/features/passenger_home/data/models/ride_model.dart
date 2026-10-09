@@ -13,7 +13,9 @@ sealed class RideModel {
     return switch (status) {
       'SEARCHING_DRIVER' => SearchingDriverRideModel(id: id),
       'NO_DRIVER_FOUND' => NoDriverFoundRideModel(id: id),
+      'PASSENGER_NO_SHOW' => PassengerNoShowRideModel(id: id),
       'DRIVER_APPROACHING' => DriverApproachingRideModel(json),
+      'DRIVER_ARRIVED' => DriverArrivedRideModel(json),
       'IN_PROGRESS' => InProgressRideModel(json),
       'COMPLETED' => CompletedRideModel(json),
       _ => throw FormatException('Statut de course inconnu : $status'),
@@ -39,6 +41,13 @@ final class NoDriverFoundRideModel extends RideModel {
   Ride toDomain() => RideNoDriverFound(id: id);
 }
 
+final class PassengerNoShowRideModel extends RideModel {
+  const PassengerNoShowRideModel({required super.id});
+
+  @override
+  Ride toDomain() => RidePassengerNoShow(id: id);
+}
+
 final class DriverApproachingRideModel extends RideModel {
   DriverApproachingRideModel(this._json) : super(id: _json['id'] as String);
 
@@ -57,6 +66,21 @@ final class DriverApproachingRideModel extends RideModel {
   );
 }
 
+final class DriverArrivedRideModel extends RideModel {
+  DriverArrivedRideModel(this._json) : super(id: _json['id'] as String);
+
+  final Map<String, dynamic> _json;
+
+  @override
+  Ride toDomain() => RideDriverArrived(
+    id: id,
+    driver: _driverFromJson(_json['driver']),
+    vehicle: _vehicleFromJson(_json['vehicle']),
+    driverPosition: _coordinatesFromJson(_json['driverPosition']),
+    boardingCode: _json['boardingCode'] as String,
+  );
+}
+
 final class InProgressRideModel extends RideModel {
   InProgressRideModel(this._json) : super(id: _json['id'] as String);
 
@@ -69,10 +93,8 @@ final class InProgressRideModel extends RideModel {
     vehicle: _vehicleFromJson(_json['vehicle']),
     taxiPosition: _coordinatesFromJson(_json['taxiPosition']),
     destination: _coordinatesFromJson(_json['destination']),
-    meterCents: _json['meterCents'] as int,
-    tariff: _json['tariff'] as String,
-    remainingKm: (_json['remainingKm'] as num).toDouble(),
-    estimatedArrival: DateTime.parse(_json['estimatedArrival'] as String),
+    minPriceCents: _json['estimatedPriceMinCents'] as int,
+    maxPriceCents: _json['estimatedPriceMaxCents'] as int,
   );
 }
 

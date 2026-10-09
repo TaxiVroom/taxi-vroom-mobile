@@ -4,11 +4,14 @@ import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/widgets/map_pill.dart';
+import 'package:mobile/core/widgets/message_toast.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_home.dart';
+import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
 import 'package:mobile/features/driver_home/domain/entities/routed_ride_request.dart';
 import 'package:mobile/features/driver_home/domain/usecases/accept_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/accept_ride_request_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/arrive_at_pickup_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
@@ -23,10 +26,10 @@ import 'package:mobile/features/driver_home/domain/usecases/set_receives_booking
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifications_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/verify_boarding_code_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_passenger_cancellation_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/watch_taximeter_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_ride_usecase.dart';
 import 'package:mobile/features/driver_home/presentation/bloc/driver_account_bloc.dart';
 import 'package:mobile/features/driver_home/presentation/bloc/driver_bookings_bloc.dart';
 import 'package:mobile/features/driver_home/presentation/bloc/driver_flow_bloc.dart';
@@ -63,10 +66,11 @@ class DriverHomePage extends StatelessWidget {
     required this.acceptRideRequestUseCase,
     required this.declineRideRequestUseCase,
     required this.watchGuidanceUseCase,
-    required this.verifyBoardingCodeUseCase,
+    required this.arriveAtPickupUseCase,
     required this.startRideUseCase,
     required this.reportNoShowUseCase,
-    required this.watchTaximeterUseCase,
+    required this.withdrawFromRideUseCase,
+    required this.watchPassengerCancellationUseCase,
     required this.loadRideCheckoutUseCase,
     required this.completeRideUseCase,
     required this.loadDriverBookingsUseCase,
@@ -88,10 +92,11 @@ class DriverHomePage extends StatelessWidget {
   final AcceptRideRequestUseCase acceptRideRequestUseCase;
   final DeclineRideRequestUseCase declineRideRequestUseCase;
   final WatchGuidanceUseCase watchGuidanceUseCase;
-  final VerifyBoardingCodeUseCase verifyBoardingCodeUseCase;
+  final ArriveAtPickupUseCase arriveAtPickupUseCase;
   final StartRideUseCase startRideUseCase;
   final ReportNoShowUseCase reportNoShowUseCase;
-  final WatchTaximeterUseCase watchTaximeterUseCase;
+  final WithdrawFromRideUseCase withdrawFromRideUseCase;
+  final WatchPassengerCancellationUseCase watchPassengerCancellationUseCase;
   final LoadRideCheckoutUseCase loadRideCheckoutUseCase;
   final CompleteRideUseCase completeRideUseCase;
   final LoadDriverBookingsUseCase loadDriverBookingsUseCase;
@@ -111,6 +116,10 @@ class DriverHomePage extends StatelessWidget {
         BlocProvider(
           create: (_) => DriverFlowBloc(
             loadDriverDocumentsUseCase: loadDriverDocumentsUseCase,
+            arriveAtPickupUseCase: arriveAtPickupUseCase,
+            withdrawFromRideUseCase: withdrawFromRideUseCase,
+            watchPassengerCancellationUseCase:
+                watchPassengerCancellationUseCase,
           )..add(const DriverFlowStarted()),
         ),
         BlocProvider(
@@ -210,48 +219,46 @@ class DriverHomePage extends StatelessWidget {
         ),
       ],
       // The tabs stay below, so the home keeps its map and its state.
-      DriverFlowPickup(:final ride) => [
-        tabsPage,
-        MaterialPage<void>(
-          key: ValueKey('driver-pickup-${ride.id}'),
-          child: DriverPickupPage(
-            ride: ride,
-            watchGuidanceUseCase: watchGuidanceUseCase,
-            onArrived: () => context.read<DriverFlowBloc>().add(
-              const DriverArrivedAtPickup(),
-            ),
-          ),
-        ),
-      ],
-      DriverFlowInRide(:final ride) => [
-        tabsPage,
-        MaterialPage<void>(
-          key: ValueKey('driver-ride-${ride.id}'),
-          child: DriverRidePage(
-            ride: ride,
-            watchGuidanceUseCase: watchGuidanceUseCase,
-            watchTaximeterUseCase: watchTaximeterUseCase,
-            onFinished: (reading) => context.read<DriverFlowBloc>().add(
-              DriverRideFinished(
-                meterCents: reading?.amountCents ?? 0,
-                distanceKm: reading?.distanceKm ?? 0,
+      DriverFlowPickup(
+        :final ride,
+        :final isSubmitting,
+        :final failureMessage,
+      ) =>
+        [
+          tabsPage,
+          MaterialPage<void>(
+            key: ValueKey('driver-pickup-${ride.id}'),
+            child: DriverPickupPage(
+              ride: ride,
+              watchGuidanceUseCase: watchGuidanceUseCase,
+              isSubmitting: isSubmitting,
+              failureMessage: failureMessage,
+              onArrived: () => context.read<DriverFlowBloc>().add(
+                const DriverArrivedAtPickup(),
+              ),
+              onWithdrawRequested: () => context.read<DriverFlowBloc>().add(
+                const DriverWithdrawRequested(),
               ),
             ),
           ),
-        ),
-      ],
-      DriverFlowCheckout(:final ride, :final meterCents, :final distanceKm) => [
+        ],
+      DriverFlowInRide(:final ride) => [tabsPage, _ridePage(context, ride)],
+      // The ride stays below, its guidance running, until the amount is
+      // validated: "Reprendre la course" finds it as it was.
+      DriverFlowCheckout(:final ride) => [
         tabsPage,
+        _ridePage(context, ride),
         MaterialPage<void>(
           key: ValueKey('driver-checkout-${ride.id}'),
           child: DriverCheckoutPage(
             ride: ride,
-            meterCents: meterCents,
-            distanceKm: distanceKm,
             loadRideCheckoutUseCase: loadRideCheckoutUseCase,
             completeRideUseCase: completeRideUseCase,
             onCompleted: () => context.read<DriverFlowBloc>().add(
               const DriverRideCompleted(),
+            ),
+            onResumed: () => context.read<DriverFlowBloc>().add(
+              const DriverRideResumed(),
             ),
           ),
         ),
@@ -263,19 +270,37 @@ class DriverHomePage extends StatelessWidget {
           child: DriverBoardingPage(
             ride: ride,
             arrivedAt: arrivedAt,
-            verifyBoardingCodeUseCase: verifyBoardingCodeUseCase,
             startRideUseCase: startRideUseCase,
             reportNoShowUseCase: reportNoShowUseCase,
+            withdrawFromRideUseCase: withdrawFromRideUseCase,
             onRideStarted: () => context.read<DriverFlowBloc>().add(
               const DriverRideStarted(),
             ),
             onNoShowReported: () => context.read<DriverFlowBloc>().add(
               const DriverNoShowReported(),
             ),
+            onWithdrawn: () => context.read<DriverFlowBloc>().add(
+              const DriverRideWithdrawn(),
+            ),
           ),
         ),
       ],
     };
+  }
+
+  // The same key in both states: the page keeps its guidance when the
+  // checkout opens above it, then closes.
+  Page<void> _ridePage(BuildContext context, DriverRide ride) {
+    return MaterialPage<void>(
+      key: ValueKey('driver-ride-${ride.id}'),
+      child: DriverRidePage(
+        ride: ride,
+        watchGuidanceUseCase: watchGuidanceUseCase,
+        onFinished: () => context.read<DriverFlowBloc>().add(
+          const DriverRideFinished(),
+        ),
+      ),
+    );
   }
 }
 
@@ -393,6 +418,19 @@ class _DriveTab extends StatelessWidget {
               previous is! RideRequestOffered && current is RideRequestOffered,
           listener: (context, _) => openRideRequestSheet(context),
         ),
+        // The request on screen was taken away: the sheet closes by itself,
+        // the driver is told why.
+        BlocListener<RideRequestBloc, RideRequestState>(
+          listenWhen: (previous, current) =>
+              previous is RideRequestOffered &&
+              current is RideRequestWaiting &&
+              current.notice != null,
+          listener: (context, state) => showMessageToast(
+            context,
+            title: 'Demande annulée',
+            message: (state as RideRequestWaiting).notice!,
+          ),
+        ),
         // Accepted: the driver goes to the passenger (mockup screen 5).
         BlocListener<RideRequestBloc, RideRequestState>(
           listenWhen: (_, current) => current is RideRequestTaken,
@@ -404,10 +442,17 @@ class _DriveTab extends StatelessWidget {
         BlocListener<DriverFlowBloc, DriverFlowState>(
           listenWhen: (previous, current) =>
               _isOnRide(previous) && current is DriverFlowHome,
-          listener: (context, _) => _onOnlineChanged(
-            context,
-            context.read<DriverHomeBloc>().state,
-          ),
+          listener: (context, state) {
+            final notice = (state as DriverFlowHome).notice;
+            if (notice != null) {
+              showMessageToast(
+                context,
+                title: 'Course annulée',
+                message: notice,
+              );
+            }
+            _onOnlineChanged(context, context.read<DriverHomeBloc>().state);
+          },
         ),
       ],
       child: BlocBuilder<DriverHomeBloc, DriverHomeState>(

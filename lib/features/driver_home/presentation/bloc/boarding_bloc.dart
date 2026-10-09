@@ -3,9 +3,10 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/features/driver_home/domain/entities/ride_start.dart';
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/verify_boarding_code_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_ride_usecase.dart';
 
 part 'boarding_event.dart';
 part 'boarding_state.dart';
@@ -16,14 +17,14 @@ class BoardingBloc extends Bloc<BoardingEvent, BoardingState> {
   BoardingBloc({
     required String rideId,
     required DateTime arrivedAt,
-    required VerifyBoardingCodeUseCase verifyBoardingCodeUseCase,
     required StartRideUseCase startRideUseCase,
     required ReportNoShowUseCase reportNoShowUseCase,
+    required WithdrawFromRideUseCase withdrawFromRideUseCase,
   }) : _rideId = rideId,
        _arrivedAt = arrivedAt,
-       _verifyBoardingCodeUseCase = verifyBoardingCodeUseCase,
        _startRideUseCase = startRideUseCase,
        _reportNoShowUseCase = reportNoShowUseCase,
+       _withdrawFromRideUseCase = withdrawFromRideUseCase,
        super(const BoardingInProgress()) {
     on<BoardingWaitStarted>(_onWaitStarted);
     on<_BoardingTicked>(_onTicked);
@@ -31,13 +32,14 @@ class BoardingBloc extends Bloc<BoardingEvent, BoardingState> {
     on<BoardingDigitErased>(_onDigitErased);
     on<BoardingRideStartRequested>(_onRideStartRequested);
     on<BoardingNoShowRequested>(_onNoShowRequested);
+    on<BoardingWithdrawRequested>(_onWithdrawRequested);
   }
 
   final String _rideId;
   final DateTime _arrivedAt;
-  final VerifyBoardingCodeUseCase _verifyBoardingCodeUseCase;
   final StartRideUseCase _startRideUseCase;
   final ReportNoShowUseCase _reportNoShowUseCase;
+  final WithdrawFromRideUseCase _withdrawFromRideUseCase;
 
   Timer? _clock;
 
@@ -56,55 +58,29 @@ class BoardingBloc extends Bloc<BoardingEvent, BoardingState> {
     emit(currentState.copyWith(waited: DateTime.now().difference(_arrivedAt)));
   }
 
-  Future<void> _onDigitPressed(
+  void _onDigitPressed(
     BoardingDigitPressed event,
     Emitter<BoardingState> emit,
-  ) async {
+  ) {
     final currentState = state;
     if (currentState is! BoardingInProgress ||
-        currentState.code.length == VerifyBoardingCodeUseCase.codeLength) {
+        !currentState.canType ||
+        currentState.code.length == StartRideUseCase.codeLength) {
       return;
     }
-
-    final code = '${currentState.code}${event.digit}';
-    if (code.length < VerifyBoardingCodeUseCase.codeLength) {
-      emit(currentState.copyWith(code: code, clearsFailure: true));
-      return;
-    }
-
     emit(
       currentState.copyWith(
-        code: code,
-        codeStatus: BoardingCodeStatus.checking,
+        code: '${currentState.code}${event.digit}',
         clearsFailure: true,
       ),
-    );
-    final result = await _verifyBoardingCodeUseCase(
-      rideId: _rideId,
-      code: code,
-    );
-    final afterCheck = state;
-    // The driver may have erased a digit meanwhile.
-    if (afterCheck is! BoardingInProgress || afterCheck.code != code) return;
-    emit(
-      switch (result) {
-        Ok(value: true) => afterCheck.copyWith(
-          codeStatus: BoardingCodeStatus.correct,
-        ),
-        Ok(value: false) => afterCheck.copyWith(
-          codeStatus: BoardingCodeStatus.incorrect,
-        ),
-        Error(:final error) => afterCheck.copyWith(
-          codeStatus: BoardingCodeStatus.typing,
-          failureMessage: error.message,
-        ),
-      },
     );
   }
 
   void _onDigitErased(BoardingDigitErased event, Emitter<BoardingState> emit) {
     final currentState = state;
-    if (currentState is! BoardingInProgress || currentState.code.isEmpty) {
+    if (currentState is! BoardingInProgress ||
+        !currentState.canType ||
+        currentState.code.isEmpty) {
       return;
     }
     final code = currentState.code;
@@ -117,24 +93,55 @@ class BoardingBloc extends Bloc<BoardingEvent, BoardingState> {
     );
   }
 
+  // The server checks the code and starts the ride at once.
   Future<void> _onRideStartRequested(
     BoardingRideStartRequested event,
     Emitter<BoardingState> emit,
   ) async {
     final currentState = state;
-    if (currentState is! BoardingInProgress ||
-        currentState.isSubmitting ||
-        currentState.codeStatus != BoardingCodeStatus.correct) {
-      return;
-    }
+    if (currentState is! BoardingInProgress || !currentState.canStart) return;
 
     emit(currentState.copyWith(isSubmitting: true, clearsFailure: true));
-    final result = await _startRideUseCase(_rideId);
-    _emitOutcome(emit, currentState, result, const BoardingRideStarted());
+    final result = await _startRideUseCase(
+      rideId: _rideId,
+      boardingCode: currentState.code,
+    );
+    switch (result) {
+      case Ok(value: RideStartAccepted()):
+        _clock?.cancel();
+        emit(const BoardingRideStarted());
+      case Ok(value: RideStartWrongCode(:final attemptsLeft)):
+        emit(
+          currentState.copyWith(
+            codeStatus: BoardingCodeStatus.incorrect,
+            attemptsLeft: attemptsLeft,
+          ),
+        );
+      case Ok(value: RideStartLocked()):
+        emit(currentState.copyWith(codeStatus: BoardingCodeStatus.locked));
+      case Error(:final error):
+        emit(currentState.copyWith(failureMessage: error.message));
+    }
   }
 
   Future<void> _onNoShowRequested(
     BoardingNoShowRequested event,
+    Emitter<BoardingState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! BoardingInProgress ||
+        currentState.isSubmitting ||
+        !currentState.canReportNoShow) {
+      return;
+    }
+
+    emit(currentState.copyWith(isSubmitting: true, clearsFailure: true));
+    final result = await _reportNoShowUseCase(_rideId);
+    _emitOutcome(emit, currentState, result, const BoardingNoShowReported());
+  }
+
+  Future<void> _onWithdrawRequested(
+    BoardingWithdrawRequested event,
     Emitter<BoardingState> emit,
   ) async {
     final currentState = state;
@@ -143,8 +150,8 @@ class BoardingBloc extends Bloc<BoardingEvent, BoardingState> {
     }
 
     emit(currentState.copyWith(isSubmitting: true, clearsFailure: true));
-    final result = await _reportNoShowUseCase(_rideId);
-    _emitOutcome(emit, currentState, result, const BoardingNoShowReported());
+    final result = await _withdrawFromRideUseCase(_rideId);
+    _emitOutcome(emit, currentState, result, const BoardingWithdrawn());
   }
 
   void _emitOutcome(

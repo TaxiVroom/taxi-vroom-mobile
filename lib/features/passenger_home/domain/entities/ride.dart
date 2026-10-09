@@ -27,6 +27,14 @@ final class RideNoDriverFound extends Ride {
   List<Object?> get props => [id];
 }
 
+// The driver waited at the pickup and reported the passenger absent.
+final class RidePassengerNoShow extends Ride {
+  const RidePassengerNoShow({required super.id});
+
+  @override
+  List<Object?> get props => [id];
+}
+
 final class RideDriverApproaching extends Ride {
   const RideDriverApproaching({
     required super.id,
@@ -73,7 +81,33 @@ final class RideDriverApproaching extends Ride {
   ];
 }
 
-// The passenger is in the taxi, the meter is running.
+// The taxi waits at the pickup for the passenger to give their code.
+final class RideDriverArrived extends Ride {
+  const RideDriverArrived({
+    required super.id,
+    required this.driver,
+    required this.vehicle,
+    required this.driverPosition,
+    required this.boardingCode,
+  });
+
+  final Driver driver;
+  final Vehicle vehicle;
+  final Coordinates driverPosition;
+  final String boardingCode;
+
+  @override
+  List<Object?> get props => [
+    id,
+    driver,
+    vehicle,
+    driverPosition,
+    boardingCode,
+  ];
+}
+
+// The passenger is in the taxi. The meter is not connected yet: the
+// passenger sees the price estimated when ordering.
 final class RideInProgress extends Ride {
   const RideInProgress({
     required super.id,
@@ -81,24 +115,32 @@ final class RideInProgress extends Ride {
     required this.vehicle,
     required this.taxiPosition,
     required this.destination,
-    required this.meterCents,
-    required this.tariff,
-    required this.remainingKm,
-    required this.estimatedArrival,
+    required this.minPriceCents,
+    required this.maxPriceCents,
+    this.estimatedArrival,
   });
 
   final Driver driver;
   final Vehicle vehicle;
   final Coordinates taxiPosition;
   final Coordinates destination;
+  final int minPriceCents;
+  final int maxPriceCents;
 
-  // Live amount on the taxi's meter.
-  final int meterCents;
+  // From the taxi's road to the destination: null until it is known.
+  final DateTime? estimatedArrival;
 
-  // Regulated tariff currently applied by the meter (A, B, C or D).
-  final String tariff;
-  final double remainingKm;
-  final DateTime estimatedArrival;
+  RideInProgress withEstimatedArrival(DateTime estimatedArrival) =>
+      RideInProgress(
+        id: id,
+        driver: driver,
+        vehicle: vehicle,
+        taxiPosition: taxiPosition,
+        destination: destination,
+        minPriceCents: minPriceCents,
+        maxPriceCents: maxPriceCents,
+        estimatedArrival: estimatedArrival,
+      );
 
   @override
   List<Object?> get props => [
@@ -107,9 +149,8 @@ final class RideInProgress extends Ride {
     vehicle,
     taxiPosition,
     destination,
-    meterCents,
-    tariff,
-    remainingKm,
+    minPriceCents,
+    maxPriceCents,
     estimatedArrival,
   ];
 }

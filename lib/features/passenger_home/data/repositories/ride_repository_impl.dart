@@ -6,6 +6,8 @@ import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/errors/dio_exception_failure.dart';
 import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/features/passenger_home/data/datasources/ride_booking_remote_datasource.dart';
+import 'package:mobile/features/passenger_home/data/datasources/ride_rating_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
@@ -14,9 +16,22 @@ import 'package:mobile/features/passenger_home/domain/entities/taxi_offer.dart';
 import 'package:mobile/features/passenger_home/domain/repositories/ride_repository.dart';
 
 class RideRepositoryImpl implements RideRepository {
-  const RideRepositoryImpl(this._dataSource);
+  const RideRepositoryImpl(
+    this._dataSource,
+    this._bookingDataSource,
+    this._ratingDataSource,
+  );
 
   final RideRemoteDataSource _dataSource;
+
+  // No backend yet: simulated.
+  final RideBookingRemoteDataSource _bookingDataSource;
+  final RideRatingRemoteDataSource _ratingDataSource;
+
+  // The passenger got in meanwhile, or the ride already stopped.
+  static const _tooLateToCancel = ValidationFailure(
+    'La course ne peut plus être annulée.',
+  );
 
   @override
   Future<Result<String>> requestRide({
@@ -54,6 +69,8 @@ class RideRepositoryImpl implements RideRepository {
                 ServerFailure(message ?? 'Connexion au service impossible.'),
               ),
             ),
+            // The boarding code comes from the API.
+            DioException() => sink.add(Result.error(error.toFailure())),
             _ => sink.addError(error, stackTrace),
           },
         ),
@@ -65,7 +82,9 @@ class RideRepositoryImpl implements RideRepository {
       await _dataSource.cancelRide(rideId);
       return const Result.ok(null);
     } on DioException catch (e) {
-      return Result.error(e.toFailure());
+      return Result.error(
+        e.response?.statusCode == 409 ? _tooLateToCancel : e.toFailure(),
+      );
     }
   }
 
@@ -77,7 +96,7 @@ class RideRepositoryImpl implements RideRepository {
     required DateTime scheduledPickup,
   }) async {
     try {
-      final bookingId = await _dataSource.bookRide(
+      final bookingId = await _bookingDataSource.bookRide(
         originLatitude: origin.latitude,
         originLongitude: origin.longitude,
         destinationLatitude: destination.coordinates.latitude,
@@ -98,7 +117,7 @@ class RideRepositoryImpl implements RideRepository {
   @override
   Future<Result<void>> cancelBooking(String bookingId) async {
     try {
-      await _dataSource.cancelBooking(bookingId);
+      await _bookingDataSource.cancelBooking(bookingId);
       return const Result.ok(null);
     } on DioException catch (e) {
       return Result.error(e.toFailure());
@@ -108,7 +127,7 @@ class RideRepositoryImpl implements RideRepository {
   @override
   Future<Result<RideHistory>> getRideHistory() async {
     try {
-      final model = await _dataSource.getRideHistory();
+      final model = await _bookingDataSource.getRideHistory();
       return Result.ok(model.toDomain());
     } on DioException catch (e) {
       return Result.error(e.toFailure());
@@ -120,14 +139,12 @@ class RideRepositoryImpl implements RideRepository {
     required String rideId,
     required int stars,
     required List<String> compliments,
-    required int tipCents,
   }) async {
     try {
-      await _dataSource.rateRide(
+      await _ratingDataSource.rateRide(
         rideId: rideId,
         stars: stars,
         compliments: compliments,
-        tipCents: tipCents,
       );
       return const Result.ok(null);
     } on DioException catch (e) {

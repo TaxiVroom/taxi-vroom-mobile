@@ -24,7 +24,7 @@ class RideRequestRepositoryImpl implements RideRequestRepository {
   // Not an async* with await for: its cancel would wait for the next request,
   // which may never come.
   @override
-  Stream<Result<RideRequest>> watchRideRequests({
+  Stream<Result<RideRequest?>> watchRideRequests({
     required Coordinates around,
   }) => _dataSource
       .watchRideRequests(
@@ -33,7 +33,7 @@ class RideRequestRepositoryImpl implements RideRequestRepository {
       )
       .transform(
         StreamTransformer.fromHandlers(
-          handleData: (model, sink) => sink.add(Result.ok(model.toDomain())),
+          handleData: (model, sink) => sink.add(Result.ok(model?.toDomain())),
           handleError: (error, stackTrace, sink) => switch (error) {
             FirebaseException() => sink.add(Result.error(_toFailure(error))),
             _ => sink.addError(error, stackTrace),

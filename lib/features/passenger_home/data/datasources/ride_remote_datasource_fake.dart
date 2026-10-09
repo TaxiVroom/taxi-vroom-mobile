@@ -1,14 +1,21 @@
 import 'dart:math';
 
+import 'package:mobile/features/passenger_home/data/datasources/ride_booking_remote_datasource.dart';
+import 'package:mobile/features/passenger_home/data/datasources/ride_rating_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/models/ride_history_model.dart';
 import 'package:mobile/features/passenger_home/data/models/ride_model.dart';
+import 'package:mobile/features/passenger_home/data/models/simulated_driver_and_vehicle_json.dart';
 
 /// Implémentation de développement avec données de test.
-/// Simule une course complète : recherche, chauffeur qui approche, trajet avec
-/// le compteur qui tourne, puis fin de course. Une « minute » dure 3 s.
+/// Simule une course complète : recherche, chauffeur qui approche puis
+/// attend, trajet, puis fin de course. Une « minute » dure 3 s.
 /// Garde aussi en mémoire les réservations et l'historique des courses.
-class RideRemoteDataSourceFake implements RideRemoteDataSource {
+class RideRemoteDataSourceFake
+    implements
+        RideRemoteDataSource,
+        RideBookingRemoteDataSource,
+        RideRatingRemoteDataSource {
   RideRemoteDataSourceFake() {
     final now = DateTime.now();
     _pastRides.addAll([
@@ -85,6 +92,8 @@ class RideRemoteDataSourceFake implements RideRemoteDataSource {
   double _destinationLatitude = 0;
   double _destinationLongitude = 0;
   String _destinationName = '';
+  int _minPriceCents = 0;
+  int _maxPriceCents = 0;
   bool _isCancelled = false;
 
   @override
@@ -103,6 +112,8 @@ class RideRemoteDataSourceFake implements RideRemoteDataSource {
     _destinationLatitude = destinationLatitude;
     _destinationLongitude = destinationLongitude;
     _destinationName = destinationName;
+    _minPriceCents = minPriceCents;
+    _maxPriceCents = maxPriceCents;
     _isCancelled = false;
     return _rideId;
   }
@@ -117,6 +128,10 @@ class RideRemoteDataSourceFake implements RideRemoteDataSource {
       yield RideModel.fromJson(_driverApproachingJson(rideId, eta));
       await Future<void>.delayed(_minuteDuration);
     }
+
+    if (_isCancelled) return;
+    yield RideModel.fromJson(_driverArrivedJson(rideId));
+    await Future<void>.delayed(_minuteDuration);
 
     for (var step = 0; step < _rideSteps; step++) {
       if (_isCancelled) return;
@@ -149,7 +164,6 @@ class RideRemoteDataSourceFake implements RideRemoteDataSource {
     required String rideId,
     required int stars,
     required List<String> compliments,
-    required int tipCents,
   }) => Future<void>.delayed(const Duration(milliseconds: 400));
 
   @override
@@ -252,9 +266,18 @@ class RideRemoteDataSourceFake implements RideRemoteDataSource {
     };
   }
 
+  Map<String, dynamic> _driverArrivedJson(String rideId) => {
+    'id': rideId,
+    'status': 'DRIVER_ARRIVED',
+    'boardingCode': '4817',
+    'driverPosition': {
+      'latitude': _originLatitude,
+      'longitude': _originLongitude,
+    },
+    ...simulatedDriverAndVehicleJson,
+  };
+
   Map<String, dynamic> _inProgressJson(String rideId, double doneShare) {
-    final distanceKm = _straightLineKm();
-    final rideMinutes = max(3, (distanceKm * 2).round());
     return {
       'id': rideId,
       'status': 'IN_PROGRESS',
@@ -270,13 +293,8 @@ class RideRemoteDataSourceFake implements RideRemoteDataSource {
         'latitude': _destinationLatitude,
         'longitude': _destinationLongitude,
       },
-      'meterCents':
-          _pickupFeeCents + (_pricePerKmCents * distanceKm * doneShare).round(),
-      'tariff': 'A',
-      'remainingKm': distanceKm * (1 - doneShare),
-      'estimatedArrival': DateTime.now()
-          .add(Duration(minutes: (rideMinutes * (1 - doneShare)).round()))
-          .toIso8601String(),
+      'estimatedPriceMinCents': _minPriceCents,
+      'estimatedPriceMaxCents': _maxPriceCents,
       ...simulatedDriverAndVehicleJson,
     };
   }
@@ -310,23 +328,4 @@ class RideRemoteDataSourceFake implements RideRemoteDataSource {
         cos(_originLatitude * pi / 180);
     return sqrt(latitudeKm * latitudeKm + longitudeKm * longitudeKm);
   }
-
-  // Also used by the real ride source: the backend knows neither the vehicles
-  // nor the drivers' ratings yet.
-  static const Map<String, Map<String, Object>> simulatedDriverAndVehicleJson =
-      {
-        'driver': {
-          'name': 'Luc S.',
-          'rating': 4.9,
-          'completedRides': 2340,
-          'taxiNumber': '118',
-          'city': 'Strasbourg',
-        },
-        'vehicle': {
-          'model': 'Toyota Corolla Touring',
-          'color': 'noire',
-          'plate': 'GH-482-KZ',
-          'department': '67',
-        },
-      };
 }

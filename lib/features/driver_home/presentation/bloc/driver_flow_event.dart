@@ -42,19 +42,34 @@ final class DriverNoShowReported extends DriverFlowEvent {
   const DriverNoShowReported();
 }
 
-// "Terminer la course": the passenger is at their destination.
-final class DriverRideFinished extends DriverFlowEvent {
-  const DriverRideFinished({
-    required this.meterCents,
-    required this.distanceKm,
-  });
+// "Se désister" while driving to the passenger.
+final class DriverWithdrawRequested extends DriverFlowEvent {
+  const DriverWithdrawRequested();
+}
 
-  // The last reading of the taximeter.
-  final int meterCents;
-  final double distanceKm;
+// The driver gave the ride up from the boarding screen.
+final class DriverRideWithdrawn extends DriverFlowEvent {
+  const DriverRideWithdrawn();
+}
+
+// The passenger cancelled while the driver came or waited.
+final class _DriverRideCancelledByPassenger extends DriverFlowEvent {
+  const _DriverRideCancelledByPassenger({required this.rideId});
+
+  final String rideId;
 
   @override
-  List<Object?> get props => [meterCents, distanceKm];
+  List<Object?> get props => [rideId];
+}
+
+// "Terminer la course": the passenger is at their destination.
+final class DriverRideFinished extends DriverFlowEvent {
+  const DriverRideFinished();
+}
+
+// "Reprendre la course": the ride was ended by mistake, nothing was sent.
+final class DriverRideResumed extends DriverFlowEvent {
+  const DriverRideResumed();
 }
 
 // "Valider et repasser libre".

@@ -23,7 +23,6 @@ abstract class RideRepository {
     required String rideId,
     required int stars,
     required List<String> compliments,
-    required int tipCents,
   });
 
   // Books a ride in advance, with the offer and estimate shown to the

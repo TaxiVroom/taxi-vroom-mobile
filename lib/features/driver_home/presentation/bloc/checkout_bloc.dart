@@ -9,28 +9,25 @@ import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_u
 part 'checkout_event.dart';
 part 'checkout_state.dart';
 
-/// Mockup screen 8: the driver confirms the amount, adds the supplements and
-/// rates the passenger.
+/// Mockup screen 8: the driver types the meter amount, adds the supplements
+/// and rates the passenger.
 class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
   CheckoutBloc({
     required String rideId,
-    required int meterCents,
     required LoadRideCheckoutUseCase loadRideCheckoutUseCase,
     required CompleteRideUseCase completeRideUseCase,
   }) : _rideId = rideId,
-       _meterCents = meterCents,
        _loadRideCheckoutUseCase = loadRideCheckoutUseCase,
        _completeRideUseCase = completeRideUseCase,
        super(const CheckoutLoading()) {
     on<CheckoutStarted>(_onStarted);
-    on<CheckoutMeterAmountCorrected>(_onMeterAmountCorrected);
+    on<CheckoutMeterAmountEntered>(_onMeterAmountEntered);
     on<CheckoutSupplementCountChanged>(_onSupplementCountChanged);
     on<CheckoutCustomerRated>(_onCustomerRated);
     on<CheckoutSubmitted>(_onSubmitted);
   }
 
   final String _rideId;
-  final int _meterCents;
   final LoadRideCheckoutUseCase _loadRideCheckoutUseCase;
   final CompleteRideUseCase _completeRideUseCase;
 
@@ -39,10 +36,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
     Emitter<CheckoutState> emit,
   ) async {
     emit(const CheckoutLoading());
-    final result = await _loadRideCheckoutUseCase(
-      rideId: _rideId,
-      meterCents: _meterCents,
-    );
+    final result = await _loadRideCheckoutUseCase(_rideId);
     emit(
       switch (result) {
         Ok(:final value) => CheckoutReady(checkout: value),
@@ -51,8 +45,8 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
     );
   }
 
-  void _onMeterAmountCorrected(
-    CheckoutMeterAmountCorrected event,
+  void _onMeterAmountEntered(
+    CheckoutMeterAmountEntered event,
     Emitter<CheckoutState> emit,
   ) {
     final currentState = state;

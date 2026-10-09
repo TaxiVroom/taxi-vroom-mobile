@@ -1,6 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/theme/app_colors.dart';
-import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
@@ -17,39 +16,34 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 class DriverCheckoutPage extends StatelessWidget {
   const DriverCheckoutPage({
     required this.ride,
-    required this.meterCents,
-    required this.distanceKm,
     required this.loadRideCheckoutUseCase,
     required this.completeRideUseCase,
     required this.onCompleted,
+    required this.onResumed,
     super.key,
   });
 
   final DriverRide ride;
-
-  // Last amount read on the taximeter.
-  final int meterCents;
-
-  // Driven during the ride, according to the taximeter.
-  final double distanceKm;
-
   final LoadRideCheckoutUseCase loadRideCheckoutUseCase;
   final CompleteRideUseCase completeRideUseCase;
   final VoidCallback onCompleted;
+
+  // "Reprendre la course", when the ride was ended by mistake.
+  final VoidCallback onResumed;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => CheckoutBloc(
         rideId: ride.id,
-        meterCents: meterCents,
         loadRideCheckoutUseCase: loadRideCheckoutUseCase,
         completeRideUseCase: completeRideUseCase,
       )..add(const CheckoutStarted()),
       child: BlocListener<CheckoutBloc, CheckoutState>(
         listenWhen: (_, current) => current is CheckoutCompleted,
         listener: (_, _) => onCompleted(),
-        // The ride is left through "Valider et repasser libre" only.
+        // Left through "Valider et repasser libre" or "Reprendre la course"
+        // only.
         child: PopScope(
           canPop: false,
           child: Scaffold(
@@ -95,7 +89,7 @@ class DriverCheckoutPage extends StatelessWidget {
                 const SizedBox(height: 14),
                 _buildSupplements(context, checkout),
                 const SizedBox(height: 14),
-                if (checkout.paidInApp) _buildPaidInApp(checkout),
+                _buildPaidOnBoard(),
                 const SizedBox(height: 10),
                 const Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,8 +127,20 @@ class DriverCheckoutPage extends StatelessWidget {
               GoButton(
                 label: 'Valider et repasser libre',
                 isLoading: state.isSubmitting,
-                onPressed: () => context.read<CheckoutBloc>().add(
-                  const CheckoutSubmitted(),
+                // Not before the meter amount is typed.
+                onPressed: checkout.meterCents == null
+                    ? null
+                    : () => context.read<CheckoutBloc>().add(
+                        const CheckoutSubmitted(),
+                      ),
+              ),
+              const SizedBox(height: 4),
+              GhostButton(
+                onPressed: state.isSubmitting ? null : onResumed,
+                alignment: Alignment.center,
+                child: const Text(
+                  'Reprendre la course',
+                  style: TextStyle(color: AppColors.muted),
                 ),
               ),
             ],
@@ -166,8 +172,7 @@ class DriverCheckoutPage extends StatelessWidget {
                 style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
               ),
               Text(
-                '${ride.pickupName} → ${ride.destinationName}, '
-                '${formatDistanceKm(distanceKm)}',
+                '${ride.pickupName} → ${ride.destinationName}',
                 style: const TextStyle(fontSize: 13, color: AppColors.muted),
               ),
             ],
@@ -178,6 +183,7 @@ class DriverCheckoutPage extends StatelessWidget {
   }
 
   Widget _buildMeterAmount(BuildContext context, RideCheckout checkout) {
+    final meterCents = checkout.meterCents;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -200,10 +206,11 @@ class DriverCheckoutPage extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  formatEuro(checkout.meterCents),
-                  style: const TextStyle(
+                  meterCents == null ? '— €' : formatEuro(meterCents),
+                  style: TextStyle(
                     fontSize: 34,
                     fontWeight: FontWeight.w800,
+                    color: meterCents == null ? AppColors.muted : null,
                   ),
                 ),
               ),
@@ -218,8 +225,7 @@ class DriverCheckoutPage extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         const Text(
-          'Relevé automatiquement. Modifiable si le taximètre affiche autre '
-          'chose.',
+          'Recopiez le montant affiché par votre taximètre.',
           style: TextStyle(fontSize: 12, color: AppColors.muted),
         ),
       ],
@@ -236,7 +242,7 @@ class DriverCheckoutPage extends StatelessWidget {
       currentCents: checkout.meterCents,
     );
     if (meterCents != null) {
-      bloc.add(CheckoutMeterAmountCorrected(meterCents: meterCents));
+      bloc.add(CheckoutMeterAmountEntered(meterCents: meterCents));
     }
   }
 
@@ -261,7 +267,10 @@ class DriverCheckoutPage extends StatelessWidget {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  formatEuro(checkout.totalCents),
+                  switch (checkout.totalCents) {
+                    final totalCents? => formatEuro(totalCents),
+                    null => '— €',
+                  },
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ],
@@ -329,31 +338,34 @@ class DriverCheckoutPage extends StatelessWidget {
     );
   }
 
-  Widget _buildPaidInApp(RideCheckout checkout) {
+  // No payment in the app: the passenger pays on board, and every taxi must
+  // take cards (Code des transports, art. L3121-11-2).
+  Widget _buildPaidOnBoard() {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.successBackground,
+        color: AppColors.border.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
+      child: const Row(
         children: [
+          Icon(Icons.credit_card),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Payé par l’application',
+                Text(
+                  'À encaisser à bord',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '${checkout.paymentLabel}, rien à encaisser à bord',
-                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  'Par carte sur votre terminal, ou en espèces',
+                  style: TextStyle(fontSize: 12, color: AppColors.muted),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.check, color: AppColors.freeTaxi),
         ],
       ),
     );

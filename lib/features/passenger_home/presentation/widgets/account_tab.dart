@@ -49,14 +49,8 @@ class AccountTab extends StatelessWidget {
               title: place.label,
               subtitle: place.address,
             ),
-          const SizedBox(height: 16),
-          const SectionLabel('Paiement'),
-          // No payment in the app yet: the passenger pays the driver.
-          const PlaceListTile(
-            icon: Icons.credit_card,
-            title: 'Moyens de paiement',
-            subtitle: 'Bientôt disponible',
-          ),
+          // No payment means to set: every ride is paid on board, by card or
+          // cash.
           const SizedBox(height: 16),
           const SectionLabel('Préférences'),
           _buildNotifications(context, account),

@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
+import 'package:mobile/features/driver_home/domain/entities/ride_request_update.dart';
 import 'package:mobile/features/driver_home/domain/entities/routed_ride_request.dart';
 import 'package:mobile/features/driver_home/domain/usecases/accept_ride_request_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
@@ -36,7 +37,7 @@ class RideRequestBloc extends Bloc<RideRequestEvent, RideRequestState> {
   final AcceptRideRequestUseCase _acceptRideRequestUseCase;
   final DeclineRideRequestUseCase _declineRideRequestUseCase;
 
-  StreamSubscription<Result<RoutedRideRequest>>? _requests;
+  StreamSubscription<Result<RideRequestUpdate>>? _requests;
   Timer? _countdown;
 
   void _onWatched(RideRequestsWatched event, Emitter<RideRequestState> emit) {
@@ -60,21 +61,43 @@ class RideRequestBloc extends Bloc<RideRequestEvent, RideRequestState> {
     _RideRequestReceived event,
     Emitter<RideRequestState> emit,
   ) {
+    switch (event.result) {
+      case Ok(value: IncomingRideRequest(:final offer)):
+        _offer(offer, emit);
+      case Ok(value: CancelledRideRequest(:final requestId)):
+        _withdraw(requestId, emit);
+      // A request that could not be read is simply not offered.
+      case Error():
+        return;
+    }
+  }
+
+  void _offer(RoutedRideRequest offer, Emitter<RideRequestState> emit) {
     // One request at a time: the others go to other drivers.
     if (state is! RideRequestWaiting) return;
-    // A request that could not be read is simply not offered.
-    if (event.result case Ok(value: final offer)) {
-      emit(
-        RideRequestOffered(
-          offer: offer,
-          secondsLeft: offer.request.secondsLeft(DateTime.now()),
-        ),
-      );
-      _countdown = Timer.periodic(
-        const Duration(seconds: 1),
-        (_) => add(const _RideRequestTicked()),
-      );
+    emit(
+      RideRequestOffered(
+        offer: offer,
+        secondsLeft: offer.request.secondsLeft(DateTime.now()),
+      ),
+    );
+    _countdown = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => add(const _RideRequestTicked()),
+    );
+  }
+
+  // Only the request on screen, while the driver's answer is not on its way:
+  // an answer also takes the request back.
+  void _withdraw(String requestId, Emitter<RideRequestState> emit) {
+    final currentState = state;
+    if (currentState is! RideRequestOffered ||
+        currentState.isResponding ||
+        currentState.offer.request.id != requestId) {
+      return;
     }
+    _countdown?.cancel();
+    emit(const RideRequestWaiting(notice: 'Le client a annulé sa demande.'));
   }
 
   void _onTicked(_RideRequestTicked event, Emitter<RideRequestState> emit) {

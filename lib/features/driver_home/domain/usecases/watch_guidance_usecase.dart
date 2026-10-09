@@ -46,14 +46,15 @@ class WatchGuidanceUseCase {
         return;
     }
 
-    final positions = _drivingPositionRepository.watchPosition(
-      along: route.route.path,
-    );
-    await for (final result in positions) {
-      yield switch (result) {
-        Ok(:final value) => Result.ok(route.guidanceFrom(value)),
-        Error(:final error) => Result.error(error),
-      };
-    }
+    // yield*, not await for: leaving the screen must stop the guidance at
+    // once, even while the taxi is stopped and no new position comes.
+    yield* _drivingPositionRepository
+        .watchPosition(along: route.route.path)
+        .map(
+          (result) => switch (result) {
+            Ok(:final value) => Result.ok(route.guidanceFrom(value)),
+            Error(:final error) => Result.error(error),
+          },
+        );
   }
 }

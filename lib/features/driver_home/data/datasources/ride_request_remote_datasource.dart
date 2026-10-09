@@ -6,7 +6,9 @@ import 'package:mobile/features/driver_home/data/models/driver_ride_model.dart';
 import 'package:mobile/features/driver_home/data/models/ride_request_model.dart';
 
 abstract class RideRequestRemoteDataSource {
-  Stream<RideRequestModel> watchRideRequests({
+  // Null when no request waits for the driver: none came, or the one offered
+  // was taken back.
+  Stream<RideRequestModel?> watchRideRequests({
     required double latitude,
     required double longitude,
   });
@@ -50,16 +52,20 @@ class RideRequestRemoteDataSourceImpl implements RideRequestRemoteDataSource {
   }
 
   // The driver's position is not needed: the backend already chose them.
+  // Removed by the backend once answered, expired, or cancelled by the
+  // passenger.
   @override
-  Stream<RideRequestModel> watchRideRequests({
+  Stream<RideRequestModel?> watchRideRequests({
     required double latitude,
     required double longitude,
   }) => _database
       .ref('rideOffers/$_uid')
       .onValue
-      // Removed once answered or expired: the app expires it by itself.
-      .where((event) => event.snapshot.value != null)
-      .map((event) => RideRequestModel.fromJson(_requestJson(event.snapshot)));
+      .map(
+        (event) => event.snapshot.value == null
+            ? null
+            : RideRequestModel.fromJson(_requestJson(event.snapshot)),
+      );
 
   @override
   Future<DriverRideModel> acceptRideRequest(String requestId) async {

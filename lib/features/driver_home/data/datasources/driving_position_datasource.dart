@@ -1,6 +1,7 @@
 import 'package:mobile/core/domain/entities/coordinates.dart';
 
-// Only the simulated drive exists for now; the device GPS will come later.
+// A simulated drive, to test the guidance without driving: the device GPS
+// goes through DeviceDrivingPositionRepository instead.
 abstract class DrivingPositionDataSource {
   Stream<Coordinates> watchPosition({required List<Coordinates> along});
 }

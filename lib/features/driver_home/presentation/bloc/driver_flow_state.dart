@@ -41,23 +41,23 @@ final class DriverFlowDocumentsReview extends DriverFlowState {
 }
 
 final class DriverFlowHome extends DriverFlowState {
-  const DriverFlowHome();
-}
+  const DriverFlowHome({this.notice});
 
-// Mockup screen 8: the amount to confirm, then free again.
-final class DriverFlowCheckout extends DriverFlowState {
-  const DriverFlowCheckout({
-    required this.ride,
-    required this.meterCents,
-    required this.distanceKm,
-  });
-
-  final DriverRide ride;
-  final int meterCents;
-  final double distanceKm;
+  // Why the ride stopped, when the driver did not choose it.
+  final String? notice;
 
   @override
-  List<Object?> get props => [ride, meterCents, distanceKm];
+  List<Object?> get props => [notice];
+}
+
+// Mockup screen 8: the meter amount to type, then free again.
+final class DriverFlowCheckout extends DriverFlowState {
+  const DriverFlowCheckout({required this.ride});
+
+  final DriverRide ride;
+
+  @override
+  List<Object?> get props => [ride];
 }
 
 // Mockup screen 7: driving the passenger to their destination.
@@ -83,10 +83,19 @@ final class DriverFlowBoarding extends DriverFlowState {
 
 // Mockup screen 5: driving to the passenger.
 final class DriverFlowPickup extends DriverFlowState {
-  const DriverFlowPickup({required this.ride});
+  const DriverFlowPickup({
+    required this.ride,
+    this.isSubmitting = false,
+    this.failureMessage,
+  });
 
   final DriverRide ride;
 
+  // "Je suis arrivé" or "Se désister" is being sent.
+  final bool isSubmitting;
+
+  final String? failureMessage;
+
   @override
-  List<Object?> get props => [ride];
+  List<Object?> get props => [ride, isSubmitting, failureMessage];
 }

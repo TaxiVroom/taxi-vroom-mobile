@@ -17,11 +17,22 @@ void main() {
     const checkout = RideCheckout(
       meterCents: 2967,
       supplements: [bulkyLuggage, fifthPassenger],
-      paidInApp: true,
-      paymentLabel: 'Visa de Camille',
     );
 
     group('totalCents', () {
+      test('is unknown until the meter amount is typed', () {
+        // Arrange
+        final notTyped = checkout
+            .withMeterCents(null)
+            .withCount(bulkyLuggage, 1);
+
+        // Act
+        final total = notTyped.totalCents;
+
+        // Assert
+        expect(total, isNull);
+      });
+
       test('is the meter amount without supplements', () {
         // Arrange
         const noSupplement = checkout;
@@ -59,6 +70,32 @@ void main() {
 
         // Assert
         expect(total, 3000 + 200);
+      });
+    });
+
+    group('addedSupplements', () {
+      test('keeps only the supplements added, with their count', () {
+        // Arrange
+        final withLuggage = checkout.withCount(bulkyLuggage, 2);
+
+        // Act
+        final added = withLuggage.addedSupplements;
+
+        // Assert
+        expect(added, [(bulkyLuggage, 2)]);
+      });
+
+      test('drops a supplement brought back to 0', () {
+        // Arrange
+        final removed = checkout
+            .withCount(bulkyLuggage, 1)
+            .withCount(bulkyLuggage, 0);
+
+        // Act
+        final added = removed.addedSupplements;
+
+        // Assert
+        expect(added, isEmpty);
       });
     });
 

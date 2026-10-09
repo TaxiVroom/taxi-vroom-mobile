@@ -12,15 +12,13 @@ class DayEarnings extends Equatable {
   List<Object?> get props => [day, amountCents];
 }
 
-// The "Gains" tab: the week, day by day, and how the money comes in.
+// The "Gains" tab: the week, day by day. Every ride is paid on board, by
+// card or cash: the money is already with the driver.
 class WeeklyEarnings extends Equatable {
   const WeeklyEarnings({
     required this.days,
     required this.rideCount,
     required this.onlineMinutes,
-    required this.paidInAppCents,
-    required this.collectedOnBoardCents,
-    required this.nextPayoutDate,
   });
 
   // Monday to Sunday.
@@ -29,18 +27,7 @@ class WeeklyEarnings extends Equatable {
   final int rideCount;
   final int onlineMinutes;
 
-  // Paid through the app: transferred to the driver.
-  final int paidInAppCents;
-
-  // Card or cash in the taxi: already with the driver.
-  final int collectedOnBoardCents;
-
-  final DateTime nextPayoutDate;
-
-  int get totalCents => paidInAppCents + collectedOnBoardCents;
-
-  // Only what was paid in the app is transferred.
-  int get nextPayoutCents => paidInAppCents;
+  int get totalCents => days.fold(0, (total, day) => total + day.amountCents);
 
   // The height of a day's bar, from 0 to 1: the best day is the full bar.
   double shareOfBestDay(DayEarnings day) {
@@ -52,12 +39,5 @@ class WeeklyEarnings extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-    days,
-    rideCount,
-    onlineMinutes,
-    paidInAppCents,
-    collectedOnBoardCents,
-    nextPayoutDate,
-  ];
+  List<Object?> get props => [days, rideCount, onlineMinutes];
 }

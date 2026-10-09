@@ -11,6 +11,7 @@ import 'package:mobile/features/authentication/presentation/pages/phone_number_p
 import 'package:mobile/features/authentication/presentation/pages/welcome_page.dart';
 import 'package:mobile/features/driver_home/domain/usecases/accept_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/accept_ride_request_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/arrive_at_pickup_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
@@ -25,10 +26,10 @@ import 'package:mobile/features/driver_home/domain/usecases/set_receives_booking
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifications_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/verify_boarding_code_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_passenger_cancellation_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/watch_taximeter_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_ride_usecase.dart';
 import 'package:mobile/features/driver_home/presentation/pages/driver_home_page.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_booking_usecase.dart';
@@ -101,10 +102,11 @@ class AuthNavigator extends StatelessWidget {
     required this.acceptRideRequestUseCase,
     required this.declineRideRequestUseCase,
     required this.watchGuidanceUseCase,
-    required this.verifyBoardingCodeUseCase,
+    required this.arriveAtPickupUseCase,
     required this.startRideUseCase,
     required this.reportNoShowUseCase,
-    required this.watchTaximeterUseCase,
+    required this.withdrawFromRideUseCase,
+    required this.watchPassengerCancellationUseCase,
     required this.loadRideCheckoutUseCase,
     required this.completeRideUseCase,
     required this.loadDriverBookingsUseCase,
@@ -169,10 +171,11 @@ class AuthNavigator extends StatelessWidget {
   final AcceptRideRequestUseCase acceptRideRequestUseCase;
   final DeclineRideRequestUseCase declineRideRequestUseCase;
   final WatchGuidanceUseCase watchGuidanceUseCase;
-  final VerifyBoardingCodeUseCase verifyBoardingCodeUseCase;
+  final ArriveAtPickupUseCase arriveAtPickupUseCase;
   final StartRideUseCase startRideUseCase;
   final ReportNoShowUseCase reportNoShowUseCase;
-  final WatchTaximeterUseCase watchTaximeterUseCase;
+  final WithdrawFromRideUseCase withdrawFromRideUseCase;
+  final WatchPassengerCancellationUseCase watchPassengerCancellationUseCase;
   final LoadRideCheckoutUseCase loadRideCheckoutUseCase;
   final CompleteRideUseCase completeRideUseCase;
   final LoadDriverBookingsUseCase loadDriverBookingsUseCase;
@@ -311,10 +314,12 @@ class AuthNavigator extends StatelessWidget {
             acceptRideRequestUseCase: acceptRideRequestUseCase,
             declineRideRequestUseCase: declineRideRequestUseCase,
             watchGuidanceUseCase: watchGuidanceUseCase,
-            verifyBoardingCodeUseCase: verifyBoardingCodeUseCase,
+            arriveAtPickupUseCase: arriveAtPickupUseCase,
             startRideUseCase: startRideUseCase,
             reportNoShowUseCase: reportNoShowUseCase,
-            watchTaximeterUseCase: watchTaximeterUseCase,
+            withdrawFromRideUseCase: withdrawFromRideUseCase,
+            watchPassengerCancellationUseCase:
+                watchPassengerCancellationUseCase,
             loadRideCheckoutUseCase: loadRideCheckoutUseCase,
             completeRideUseCase: completeRideUseCase,
             loadDriverBookingsUseCase: loadDriverBookingsUseCase,

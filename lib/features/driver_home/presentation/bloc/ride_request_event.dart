@@ -33,7 +33,7 @@ final class RideRequestDeclined extends RideRequestEvent {
 final class _RideRequestReceived extends RideRequestEvent {
   const _RideRequestReceived(this.result);
 
-  final Result<RoutedRideRequest> result;
+  final Result<RideRequestUpdate> result;
 
   @override
   List<Object?> get props => [result];

@@ -4,53 +4,37 @@ import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/widgets/bottom_panel.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
-import 'package:mobile/core/widgets/taxi_meter.dart';
+import 'package:mobile/core/widgets/swipe_button.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
-import 'package:mobile/features/driver_home/domain/entities/meter_reading.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/watch_taximeter_usecase.dart';
 import 'package:mobile/features/driver_home/presentation/bloc/guidance_bloc.dart';
-import 'package:mobile/features/driver_home/presentation/bloc/taximeter_bloc.dart';
 import 'package:mobile/features/driver_home/presentation/widgets/driving_map.dart';
-import 'package:mobile/features/driver_home/presentation/widgets/go_button.dart';
 import 'package:mobile/features/driver_home/presentation/widgets/navigation_banner.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-/// Mockup screen 7: guidance to the destination, and the meter, which is
-/// the legal price.
+/// Mockup screen 7: guidance to the destination. The price is on the taxi's
+/// own meter: the app cannot read it, the driver copies it at the end.
 class DriverRidePage extends StatelessWidget {
   const DriverRidePage({
     required this.ride,
     required this.watchGuidanceUseCase,
-    required this.watchTaximeterUseCase,
     required this.onFinished,
     super.key,
   });
 
   final DriverRide ride;
   final WatchGuidanceUseCase watchGuidanceUseCase;
-  final WatchTaximeterUseCase watchTaximeterUseCase;
-  // With the last meter reading, null if the meter never answered.
-  final ValueChanged<MeterReading?> onFinished;
+  final VoidCallback onFinished;
 
   // Room kept for the bottom panel when framing the route on the map.
-  static const _panelHeight = 360.0;
+  static const _panelHeight = 300.0;
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (_) =>
-              GuidanceBloc(watchGuidanceUseCase: watchGuidanceUseCase)
-                ..add(GuidanceStarted(to: ride.destination, from: ride.pickup)),
-        ),
-        BlocProvider(
-          create: (_) =>
-              TaximeterBloc(watchTaximeterUseCase: watchTaximeterUseCase)
-                ..add(const TaximeterStarted()),
-        ),
-      ],
+    return BlocProvider(
+      create: (_) =>
+          GuidanceBloc(watchGuidanceUseCase: watchGuidanceUseCase)
+            ..add(GuidanceStarted(to: ride.destination, from: ride.pickup)),
       // The ride is left through "Terminer la course" only.
       child: PopScope(
         canPop: false,
@@ -118,7 +102,7 @@ class DriverRidePage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildMeter(guidance),
+            _buildTrip(guidance),
             const SizedBox(height: 12),
             // Supplements and the safety tools are not built yet.
             Row(
@@ -150,41 +134,31 @@ class DriverRidePage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            GoButton.primary(
-              label: 'Terminer la course',
-              onPressed: () => onFinished(
-                switch (context.read<TaximeterBloc>().state) {
-                  TaximeterRunning(:final reading) => reading,
-                  _ => null,
-                },
-              ),
-            ),
+            // Slid, not tapped: ending the ride by mistake right after the
+            // pickup must not happen.
+            SwipeButton(label: 'Terminer la course', onSwiped: onFinished),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMeter(Guidance? guidance) {
-    return BlocBuilder<TaximeterBloc, TaximeterState>(
-      builder: (context, state) => switch (state) {
-        TaximeterRunning(:final reading) => TaxiMeter(
-          tariff: reading.tariff,
-          amountCents: reading.amountCents,
-          caption: 'Taximètre connecté',
-          detail: ride.destinationName,
-          trailingDetail: guidance == null
-              ? null
-              : formatDistanceMeters(guidance.metersLeft),
+  // Where to, and what is left once the road is known.
+  Widget _buildTrip(Guidance? guidance) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          ride.destinationName,
+          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
         ),
-        TaximeterWaiting() => const Center(
-          child: CircularProgressIndicator(),
-        ),
-        TaximeterFailure(:final message) => Text(
-          message,
-          style: const TextStyle(color: AppColors.muted),
-        ),
-      },
+        if (guidance != null)
+          Text(
+            '${formatDistanceMeters(guidance.metersLeft)} · '
+            '${guidance.minutesLeft} min restantes',
+            style: const TextStyle(color: AppColors.muted),
+          ),
+      ],
     );
   }
 }

@@ -1,29 +1,57 @@
 import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource.dart';
+import 'package:mobile/features/driver_home/data/datasources/ride_checkout_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/models/ride_checkout_model.dart';
+import 'package:mobile/features/driver_home/data/models/ride_start_model.dart';
 
 /// Implémentation de développement : le code de montée de toutes les
-/// courses est « 4817 », et les courses sont payées par l'application.
-class DriverRideRemoteDataSourceFake implements DriverRideRemoteDataSource {
+/// courses est « 4817 ». Simule aussi les suppléments et la note du client,
+/// qui n'ont pas encore de backend.
+class DriverRideRemoteDataSourceFake
+    implements DriverRideRemoteDataSource, RideCheckoutRemoteDataSource {
   static const _boardingCode = '4817';
 
+  // Same rule as the server: locked after 5 wrong codes.
+  static const _maxAttempts = 5;
+
+  var _failedAttempts = 0;
+
   @override
-  Future<bool> verifyBoardingCode({
-    required String rideId,
-    required String code,
-  }) async {
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-    return code == _boardingCode;
+  Future<void> arriveAtPickup(String rideId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
   }
 
   @override
-  Future<void> startRide(String rideId) async {
+  Future<RideStartModel> startRide({
+    required String rideId,
+    required String boardingCode,
+  }) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
+    if (_failedAttempts >= _maxAttempts) {
+      return RideStartModel.fromJson({'code': 'RIDE.BOARDING_CODE_LOCKED'});
+    }
+    if (boardingCode != _boardingCode) {
+      _failedAttempts++;
+      return RideStartModel.fromJson({
+        'code': 'RIDE.WRONG_BOARDING_CODE',
+        'attemptsLeft': _maxAttempts - _failedAttempts,
+      });
+    }
+    return RideStartModel.accepted;
   }
 
   @override
   Future<void> reportNoShow(String rideId) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
   }
+
+  @override
+  Future<void> withdrawFromRide(String rideId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+  }
+
+  // The passenger never cancels.
+  @override
+  Stream<String> watchRideStatus(String rideId) => const Stream.empty();
 
   // The supplement amounts are examples: the real ones depend on the city's
   // fare rules.
@@ -43,7 +71,6 @@ class DriverRideRemoteDataSourceFake implements DriverRideRemoteDataSource {
           'amountCents': 400,
         },
       ],
-      'payment': {'paidInApp': true, 'label': 'Visa de Camille'},
     });
   }
 
@@ -51,10 +78,19 @@ class DriverRideRemoteDataSourceFake implements DriverRideRemoteDataSource {
   Future<void> completeRide({
     required String rideId,
     required int meterCents,
-    required Map<String, int> supplementCounts,
-    required int totalCents,
-    required int customerRating,
+    required List<
+      ({String supplementId, String label, int unitPriceCents, int quantity})
+    >
+    supplements,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
+  }
+
+  @override
+  Future<void> rateCustomer({
+    required String rideId,
+    required int rating,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
   }
 }

@@ -4,8 +4,9 @@ import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
 import 'package:mobile/features/driver_home/domain/entities/ride_request.dart';
 
 abstract class RideRequestRepository {
-  // The requests offered to the driver while they are online.
-  Stream<Result<RideRequest>> watchRideRequests({
+  // The requests offered to the driver while they are online. Null when no
+  // request waits for them: none came, or the one offered was taken back.
+  Stream<Result<RideRequest?>> watchRideRequests({
     required Coordinates around,
   });
 

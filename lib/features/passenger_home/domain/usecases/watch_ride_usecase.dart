@@ -8,7 +8,7 @@ import 'package:mobile/features/passenger_home/domain/repositories/ride_reposito
 
 // Follows a ride. Each update of a moving taxi also brings its road: to the
 // passenger while the driver comes, with the time left to the pickup, then
-// to the destination once the passenger is in.
+// to the destination once the passenger is in, with the arrival time.
 class WatchRideUseCase {
   const WatchRideUseCase({
     required RideRepository rideRepository,
@@ -30,17 +30,23 @@ class WatchRideUseCase {
             await _withApproach(ride),
           ),
           Ok(value: final RideInProgress ride) => Result.ok(
-            TrackedRide(
-              ride: ride,
-              remainingRoute: await _route(
-                from: ride.taxiPosition,
-                to: ride.destination,
-              ),
-            ),
+            await _withRemainingRoad(ride),
           ),
           Ok(:final value) => Result.ok(TrackedRide(ride: value)),
         },
       );
+
+  Future<TrackedRide> _withRemainingRoad(RideInProgress ride) async {
+    final road = await _route(from: ride.taxiPosition, to: ride.destination);
+    return TrackedRide(
+      ride: road == null
+          ? ride
+          : ride.withEstimatedArrival(
+              DateTime.now().add(Duration(minutes: road.durationMinutes)),
+            ),
+      remainingRoute: road,
+    );
+  }
 
   Future<TrackedRide> _withApproach(RideDriverApproaching ride) async {
     final approach = await _route(from: ride.driverPosition, to: ride.pickup);

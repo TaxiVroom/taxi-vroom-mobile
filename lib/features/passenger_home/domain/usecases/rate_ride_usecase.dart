@@ -10,11 +10,9 @@ class RateRideUseCase {
     required String rideId,
     required int stars,
     required List<String> compliments,
-    required int tipCents,
   }) => _repository.rateRide(
     rideId: rideId,
     stars: stars,
     compliments: compliments,
-    tipCents: tipCents,
   );
 }

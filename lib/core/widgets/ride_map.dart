@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
     show
         CameraViewportState,
@@ -46,8 +48,9 @@ class RideMap extends StatefulWidget {
   // Road left from the taxi to the destination, once the ride has started.
   final List<Coordinates>? remainingRoute;
 
-  // The blue dot of the phone's GPS. Off for the driver: the taxi marker
-  // already shows where they are.
+  // The blue dot of the phone's GPS. Off whenever the taxi marker already
+  // shows where the phone is: for the driver, and for the passenger in the
+  // taxi, whose GPS would not quite agree with the driver's.
   final bool showsDevicePosition;
 
   // Driving: the camera follows the driver, tilted and turned along the
@@ -81,6 +84,9 @@ class _RideMapState extends State<RideMap> {
   @override
   void didUpdateWidget(RideMap oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.showsDevicePosition != widget.showsDevicePosition) {
+      unawaited(_showDevicePosition());
+    }
     if (oldWidget.remainingRoute != widget.remainingRoute) _showRoute();
     if (oldWidget.driverPosition != widget.driverPosition) _showDriver();
     if (oldWidget.destination == null) _showDestination();
@@ -100,12 +106,7 @@ class _RideMapState extends State<RideMap> {
 
   Future<void> _onMapCreated(MapboxMap map) async {
     _map = map;
-    await map.location.updateSettings(
-      LocationComponentSettings(
-        enabled: widget.showsDevicePosition,
-        pulsingEnabled: true,
-      ),
-    );
+    await _showDevicePosition();
     // Created first so the route line stays under the taxi marker.
     _routeLine = await map.annotations.createPolylineAnnotationManager();
     _driverMarker = await map.annotations.createCircleAnnotationManager();
@@ -113,6 +114,15 @@ class _RideMapState extends State<RideMap> {
     await _showDriver();
     await _showDestination();
     await _moveCamera();
+  }
+
+  Future<void> _showDevicePosition() async {
+    await _map?.location.updateSettings(
+      LocationComponentSettings(
+        enabled: widget.showsDevicePosition,
+        pulsingEnabled: true,
+      ),
+    );
   }
 
   Future<void> _showRoute() async {

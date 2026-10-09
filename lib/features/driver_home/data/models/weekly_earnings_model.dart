@@ -5,9 +5,6 @@ class WeeklyEarningsModel {
     required this.days,
     required this.rideCount,
     required this.onlineMinutes,
-    required this.paidInAppCents,
-    required this.collectedOnBoardCents,
-    required this.nextPayoutDate,
   });
 
   factory WeeklyEarningsModel.fromJson(Map<String, dynamic> json) =>
@@ -23,17 +20,11 @@ class WeeklyEarningsModel {
         ],
         rideCount: json['rideCount'] as int,
         onlineMinutes: json['onlineMinutes'] as int,
-        paidInAppCents: json['paidInAppCents'] as int,
-        collectedOnBoardCents: json['collectedOnBoardCents'] as int,
-        nextPayoutDate: DateTime.parse(json['nextPayoutDate'] as String),
       );
 
   final List<({DateTime day, int amountCents})> days;
   final int rideCount;
   final int onlineMinutes;
-  final int paidInAppCents;
-  final int collectedOnBoardCents;
-  final DateTime nextPayoutDate;
 
   WeeklyEarnings toDomain() => WeeklyEarnings(
     days: [
@@ -42,8 +33,5 @@ class WeeklyEarningsModel {
     ],
     rideCount: rideCount,
     onlineMinutes: onlineMinutes,
-    paidInAppCents: paidInAppCents,
-    collectedOnBoardCents: collectedOnBoardCents,
-    nextPayoutDate: nextPayoutDate,
   );
 }

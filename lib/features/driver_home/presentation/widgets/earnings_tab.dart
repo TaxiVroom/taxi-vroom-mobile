@@ -57,17 +57,15 @@ class EarningsTab extends StatelessWidget {
           formatEuro(earnings.totalCents),
           style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w800),
         ),
+        // Every ride is paid on board: the money is already with the driver.
         Text(
-          '${earnings.rideCount} courses, $onlineHours h en ligne',
+          '${earnings.rideCount} courses, $onlineHours h en ligne, encaissé à '
+          'bord (carte ou espèces)',
           style: const TextStyle(fontSize: 13, color: AppColors.muted),
         ),
         const SizedBox(height: 16),
         _buildChart(earnings),
         const SizedBox(height: 16),
-        _buildSplit(earnings),
-        const SizedBox(height: 14),
-        _buildNextPayout(earnings),
-        const SizedBox(height: 6),
         // The PDF statement is not built yet.
         PlaceListTile(
           icon: Icons.receipt_long,
@@ -134,84 +132,6 @@ class EarningsTab extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSplit(WeeklyEarnings earnings) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.border.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          _buildSplitRow(
-            'Payé par l’application',
-            earnings.paidInAppCents,
-          ),
-          _buildSplitRow(
-            'Encaissé à bord (CB, espèces)',
-            earnings.collectedOnBoardCents,
-          ),
-          _buildSplitRow('Total', earnings.totalCents, isTotal: true),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSplitRow(String label, int amountCents, {bool isTotal = false}) {
-    final style = isTotal
-        ? const TextStyle(fontWeight: FontWeight.bold)
-        : const TextStyle(color: AppColors.muted);
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: isTotal
-          ? null
-          : const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.border)),
-            ),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: style)),
-          const SizedBox(width: 12),
-          Text(formatEuro(amountCents), style: style),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNextPayout(WeeklyEarnings earnings) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.successBackground,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Prochain virement',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  '${formatLongDate(earnings.nextPayoutDate)} sur votre '
-                  'compte pro',
-                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            formatEuro(earnings.nextPayoutCents),
-            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
       ),

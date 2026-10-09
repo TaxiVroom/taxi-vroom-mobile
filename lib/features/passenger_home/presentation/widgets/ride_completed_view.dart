@@ -2,12 +2,11 @@ import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
 import 'package:mobile/core/widgets/choice_button.dart';
-import 'package:mobile/core/widgets/section_label.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-/// Mockup screen 9: total and meter breakdown, then rating the driver and an
-/// optional tip.
+/// Mockup screen 9: total and meter breakdown, then rating the driver. No
+/// tip in the app: nothing is paid through it.
 class RideCompletedView extends StatefulWidget {
   const RideCompletedView({
     required this.ride,
@@ -18,11 +17,7 @@ class RideCompletedView extends StatefulWidget {
 
   final RideCompleted ride;
   final bool isSubmitting;
-  final void Function({
-    required int stars,
-    required List<String> compliments,
-    required int tipCents,
-  })
+  final void Function({required int stars, required List<String> compliments})
   onFinished;
 
   @override
@@ -31,12 +26,10 @@ class RideCompletedView extends StatefulWidget {
 
 class _RideCompletedViewState extends State<RideCompletedView> {
   static const _compliments = ['Conduite douce', 'Ponctuel', 'Aide bagages'];
-  static const _tipsCents = [0, 100, 200, 500];
 
   // 0 star means the passenger did not rate the ride.
   int _stars = 0;
   final Set<String> _selectedCompliments = {};
-  int _tipCents = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -54,9 +47,10 @@ class _RideCompletedViewState extends State<RideCompletedView> {
               formatEuro(ride.totalCents),
               style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w800),
             ),
-            // No payment in the app yet: the passenger pays the driver.
+            // Paid on board: every taxi must take cards (Code des transports,
+            // art. L3121-11-2).
             const Text(
-              'À régler au chauffeur',
+              'À régler au chauffeur, par carte ou en espèces',
               style: TextStyle(color: AppColors.muted),
             ),
             const SizedBox(height: 16),
@@ -70,9 +64,6 @@ class _RideCompletedViewState extends State<RideCompletedView> {
             _buildStars(),
             const SizedBox(height: 8),
             _buildCompliments(),
-            const SizedBox(height: 16),
-            const SectionLabel('Pourboire (facultatif)'),
-            _buildTips(),
             const SizedBox(height: 24),
             PrimaryButton(
               onPressed: widget.isSubmitting ? null : _onFinished,
@@ -121,7 +112,7 @@ class _RideCompletedViewState extends State<RideCompletedView> {
           for (final line in ride.fareLines)
             _buildFareRow(line.label, line.amountCents),
           const Divider(),
-          _buildFareRow('Total au compteur', ride.totalCents, isTotal: true),
+          _buildFareRow('Total', ride.totalCents, isTotal: true),
         ],
       ),
     );
@@ -175,25 +166,10 @@ class _RideCompletedViewState extends State<RideCompletedView> {
     );
   }
 
-  Widget _buildTips() {
-    return Wrap(
-      spacing: 8,
-      children: [
-        for (final tipCents in _tipsCents)
-          ChoiceButton(
-            label: tipCents == 0 ? 'Aucun' : '${tipCents ~/ 100} €',
-            isSelected: tipCents == _tipCents,
-            onPressed: () => setState(() => _tipCents = tipCents),
-          ),
-      ],
-    );
-  }
-
   void _onFinished() {
     widget.onFinished(
       stars: _stars,
       compliments: _selectedCompliments.toList(),
-      tipCents: _tipCents,
     );
   }
 }

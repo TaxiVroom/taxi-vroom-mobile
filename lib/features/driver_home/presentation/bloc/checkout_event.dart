@@ -12,9 +12,9 @@ final class CheckoutStarted extends CheckoutEvent {
   const CheckoutStarted();
 }
 
-// The taximeter shows another amount than the one read by the app.
-final class CheckoutMeterAmountCorrected extends CheckoutEvent {
-  const CheckoutMeterAmountCorrected({required this.meterCents});
+// The driver copied the amount shown on the taxi's meter.
+final class CheckoutMeterAmountEntered extends CheckoutEvent {
+  const CheckoutMeterAmountEntered({required this.meterCents});
 
   final int meterCents;
 

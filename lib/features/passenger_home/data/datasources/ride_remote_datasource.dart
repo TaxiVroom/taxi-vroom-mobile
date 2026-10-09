@@ -1,8 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource_fake.dart';
-import 'package:mobile/features/passenger_home/data/models/ride_history_model.dart';
 import 'package:mobile/features/passenger_home/data/models/ride_model.dart';
+import 'package:mobile/features/passenger_home/data/models/simulated_driver_and_vehicle_json.dart';
 import 'package:stream_transform/stream_transform.dart';
 
 abstract class RideRemoteDataSource {
@@ -19,45 +18,18 @@ abstract class RideRemoteDataSource {
   Stream<RideModel> watchRide(String rideId);
 
   Future<void> cancelRide(String rideId);
-
-  Future<void> rateRide({
-    required String rideId,
-    required int stars,
-    required List<String> compliments,
-    required int tipCents,
-  });
-
-  Future<String> bookRide({
-    required double originLatitude,
-    required double originLongitude,
-    required double destinationLatitude,
-    required double destinationLongitude,
-    required String destinationName,
-    required String offerId,
-    required String offerName,
-    required int minPriceCents,
-    required int maxPriceCents,
-    required DateTime scheduledPickup,
-  });
-
-  Future<void> cancelBooking(String bookingId);
-
-  Future<RideHistoryModel> getRideHistory();
 }
 
 // The ride is ordered through the API; the backend then writes it at
 // rides/<rideId> as it goes. Once a driver accepted, their position comes
-// from drivers/<uid> and the boarding code from rideBoardingCodes/<rideId>,
-// readable by the passenger only.
+// from drivers/<uid>, and the boarding code from the API, which gives it to
+// the passenger only.
 // Docs: https://firebase.google.com/docs/database/flutter/read-and-write
 class RideRemoteDataSourceImpl implements RideRemoteDataSource {
-  const RideRemoteDataSourceImpl(this._database, this._dio, this._simulated);
+  const RideRemoteDataSourceImpl(this._database, this._dio);
 
   final FirebaseDatabase _database;
   final Dio _dio;
-
-  // Cancelling, rating, booking and the history have no backend yet.
-  final RideRemoteDataSource _simulated;
 
   @override
   Future<String> requestRide({
@@ -95,56 +67,129 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
   Stream<RideModel> _rideModels(String rideId, DataSnapshot ride) {
     final status = ride.child('status').value! as String;
     return switch (status) {
-      'SEARCHING_DRIVER' || 'NO_DRIVER_FOUND' => Stream.value(
-        RideModel.fromJson({'id': rideId, 'status': status}),
+      'SEARCHING_DRIVER' || 'NO_DRIVER_FOUND' || 'PASSENGER_NO_SHOW' =>
+        Stream.value(RideModel.fromJson({'id': rideId, 'status': status})),
+      'DRIVER_EN_ROUTE' => _withBoardingCode(
+        rideId,
+        ride,
+        (position, boardingCode) => {
+          'status': 'DRIVER_APPROACHING',
+          'boardingCode': boardingCode,
+          'pickup': _coordinates(ride.child('pickup')),
+          'driverPosition': _coordinates(position),
+        },
       ),
-      'DRIVER_EN_ROUTE' => _approachingModels(rideId, ride),
+      'DRIVER_ARRIVED' => _withBoardingCode(
+        rideId,
+        ride,
+        (position, boardingCode) => {
+          'status': 'DRIVER_ARRIVED',
+          'boardingCode': boardingCode,
+          'driverPosition': _coordinates(position),
+        },
+      ),
+      'IN_PROGRESS' => _driverPositions(ride).map(
+        (position) => RideModel.fromJson(
+          _withDriverJson(rideId, ride, {
+            'status': 'IN_PROGRESS',
+            'taxiPosition': _coordinates(position),
+            'destination': _coordinates(ride.child('destination')),
+            'estimatedPriceMinCents': ride
+                .child('estimatedPriceMinCents')
+                .value,
+            'estimatedPriceMaxCents': ride
+                .child('estimatedPriceMaxCents')
+                .value,
+          }),
+        ),
+      ),
+      'COMPLETED' => Stream.value(
+        RideModel.fromJson(_withDriverJson(rideId, ride, _completedJson(ride))),
+      ),
+      // Only the passenger cancels: their screen already left the ride.
+      'CANCELLED' => const Stream.empty(),
       _ => Stream.error(FormatException('Statut de course inconnu : $status')),
     };
   }
 
-  // Again at each move of the driver.
-  Stream<RideModel> _approachingModels(String rideId, DataSnapshot ride) {
+  // The receipt the backend wrote at the end of the ride: the meter, then
+  // each supplement.
+  Map<String, dynamic> _completedJson(DataSnapshot ride) {
+    final completion = ride.child('completion');
+    return {
+      'status': 'COMPLETED',
+      'destinationName': ride.child('destination/name').value! as String,
+      'arrivedAt': DateTime.fromMillisecondsSinceEpoch(
+        completion.child('completedAt').value! as int,
+      ).toIso8601String(),
+      'totalCents': completion.child('totalCents').value! as int,
+      'fareLines': [
+        {
+          'label': 'Compteur',
+          'amountCents': completion.child('meterCents').value! as int,
+        },
+        for (final supplement in completion.child('supplements').children)
+          _supplementLine(supplement),
+      ],
+    };
+  }
+
+  Map<String, dynamic> _supplementLine(DataSnapshot supplement) {
+    final label = supplement.child('label').value! as String;
+    final quantity = supplement.child('quantity').value! as int;
+    final unitPriceCents = supplement.child('unitPriceCents').value! as int;
+    return {
+      'label': quantity > 1 ? '$label × $quantity' : label,
+      'amountCents': unitPriceCents * quantity,
+    };
+  }
+
+  // Again at each move of the driver. The code is asked once to the API: it
+  // never goes through Firebase.
+  Stream<RideModel> _withBoardingCode(
+    String rideId,
+    DataSnapshot ride,
+    Map<String, dynamic> Function(DataSnapshot position, String boardingCode)
+    json,
+  ) => _driverPositions(ride).combineLatest(
+    Stream.fromFuture(_boardingCode(rideId)),
+    (position, boardingCode) => RideModel.fromJson(
+      _withDriverJson(rideId, ride, json(position, boardingCode)),
+    ),
+  );
+
+  Future<String> _boardingCode(String rideId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/v1/rides/$rideId/boarding-code',
+    );
+    return response.data!['code'] as String;
+  }
+
+  Stream<DataSnapshot> _driverPositions(DataSnapshot ride) {
     final driverId = ride.child('driverId').value! as String;
-    final positions = _database
+    return _database
         .ref('drivers/$driverId')
         .onValue
         // Gone when the driver loses the connection: the last one stays.
         .where((event) => event.snapshot.value != null)
         .map((event) => event.snapshot);
-    final boardingCodes = _database
-        .ref('rideBoardingCodes/$rideId/code')
-        .onValue
-        .where((event) => event.snapshot.value != null)
-        .map((event) => event.snapshot.value! as String);
-    return positions.combineLatest(
-      boardingCodes,
-      (position, boardingCode) => RideModel.fromJson(
-        _approachingJson(rideId, ride, position, boardingCode),
-      ),
-    );
   }
 
-  Map<String, dynamic> _approachingJson(
+  Map<String, dynamic> _withDriverJson(
     String rideId,
     DataSnapshot ride,
-    DataSnapshot position,
-    String boardingCode,
+    Map<String, dynamic> json,
   ) {
-    const simulated = RideRemoteDataSourceFake.simulatedDriverAndVehicleJson;
     final driver = ride.child('driver');
     final lastName = driver.child('lastName').value! as String;
     return {
       'id': rideId,
-      'status': 'DRIVER_APPROACHING',
-      'boardingCode': boardingCode,
-      'pickup': _coordinates(ride.child('pickup')),
-      'driverPosition': _coordinates(position),
+      ...json,
       'driver': {
-        ...simulated['driver']!,
+        ...simulatedDriverAndVehicleJson['driver']!,
         'name': '${driver.child('firstName').value} ${lastName[0]}.',
       },
-      'vehicle': simulated['vehicle'],
+      'vehicle': simulatedDriverAndVehicleJson['vehicle'],
     };
   }
 
@@ -154,50 +199,6 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
   };
 
   @override
-  Future<void> cancelRide(String rideId) => _simulated.cancelRide(rideId);
-
-  @override
-  Future<void> rateRide({
-    required String rideId,
-    required int stars,
-    required List<String> compliments,
-    required int tipCents,
-  }) => _simulated.rateRide(
-    rideId: rideId,
-    stars: stars,
-    compliments: compliments,
-    tipCents: tipCents,
-  );
-
-  @override
-  Future<String> bookRide({
-    required double originLatitude,
-    required double originLongitude,
-    required double destinationLatitude,
-    required double destinationLongitude,
-    required String destinationName,
-    required String offerId,
-    required String offerName,
-    required int minPriceCents,
-    required int maxPriceCents,
-    required DateTime scheduledPickup,
-  }) => _simulated.bookRide(
-    originLatitude: originLatitude,
-    originLongitude: originLongitude,
-    destinationLatitude: destinationLatitude,
-    destinationLongitude: destinationLongitude,
-    destinationName: destinationName,
-    offerId: offerId,
-    offerName: offerName,
-    minPriceCents: minPriceCents,
-    maxPriceCents: maxPriceCents,
-    scheduledPickup: scheduledPickup,
-  );
-
-  @override
-  Future<void> cancelBooking(String bookingId) =>
-      _simulated.cancelBooking(bookingId);
-
-  @override
-  Future<RideHistoryModel> getRideHistory() => _simulated.getRideHistory();
+  Future<void> cancelRide(String rideId) =>
+      _dio.post<void>('/v1/rides/$rideId/cancel');
 }

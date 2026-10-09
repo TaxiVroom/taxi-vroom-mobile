@@ -10,31 +10,17 @@ void main() {
       days: [monday, tuesday, wednesday],
       rideCount: 12,
       onlineMinutes: 600,
-      paidInAppCents: 11250,
-      collectedOnBoardCents: 3750,
-      nextPayoutDate: DateTime(2026, 9, 28),
     );
 
-    test('the total adds what was paid in the app and on board', () {
+    test('the total adds the earnings of every day', () {
       // Arrange
-      const expected = 11250 + 3750;
+      const expected = 5000 + 10000 + 0;
 
       // Act
       final total = earnings.totalCents;
 
       // Assert
       expect(total, expected);
-    });
-
-    test('only what was paid in the app is transferred', () {
-      // Arrange
-      const expected = 11250;
-
-      // Act
-      final payout = earnings.nextPayoutCents;
-
-      // Assert
-      expect(payout, expected);
     });
 
     test('bars are sized against the best day', () {
@@ -54,9 +40,6 @@ void main() {
         days: [wednesday],
         rideCount: 0,
         onlineMinutes: 0,
-        paidInAppCents: 0,
-        collectedOnBoardCents: 0,
-        nextPayoutDate: DateTime(2026, 9, 28),
       );
 
       // Act

@@ -19,7 +19,7 @@ class RideRequestRemoteDataSourceFake implements RideRequestRemoteDataSource {
   final _sentRequests = <String, Map<String, dynamic>>{};
 
   @override
-  Stream<RideRequestModel> watchRideRequests({
+  Stream<RideRequestModel?> watchRideRequests({
     required double latitude,
     required double longitude,
   }) async* {
