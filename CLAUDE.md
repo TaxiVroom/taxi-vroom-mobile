@@ -1,6 +1,6 @@
 # Commands
 
-- After a fresh clone and after any `.env.*` change: `dart run build_runner build --delete-conflicting-outputs`. envied generates `lib/env/*.g.dart` (gitignored); the app does not compile without them.
+- After a fresh clone and after any `.env.*` change: `dart run build_runner clean && dart run build_runner build --delete-conflicting-outputs`. envied generates `lib/env/*.g.dart` (gitignored); the app does not compile without them. The `clean` is required: build_runner does not track `.env.*` files, so without it a `.env.*` change is silently ignored and the old values stay in the generated code.
 - Run a flavor: `flutter run --flavor development --target lib/main_development.dart` (same pattern for `staging` / `production`).
 - Run a single test file: `very_good test <path>`. `very_good test` never runs `pub get`: run `flutter pub get` first after changing `pubspec.yaml`.
 - Bloc lint (run by CI with `very_good_analysis`): `dart run bloc_tools:bloc lint .`
@@ -8,7 +8,7 @@
 # Environment
 
 - Env files live at the repo root and are gitignored: `.env.dev`, `.env.stg`, `.env.prod` — not `.env.staging`, the names are hardcoded in `lib/env/env_*.dart`. Keys: `API_BASE_URL`, `MAPBOX_ACCESS_TOKEN` (the public `pk.` token only, never a secret one), `FIREBASE_DATABASE_URL` (Realtime Database in `europe-west1`: the app must be given its URL).
-- `.env.dev` points to the backend on the dev machine's LAN IP, port 3000. When that IP changes, update it and rerun `build_runner`.
+- `.env.dev` points to the backend on the dev machine's LAN IP, port 3000. When that IP changes, update it and rerun `build_runner` (with `clean`, see above), then fully restart `flutter run`: a hot reload keeps the old value.
 - `main_staging.dart` uses the production Firebase options: no staging Firebase app exists yet.
 
 # Architecture
