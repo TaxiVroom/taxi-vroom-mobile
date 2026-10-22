@@ -3,16 +3,19 @@ import 'dart:math';
 import 'package:mobile/features/passenger_home/data/datasources/ride_booking_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_rating_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource.dart';
+import 'package:mobile/features/passenger_home/data/datasources/taxi_offer_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/models/ride_history_model.dart';
 import 'package:mobile/features/passenger_home/data/models/ride_model.dart';
 import 'package:mobile/features/passenger_home/data/models/simulated_driver_and_vehicle_json.dart';
+import 'package:mobile/features/passenger_home/data/models/taxi_offer_model.dart';
 
 /// Implémentation de développement avec données de test.
-/// Simule une course complète : recherche, chauffeur qui approche puis
-/// attend, trajet, puis fin de course. Une « minute » dure 3 s.
+/// Simule une course complète : estimation, recherche, chauffeur qui approche
+/// puis attend, trajet, puis fin de course. Une « minute » dure 3 s.
 /// Garde aussi en mémoire les réservations et l'historique des courses.
 class RideRemoteDataSourceFake
     implements
+        TaxiOfferRemoteDataSource,
         RideRemoteDataSource,
         RideBookingRemoteDataSource,
         RideRatingRemoteDataSource {
@@ -82,10 +85,27 @@ class RideRemoteDataSourceFake
   static const _startLatitudeOffset = 0.006;
   static const _startLongitudeOffset = -0.004;
 
-  // Fake meter, same national caps as the fake taxi offers.
+  // Fake prices and meter from the national caps.
   static const _pickupFeeCents = 448;
   static const _pricePerKmCents = 130;
+  static const _minimumFareCents = 800;
   static const _idleTimeCents = 150;
+
+  // Shown in "Comment est calculé le prix ?": the Bas-Rhin 2026 arrêté.
+  static const Map<String, Object> _tariffJson = {
+    'departmentCode': '67',
+    'validFrom': '2026-02-01',
+    'decree': 'Arrêté préfectoral du 26 janvier 2026',
+    'pickupCents': 310,
+    'kmCentsA': 101,
+    'kmCentsB': 143,
+    'kmCentsC': 202,
+    'kmCentsD': 286,
+    'hourlyCents': 3780,
+    'minimumFareCents': 800,
+    'nightStartMinute': 19 * 60,
+    'nightEndMinute': 7 * 60,
+  };
 
   double _originLatitude = 0;
   double _originLongitude = 0;
@@ -96,26 +116,44 @@ class RideRemoteDataSourceFake
   int _maxPriceCents = 0;
   bool _isCancelled = false;
 
+  // One taxi priced from the national caps, with a ±10 % range.
   @override
-  Future<String> requestRide({
-    required double originLatitude,
-    required double originLongitude,
-    required double destinationLatitude,
-    required double destinationLongitude,
+  Future<List<TaxiOfferModel>> getOffers({
+    required double fromLatitude,
+    required double fromLongitude,
+    required double toLatitude,
+    required double toLongitude,
     required String destinationName,
-    required int minPriceCents,
-    required int maxPriceCents,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
-    _originLatitude = originLatitude;
-    _originLongitude = originLongitude;
-    _destinationLatitude = destinationLatitude;
-    _destinationLongitude = destinationLongitude;
+    _originLatitude = fromLatitude;
+    _originLongitude = fromLongitude;
+    _destinationLatitude = toLatitude;
+    _destinationLongitude = toLongitude;
     _destinationName = destinationName;
-    _minPriceCents = minPriceCents;
-    _maxPriceCents = maxPriceCents;
+    final fareCents =
+        _pickupFeeCents + (_pricePerKmCents * _straightLineKm()).round();
+    _minPriceCents = max((fareCents * 0.9).round(), _minimumFareCents);
+    _maxPriceCents = max((fareCents * 1.1).round(), _minimumFareCents);
+    return [
+      TaxiOfferModel.fromJson({
+        'id': 'taxi',
+        'rideId': _rideId,
+        'name': 'Taxi',
+        'description': '4 places',
+        'pickupEtaMinutes': _initialEtaMinutes,
+        'minPriceCents': _minPriceCents,
+        'maxPriceCents': _maxPriceCents,
+        'priceNote': 'hors suppléments',
+        'tariff': _tariffJson,
+      }),
+    ];
+  }
+
+  @override
+  Future<void> requestRide(String rideId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
     _isCancelled = false;
-    return _rideId;
   }
 
   @override

@@ -9,6 +9,7 @@ import 'package:mobile/core/widgets/message_toast.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_choice.dart';
+import 'package:mobile/features/passenger_home/domain/entities/taxi_offer.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
@@ -18,6 +19,7 @@ import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_
 import 'package:mobile/features/passenger_home/presentation/bloc/ride_history_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/taxi_choice_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/pickup_time_chip.dart';
+import 'package:mobile/features/passenger_home/presentation/widgets/price_explanation_sheet.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/route_map.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/taxi_offer_tile.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -186,10 +188,11 @@ class TaxiChoicePage extends StatelessWidget {
         _buildOptions(),
         const SizedBox(height: 8),
         const Text(
-          "Prix final au compteur, tarif réglementé. L'estimation inclut "
-          "l'approche du taxi.",
+          'Estimation, trajet du taxi jusqu’à vous inclus. Le prix final est '
+          'celui du taximètre.',
           style: TextStyle(fontSize: 12, color: AppColors.muted),
         ),
+        _buildPriceExplanation(context, choice.offerById(selectedOfferId)),
         if (orderFailureMessage != null) ...[
           const SizedBox(height: 8),
           Text(
@@ -214,6 +217,25 @@ class TaxiChoicePage extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPriceExplanation(BuildContext context, TaxiOffer? offer) {
+    if (offer == null) return const SizedBox.shrink();
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: LinkButton(
+        density: ButtonDensity.compact,
+        onPressed: () => openSheet<void>(
+          context: context,
+          position: OverlayPosition.bottom,
+          builder: (_) => PriceExplanationSheet(tariff: offer.tariff),
+        ),
+        child: const Text(
+          'Comment est calculé le prix ?',
+          style: TextStyle(fontSize: 12),
+        ),
+      ),
     );
   }
 

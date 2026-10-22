@@ -2,18 +2,34 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/domain/entities/ride_route.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_choice.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_offer.dart';
+import 'package:mobile/features/passenger_home/domain/entities/taxi_tariff.dart';
 
 void main() {
   group('TaxiChoice', () {
-    const offer = TaxiOffer(
+    final offer = TaxiOffer(
       id: 'taxi',
+      rideId: 'ride-id',
       name: 'Taxi',
       description: '4 places',
       pickupEtaMinutes: 4,
       minPriceCents: 2000,
       maxPriceCents: 2500,
+      tariff: TaxiTariff(
+        departmentCode: '67',
+        validFrom: DateTime(2026, 2),
+        decree: 'Arrêté préfectoral du 26 janvier 2026',
+        pickupCents: 310,
+        kmCentsA: 101,
+        kmCentsB: 143,
+        kmCentsC: 202,
+        kmCentsD: 286,
+        hourlyCents: 3780,
+        minimumFareCents: 800,
+        nightStartMinute: 19 * 60,
+        nightEndMinute: 7 * 60,
+      ),
     );
-    const choice = TaxiChoice(
+    final choice = TaxiChoice(
       route: RideRoute(distanceKm: 14, durationMinutes: 17, path: []),
       offers: [offer],
     );

@@ -31,11 +31,7 @@ class LoadTaxiChoiceUseCase {
     }
 
     final List<TaxiOffer> offers;
-    switch (await _taxiOfferRepository.getOffers(
-      from: from,
-      to: to.coordinates,
-      route: route,
-    )) {
+    switch (await _taxiOfferRepository.getOffers(from: from, to: to)) {
       case Ok(:final value):
         offers = value;
       case Error(:final error):

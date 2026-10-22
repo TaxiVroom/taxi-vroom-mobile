@@ -8,11 +8,9 @@ import 'package:mobile/features/passenger_home/domain/entities/taxi_offer.dart';
 abstract class RideRepository {
   // Returns the id of the created ride. The offer's estimate goes with it: the
   // real price comes from the meter.
-  Future<Result<String>> requestRide({
-    required Coordinates origin,
-    required Place destination,
-    required TaxiOffer offer,
-  });
+  // Orders the estimated ride of the offer, at its price. Fails with
+  // EstimateExpiredFailure when the price is too old.
+  Future<Result<String>> requestRide(TaxiOffer offer);
 
   // Emits the ride every time its status or position changes.
   Stream<Result<Ride>> watchRide(String rideId);

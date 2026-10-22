@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:mobile/core/domain/entities/coordinates.dart';
+import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_choice.dart';
@@ -41,12 +42,21 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
     Emitter<TaxiChoiceState> emit,
   ) async {
     emit(const TaxiChoiceLoading());
+    await _load(emit);
+  }
+
+  // A new estimate each time: the backend prices from the taxis free now.
+  Future<void> _load(
+    Emitter<TaxiChoiceState> emit, {
+    String? orderFailureMessage,
+  }) async {
     switch (await _loadTaxiChoiceUseCase(from: _origin, to: _destination)) {
       case Ok(:final value):
         emit(
           TaxiChoiceReady(
             choice: value,
             selectedOfferId: value.offers.firstOrNull?.id,
+            orderFailureMessage: orderFailureMessage,
           ),
         );
       case Error(:final error):
@@ -84,11 +94,7 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
         isOrdering: true,
       ),
     );
-    switch (await _requestRideUseCase(
-      origin: _origin,
-      destination: _destination,
-      offer: offer,
-    )) {
+    switch (await _requestRideUseCase(offer)) {
       case Ok(:final value):
         emit(
           TaxiChoiceReady(
@@ -97,6 +103,9 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
             orderedRideId: value,
           ),
         );
+      // The passenger sees the new price before ordering again.
+      case Error(error: EstimateExpiredFailure(:final message)):
+        await _load(emit, orderFailureMessage: message);
       case Error(:final error):
         emit(
           TaxiChoiceReady(

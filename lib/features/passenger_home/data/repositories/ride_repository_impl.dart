@@ -33,25 +33,20 @@ class RideRepositoryImpl implements RideRepository {
     'La course ne peut plus être annulée.',
   );
 
+  // The only 422 of the order (RIDE.ESTIMATE_EXPIRED in the API).
+  static const _estimateExpired = EstimateExpiredFailure(
+    'Le prix a été mis à jour : vérifiez-le avant de commander.',
+  );
+
   @override
-  Future<Result<String>> requestRide({
-    required Coordinates origin,
-    required Place destination,
-    required TaxiOffer offer,
-  }) async {
+  Future<Result<String>> requestRide(TaxiOffer offer) async {
     try {
-      final rideId = await _dataSource.requestRide(
-        originLatitude: origin.latitude,
-        originLongitude: origin.longitude,
-        destinationLatitude: destination.coordinates.latitude,
-        destinationLongitude: destination.coordinates.longitude,
-        destinationName: destination.name,
-        minPriceCents: offer.minPriceCents,
-        maxPriceCents: offer.maxPriceCents,
-      );
-      return Result.ok(rideId);
+      await _dataSource.requestRide(offer.rideId);
+      return Result.ok(offer.rideId);
     } on DioException catch (e) {
-      return Result.error(e.toFailure());
+      return Result.error(
+        e.response?.statusCode == 422 ? _estimateExpired : e.toFailure(),
+      );
     }
   }
 

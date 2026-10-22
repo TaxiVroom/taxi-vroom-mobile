@@ -5,22 +5,16 @@ import 'package:mobile/features/passenger_home/data/models/simulated_driver_and_
 import 'package:stream_transform/stream_transform.dart';
 
 abstract class RideRemoteDataSource {
-  Future<String> requestRide({
-    required double originLatitude,
-    required double originLongitude,
-    required double destinationLatitude,
-    required double destinationLongitude,
-    required String destinationName,
-    required int minPriceCents,
-    required int maxPriceCents,
-  });
+  // Orders the ride the backend estimated, at the price shown.
+  Future<void> requestRide(String rideId);
 
   Stream<RideModel> watchRide(String rideId);
 
   Future<void> cancelRide(String rideId);
 }
 
-// The ride is ordered through the API; the backend then writes it at
+// The ride is estimated, then ordered through the API; the backend then
+// writes it at
 // rides/<rideId> as it goes. Once a driver accepted, their position comes
 // from drivers/<uid>, and the boarding code from the API, which gives it to
 // the passenger only.
@@ -32,29 +26,8 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
   final Dio _dio;
 
   @override
-  Future<String> requestRide({
-    required double originLatitude,
-    required double originLongitude,
-    required double destinationLatitude,
-    required double destinationLongitude,
-    required String destinationName,
-    required int minPriceCents,
-    required int maxPriceCents,
-  }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/v1/rides',
-      data: {
-        'originLatitude': originLatitude,
-        'originLongitude': originLongitude,
-        'destinationName': destinationName,
-        'destinationLatitude': destinationLatitude,
-        'destinationLongitude': destinationLongitude,
-        'estimatedPriceMinCents': minPriceCents,
-        'estimatedPriceMaxCents': maxPriceCents,
-      },
-    );
-    return response.data!['id'] as String;
-  }
+  Future<void> requestRide(String rideId) =>
+      _dio.post<void>('/v1/rides/$rideId/request');
 
   @override
   Stream<RideModel> watchRide(String rideId) => _database

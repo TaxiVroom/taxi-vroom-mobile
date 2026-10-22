@@ -17,6 +17,11 @@ class ValidationFailure extends Failure {
   const ValidationFailure(super.message);
 }
 
+// The price shown is too old to be ordered: a new one must be shown first.
+class EstimateExpiredFailure extends ValidationFailure {
+  const EstimateExpiredFailure(super.message);
+}
+
 // Location unavailable: permission denied or location services turned off.
 class LocationFailure extends Failure {
   const LocationFailure(super.message);

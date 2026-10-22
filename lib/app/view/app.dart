@@ -73,7 +73,7 @@ import 'package:mobile/features/passenger_home/data/datasources/place_search_rem
 import 'package:mobile/features/passenger_home/data/datasources/recent_destination_remote_datasource_fake.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource_fake.dart';
-import 'package:mobile/features/passenger_home/data/datasources/taxi_offer_remote_datasource_fake.dart';
+import 'package:mobile/features/passenger_home/data/datasources/taxi_offer_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/repositories/account_repository_impl.dart';
 import 'package:mobile/features/passenger_home/data/repositories/nearby_taxi_repository_impl.dart';
 import 'package:mobile/features/passenger_home/data/repositories/place_search_repository_impl.dart';
@@ -164,11 +164,16 @@ class App extends StatelessWidget {
       ),
     );
 
-    // Choix du taxi : offres et prix fake en attendant l'endpoint backend.
+    // Course simulée : estimation, suivi, notation, réservations et
+    // historique. Une seule instance, qui garde l'estimation pour la commande.
+    final rideFake = RideRemoteDataSourceFake();
+
+    // Choix du taxi : prix estimé par le backend, qui crée la course. Pour
+    // tout simuler, passer rideFake à la place, et aussi à la course.
     final loadTaxiChoiceUseCase = LoadTaxiChoiceUseCase(
       routeRepository: routeRepo,
       taxiOfferRepository: TaxiOfferRepositoryImpl(
-        TaxiOfferRemoteDataSourceFake(),
+        TaxiOfferRemoteDataSourceImpl(dio),
       ),
     );
 
@@ -191,7 +196,6 @@ class App extends StatelessWidget {
     // réservations et historique restent simulés. Une seule instance,
     // partagée par la commande, le suivi et l'annulation. Pour tout simuler,
     // passer rideFake en premier argument aussi.
-    final rideFake = RideRemoteDataSourceFake();
     final rideRepo = RideRepositoryImpl(
       RideRemoteDataSourceImpl(realtimeDatabase, dio),
       rideFake,
