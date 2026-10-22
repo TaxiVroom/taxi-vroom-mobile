@@ -147,5 +147,82 @@ void main() {
         expect(reachable, [taxi2KmNorth]);
       });
     });
+
+    group('searchCenters', () {
+      test('starts the search where the passenger is', () async {
+        // Arrange
+        const positions = Stream<Coordinates>.empty();
+
+        // Act
+        final centers = WatchNearbyTaxisUseCase.searchCenters(
+          positions,
+          from: passenger,
+        );
+
+        // Assert
+        expect(await centers.toList(), [passenger]);
+      });
+
+      test('keeps the search after a move 1 cm within 500 m', () async {
+        // Arrange
+        final positions = Stream.value(
+          const Coordinates(latitude: 48.57789652, longitude: 7.7521),
+        );
+
+        // Act
+        final centers = WatchNearbyTaxisUseCase.searchCenters(
+          positions,
+          from: passenger,
+        );
+
+        // Assert
+        expect(await centers.toList(), [passenger]);
+      });
+
+      test('moves the search after a move 1 cm beyond 500 m', () async {
+        // Arrange
+        const moved = Coordinates(latitude: 48.5778967, longitude: 7.7521);
+        final positions = Stream.value(moved);
+
+        // Act
+        final centers = WatchNearbyTaxisUseCase.searchCenters(
+          positions,
+          from: passenger,
+        );
+
+        // Assert
+        expect(await centers.toList(), [passenger, moved]);
+      });
+
+      test('measures the move from the latest search', () async {
+        // Arrange
+        const moved400mNorth = Coordinates(
+          latitude: 48.57699729,
+          longitude: 7.7521,
+        );
+        const moved800mNorth = Coordinates(
+          latitude: 48.58059457,
+          longitude: 7.7521,
+        );
+        const moved1100mNorth = Coordinates(
+          latitude: 48.58329254,
+          longitude: 7.7521,
+        );
+        final positions = Stream.fromIterable([
+          moved400mNorth,
+          moved800mNorth,
+          moved1100mNorth,
+        ]);
+
+        // Act
+        final centers = WatchNearbyTaxisUseCase.searchCenters(
+          positions,
+          from: passenger,
+        );
+
+        // Assert
+        expect(await centers.toList(), [passenger, moved800mNorth]);
+      });
+    });
   });
 }

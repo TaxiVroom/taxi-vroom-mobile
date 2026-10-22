@@ -219,6 +219,7 @@ class App extends StatelessWidget {
       nearbyTaxiRepository: NearbyTaxiRepositoryImpl(
         NearbyTaxiRemoteDataSourceImpl(realtimeDatabase),
       ),
+      locationRepository: locationRepo,
     );
 
     // Accueil chauffeur. Pas encore d'endpoint backend : disponibilité, demande
