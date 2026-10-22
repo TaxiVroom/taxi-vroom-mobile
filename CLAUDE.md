@@ -10,6 +10,7 @@
 - Env files live at the repo root and are gitignored: `.env.dev`, `.env.stg`, `.env.prod` — not `.env.staging`, the names are hardcoded in `lib/env/env_*.dart`. Keys: `API_BASE_URL`, `MAPBOX_ACCESS_TOKEN` (the public `pk.` token only, never a secret one), `FIREBASE_DATABASE_URL` (Realtime Database in `europe-west1`: the app must be given its URL).
 - `.env.dev` points to the backend on the dev machine's LAN IP, port 3000. When that IP changes, update it and rerun `build_runner` (with `clean`, see above), then fully restart `flutter run`: a hot reload keeps the old value.
 - `main_staging.dart` uses the production Firebase options: no staging Firebase app exists yet.
+- Realtime Database paths: `drivers/{uid}` (online drivers, written by the driver app), `rideOffers/{driverUid}` and `rides/{rideId}` (written by the backend only, read-only for the app). The boarding code is not in it: the passenger gets it from `GET /v1/rides/:rideId/boarding-code`.
 
 # Architecture
 
