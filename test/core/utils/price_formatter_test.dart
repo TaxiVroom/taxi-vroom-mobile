@@ -2,6 +2,32 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/utils/price_formatter.dart';
 
 void main() {
+  group('formatEuroRange', () {
+    test('widens the range to whole euros, never narrows it', () {
+      // Arrange
+      const minCents = 1260;
+      const maxCents = 1740;
+
+      // Act
+      final range = formatEuroRange(minCents, maxCents);
+
+      // Assert
+      expect(range, '12–18 €');
+    });
+
+    test('keeps whole euros as they are', () {
+      // Arrange
+      const minCents = 2700;
+      const maxCents = 3300;
+
+      // Act
+      final range = formatEuroRange(minCents, maxCents);
+
+      // Assert
+      expect(range, '27–33 €');
+    });
+  });
+
   group('parseEuroCents', () {
     test('reads a French amount with a comma', () {
       // Arrange

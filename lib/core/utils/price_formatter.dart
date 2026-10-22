@@ -1,6 +1,7 @@
-// (2700, 3300) -> "27–33 €".
+// (2700, 3300) -> "27–33 €". Widened to whole euros, never narrowed: the
+// price announced must hold the estimate.
 String formatEuroRange(int minCents, int maxCents) =>
-    '${(minCents / 100).round()}–${(maxCents / 100).round()} €';
+    '${minCents ~/ 100}–${(maxCents / 100).ceil()} €';
 
 // 2967 -> "29,67 €".
 String formatEuro(int cents) =>
