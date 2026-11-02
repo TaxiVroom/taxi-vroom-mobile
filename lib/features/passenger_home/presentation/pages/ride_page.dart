@@ -8,6 +8,7 @@ import 'package:mobile/core/utils/time_formatter.dart';
 import 'package:mobile/core/widgets/bottom_panel.dart';
 import 'package:mobile/core/widgets/license_plate.dart';
 import 'package:mobile/core/widgets/map_pill.dart';
+import 'package:mobile/core/widgets/message_toast.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/core/widgets/ride_map.dart';
 import 'package:mobile/features/passenger_home/domain/entities/driver.dart';
@@ -54,8 +55,16 @@ class RidePage extends StatelessWidget {
       )..add(const RideStarted()),
       child: BlocListener<RideBloc, RideState>(
         listenWhen: (_, current) => current is RideEnded,
-        listener: (context, _) =>
-            context.read<PassengerFlowBloc>().add(const PassengerRideEnded()),
+        listener: (context, state) {
+          if (state is RideEnded && state.isRatingLost) {
+            showMessageToast(
+              context,
+              title: 'Note non envoyée',
+              message: 'Votre note n’a pas pu être envoyée.',
+            );
+          }
+          context.read<PassengerFlowBloc>().add(const PassengerRideEnded());
+        },
         // An ordered ride is left through "Annuler la course" or "Terminer".
         child: PopScope(
           canPop: false,

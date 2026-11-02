@@ -7,26 +7,21 @@ import 'package:mobile/core/errors/dio_exception_failure.dart';
 import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_booking_remote_datasource.dart';
-import 'package:mobile/features/passenger_home/data/datasources/ride_rating_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
+import 'package:mobile/features/passenger_home/domain/entities/ride_compliment.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride_history.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_offer.dart';
 import 'package:mobile/features/passenger_home/domain/repositories/ride_repository.dart';
 
 class RideRepositoryImpl implements RideRepository {
-  const RideRepositoryImpl(
-    this._dataSource,
-    this._bookingDataSource,
-    this._ratingDataSource,
-  );
+  const RideRepositoryImpl(this._dataSource, this._bookingDataSource);
 
   final RideRemoteDataSource _dataSource;
 
   // No backend yet: simulated.
   final RideBookingRemoteDataSource _bookingDataSource;
-  final RideRatingRemoteDataSource _ratingDataSource;
 
   // The passenger got in meanwhile, or the ride already stopped.
   static const _tooLateToCancel = ValidationFailure(
@@ -122,8 +117,14 @@ class RideRepositoryImpl implements RideRepository {
   @override
   Future<Result<RideHistory>> getRideHistory() async {
     try {
-      final model = await _bookingDataSource.getRideHistory();
-      return Result.ok(model.toDomain());
+      final bookings = await _bookingDataSource.getBookings();
+      final pastRides = await _dataSource.getPastRides();
+      return Result.ok(
+        RideHistory(
+          upcoming: [for (final ride in bookings) ride.toDomain()],
+          past: [for (final ride in pastRides) ride.toDomain()],
+        ),
+      );
     } on DioException catch (e) {
       return Result.error(e.toFailure());
     }
@@ -133,13 +134,13 @@ class RideRepositoryImpl implements RideRepository {
   Future<Result<void>> rateRide({
     required String rideId,
     required int stars,
-    required List<String> compliments,
+    required List<RideCompliment> compliments,
   }) async {
     try {
-      await _ratingDataSource.rateRide(
+      await _dataSource.rateRide(
         rideId: rideId,
         stars: stars,
-        compliments: compliments,
+        compliments: [for (final compliment in compliments) compliment.code],
       );
       return const Result.ok(null);
     } on DioException catch (e) {

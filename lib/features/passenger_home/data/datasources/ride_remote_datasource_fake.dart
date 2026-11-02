@@ -1,10 +1,10 @@
 import 'dart:math';
 
 import 'package:mobile/features/passenger_home/data/datasources/ride_booking_remote_datasource.dart';
-import 'package:mobile/features/passenger_home/data/datasources/ride_rating_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/taxi_offer_remote_datasource.dart';
-import 'package:mobile/features/passenger_home/data/models/ride_history_model.dart';
+import 'package:mobile/features/passenger_home/data/models/booked_ride_model.dart';
+import 'package:mobile/features/passenger_home/data/models/past_ride_model.dart';
 import 'package:mobile/features/passenger_home/data/models/ride_model.dart';
 import 'package:mobile/features/passenger_home/data/models/simulated_driver_and_vehicle_json.dart';
 import 'package:mobile/features/passenger_home/data/models/taxi_offer_model.dart';
@@ -17,8 +17,7 @@ class RideRemoteDataSourceFake
     implements
         TaxiOfferRemoteDataSource,
         RideRemoteDataSource,
-        RideBookingRemoteDataSource,
-        RideRatingRemoteDataSource {
+        RideBookingRemoteDataSource {
   RideRemoteDataSourceFake() {
     final now = DateTime.now();
     _pastRides.addAll([
@@ -26,21 +25,18 @@ class RideRemoteDataSourceFake
         'Gare',
         'Maison',
         now.subtract(const Duration(days: 2)),
-        'A',
         1120,
       ),
       _pastRideJson(
         'Maison',
         'Travail',
         now.subtract(const Duration(days: 5)),
-        'A',
         2190,
       ),
       _pastRideJson(
         'Rivétoile',
         'Maison',
         now.subtract(const Duration(days: 15)),
-        'C',
         980,
       ),
     ]);
@@ -184,7 +180,6 @@ class RideRemoteDataSourceFake
         'Ma position',
         _destinationName,
         DateTime.now(),
-        'A',
         completed['totalCents'] as int,
       ),
     );
@@ -258,7 +253,7 @@ class RideRemoteDataSourceFake
   }
 
   @override
-  Future<RideHistoryModel> getRideHistory() async {
+  Future<List<BookedRideModel>> getBookings() async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     final upcoming = [..._bookings]
       ..sort(
@@ -266,24 +261,25 @@ class RideRemoteDataSourceFake
           b['scheduledPickup'] as String,
         ),
       );
-    return RideHistoryModel.fromJson({
-      'upcoming': upcoming,
-      'past': _pastRides,
-    });
+    return upcoming.map(BookedRideModel.fromJson).toList();
+  }
+
+  @override
+  Future<List<PastRideModel>> getPastRides() async {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    return _pastRides.map(PastRideModel.fromJson).toList();
   }
 
   Map<String, dynamic> _pastRideJson(
     String originName,
     String destinationName,
     DateTime startedAt,
-    String tariff,
     int totalCents,
   ) => {
     'id': 'fake-past-${startedAt.millisecondsSinceEpoch}',
     'originName': originName,
     'destinationName': destinationName,
     'startedAt': startedAt.toIso8601String(),
-    'tariff': tariff,
     'totalCents': totalCents,
   };
 

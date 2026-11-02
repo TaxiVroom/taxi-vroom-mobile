@@ -177,7 +177,7 @@ class _RideHistoryTabState extends State<RideHistoryTab> {
     return PlaceListTile(
       icon: Icons.local_taxi_outlined,
       title: '${ride.originName} → ${ride.destinationName}',
-      subtitle: '${formatShortDateTime(ride.startedAt)}, tarif ${ride.tariff}',
+      subtitle: formatShortDateTime(ride.startedAt),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:mobile/core/domain/entities/ride_route.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
+import 'package:mobile/features/passenger_home/domain/entities/ride_compliment.dart';
 import 'package:mobile/features/passenger_home/domain/entities/tracked_ride.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
@@ -92,14 +93,13 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         isSubmitting: true,
       ),
     );
-    _emitEndOrFailure(
-      emit,
-      await _rateRideUseCase(
-        rideId: _rideId,
-        stars: event.stars,
-        compliments: event.compliments,
-      ),
+    final result = await _rateRideUseCase(
+      rideId: _rideId,
+      stars: event.stars,
+      compliments: event.compliments,
     );
+    // The ride is over either way: a lost rating does not hold them back.
+    emit(RideEnded(isRatingLost: result is Error));
   }
 
   void _emitEndOrFailure(Emitter<RideState> emit, Result<void> result) {

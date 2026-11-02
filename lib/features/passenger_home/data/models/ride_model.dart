@@ -126,7 +126,7 @@ Driver _driverFromJson(Object? json) {
   final driver = json! as Map<String, dynamic>;
   return Driver(
     name: driver['name'] as String,
-    rating: (driver['rating'] as num).toDouble(),
+    rating: (driver['rating'] as num?)?.toDouble(),
     completedRides: driver['completedRides'] as int,
     taxiNumber: driver['taxiNumber'] as String,
     city: driver['city'] as String,

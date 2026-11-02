@@ -11,7 +11,9 @@ class Driver extends Equatable {
   });
 
   final String name;
-  final double rating;
+
+  // The average of all their ratings: null until they get one.
+  final double? rating;
   final int completedRides;
 
   // Licence number of the taxi in its city (e.g. "118").

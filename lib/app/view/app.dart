@@ -192,13 +192,12 @@ class App extends StatelessWidget {
       databaseURL: config.firebaseDatabaseUrl,
     );
 
-    // Course : commandée et annulée via l'API, suivie dans Firebase. Notation,
-    // réservations et historique restent simulés. Une seule instance,
+    // Course : commandée, annulée et notée via l'API, suivie dans Firebase.
+    // Réservations et historique restent simulés. Une seule instance,
     // partagée par la commande, le suivi et l'annulation. Pour tout simuler,
     // passer rideFake en premier argument aussi.
     final rideRepo = RideRepositoryImpl(
       RideRemoteDataSourceImpl(realtimeDatabase, dio),
-      rideFake,
       rideFake,
     );
     // Connexion à Firebase, pour prévenir chauffeur et passager quand elle est

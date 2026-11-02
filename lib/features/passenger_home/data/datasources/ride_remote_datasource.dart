@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:mobile/features/passenger_home/data/models/past_ride_model.dart';
 import 'package:mobile/features/passenger_home/data/models/ride_model.dart';
 import 'package:mobile/features/passenger_home/data/models/simulated_driver_and_vehicle_json.dart';
 import 'package:stream_transform/stream_transform.dart';
@@ -11,6 +12,15 @@ abstract class RideRemoteDataSource {
   Stream<RideModel> watchRide(String rideId);
 
   Future<void> cancelRide(String rideId);
+
+  Future<void> rateRide({
+    required String rideId,
+    required int stars,
+    required List<String> compliments,
+  });
+
+  // Most recent first.
+  Future<List<PastRideModel>> getPastRides();
 }
 
 // The ride is estimated, then ordered through the API; the backend then
@@ -21,6 +31,8 @@ abstract class RideRemoteDataSource {
 // Docs: https://firebase.google.com/docs/database/flutter/read-and-write
 class RideRemoteDataSourceImpl implements RideRemoteDataSource {
   const RideRemoteDataSourceImpl(this._database, this._dio);
+
+  static const _pastRidesLimit = 50;
 
   final FirebaseDatabase _database;
   final Dio _dio;
@@ -89,6 +101,8 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
   // each supplement.
   Map<String, dynamic> _completedJson(DataSnapshot ride) {
     final completion = ride.child('completion');
+    // Read from the value: the plugin's children numbers a list from -1.
+    final supplements = completion.child('supplements').value as List<Object?>?;
     return {
       'status': 'COMPLETED',
       'destinationName': ride.child('destination/name').value! as String,
@@ -101,16 +115,16 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
           'label': 'Compteur',
           'amountCents': completion.child('meterCents').value! as int,
         },
-        for (final supplement in completion.child('supplements').children)
-          _supplementLine(supplement),
+        for (final supplement in supplements ?? const <Object?>[])
+          _supplementLine(supplement! as Map<Object?, Object?>),
       ],
     };
   }
 
-  Map<String, dynamic> _supplementLine(DataSnapshot supplement) {
-    final label = supplement.child('label').value! as String;
-    final quantity = supplement.child('quantity').value! as int;
-    final unitPriceCents = supplement.child('unitPriceCents').value! as int;
+  Map<String, dynamic> _supplementLine(Map<Object?, Object?> supplement) {
+    final label = supplement['label']! as String;
+    final quantity = supplement['quantity']! as int;
+    final unitPriceCents = supplement['unitPriceCents']! as int;
     return {
       'label': quantity > 1 ? '$label × $quantity' : label,
       'amountCents': unitPriceCents * quantity,
@@ -161,6 +175,8 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
       'driver': {
         ...simulatedDriverAndVehicleJson['driver']!,
         'name': '${driver.child('firstName').value} ${lastName[0]}.',
+        'rating': driver.child('rating').value,
+        'completedRides': driver.child('completedRides').value,
       },
       'vehicle': simulatedDriverAndVehicleJson['vehicle'],
     };
@@ -174,4 +190,25 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
   @override
   Future<void> cancelRide(String rideId) =>
       _dio.post<void>('/v1/rides/$rideId/cancel');
+
+  @override
+  Future<void> rateRide({
+    required String rideId,
+    required int stars,
+    required List<String> compliments,
+  }) => _dio.post<void>(
+    '/v1/rides/$rideId/rating',
+    data: {'stars': stars, 'compliments': compliments},
+  );
+
+  @override
+  Future<List<PastRideModel>> getPastRides() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/v1/rides',
+      queryParameters: {'limit': _pastRidesLimit},
+    );
+    return (response.data!['data'] as List<dynamic>)
+        .map((ride) => PastRideModel.fromJson(ride as Map<String, dynamic>))
+        .toList();
+  }
 }

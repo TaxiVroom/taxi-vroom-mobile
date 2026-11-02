@@ -32,7 +32,12 @@ final class RideTracking extends RideState {
 
 // Cancelled, or completed and rated: the flow leaves the ride screen.
 final class RideEnded extends RideState {
-  const RideEnded();
+  const RideEnded({this.isRatingLost = false});
+
+  final bool isRatingLost;
+
+  @override
+  List<Object?> get props => [isRatingLost];
 }
 
 final class RideFailure extends RideState {

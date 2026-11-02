@@ -3,6 +3,7 @@ import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
 import 'package:mobile/core/widgets/choice_button.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
+import 'package:mobile/features/passenger_home/domain/entities/ride_compliment.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Mockup screen 9: total and meter breakdown, then rating the driver. No
@@ -17,7 +18,10 @@ class RideCompletedView extends StatefulWidget {
 
   final RideCompleted ride;
   final bool isSubmitting;
-  final void Function({required int stars, required List<String> compliments})
+  final void Function({
+    required int stars,
+    required List<RideCompliment> compliments,
+  })
   onFinished;
 
   @override
@@ -25,11 +29,9 @@ class RideCompletedView extends StatefulWidget {
 }
 
 class _RideCompletedViewState extends State<RideCompletedView> {
-  static const _compliments = ['Conduite douce', 'Ponctuel', 'Aide bagages'];
-
   // 0 star means the passenger did not rate the ride.
   int _stars = 0;
-  final Set<String> _selectedCompliments = {};
+  final Set<RideCompliment> _selectedCompliments = {};
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +70,12 @@ class _RideCompletedViewState extends State<RideCompletedView> {
             PrimaryButton(
               onPressed: widget.isSubmitting ? null : _onFinished,
               alignment: Alignment.center,
+              trailing: widget.isSubmitting
+                  ? const AspectRatio(
+                      aspectRatio: 1,
+                      child: CircularProgressIndicator(onSurface: true),
+                    )
+                  : null,
               child: const Text('Terminer'),
             ),
           ],
@@ -152,9 +160,9 @@ class _RideCompletedViewState extends State<RideCompletedView> {
       spacing: 8,
       runSpacing: 8,
       children: [
-        for (final compliment in _compliments)
+        for (final compliment in RideCompliment.values)
           ChoiceButton(
-            label: compliment,
+            label: compliment.label,
             isSelected: _selectedCompliments.contains(compliment),
             onPressed: () => setState(() {
               if (!_selectedCompliments.remove(compliment)) {

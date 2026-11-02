@@ -11,7 +11,8 @@ class DriverSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rating = formatRating(driver.rating);
+    final rating = driver.rating;
+    final reputation = rating == null ? 'Nouveau' : '★ ${formatRating(rating)}';
     return Row(
       children: [
         Avatar(initials: Avatar.getInitials(driver.name)),
@@ -25,7 +26,7 @@ class DriverSummary extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               Text(
-                '★ $rating, ${driver.completedRides} courses',
+                '$reputation, ${driver.completedRides} courses',
                 style: const TextStyle(fontSize: 13, color: AppColors.muted),
               ),
               Text(

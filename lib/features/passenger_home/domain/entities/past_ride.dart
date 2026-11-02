@@ -7,7 +7,6 @@ class PastRide extends Equatable {
     required this.originName,
     required this.destinationName,
     required this.startedAt,
-    required this.tariff,
     required this.totalCents,
   });
 
@@ -15,7 +14,6 @@ class PastRide extends Equatable {
   final String originName;
   final String destinationName;
   final DateTime startedAt;
-  final String tariff;
   final int totalCents;
 
   @override
@@ -24,7 +22,6 @@ class PastRide extends Equatable {
     originName,
     destinationName,
     startedAt,
-    tariff,
     totalCents,
   ];
 }
