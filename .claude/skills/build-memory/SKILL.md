@@ -183,6 +183,9 @@ Same line language as hot arch: promotion is cut/paste + link update.
 | `CATALOG` | Node add/remove/retag/summary change |
 | `INDEX` | Entry points or shard purpose change |
 
+- A decision with a spec stays in the spec: memory only points to it. Never copy it.
+- A decision without a spec gets one line, with its reason and the rejected option: `chosen; rejected: X (why)`. A rejected option is not a failed attempt: never compress it away.
+
 ## Compression
 
 - Facts over narrative. Merge duplicate ids in place.
