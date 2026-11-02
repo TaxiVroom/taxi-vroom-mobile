@@ -15,9 +15,13 @@
     }
   ],
   "useGitignore": true,
+  "ignorePaths": [".aimemory/**"],
   "words": [
+    "aimemory",
     "Contador",
+    "hyp",
     "localizable",
+    "ltm",
     "mostrado",
     "página",
     "Texto"

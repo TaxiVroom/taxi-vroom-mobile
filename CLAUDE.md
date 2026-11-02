@@ -1,3 +1,28 @@
+# Memory lifecycle
+
+`.aimemory/` is the versioned knowledge base of this repo: never store a secret in it. Formats: `.claude/skills/build-memory/SKILL.md`.
+
+Always loaded:
+
+@.aimemory/INDEX.md
+@.aimemory/prefs.md
+
+**Start** of non-trivial work (planning, and again when executing an accepted plan):
+
+1. Load the other hot shards: `arch.md`, `hyp.md`, `done.md`.
+2. Scan `ltm/CATALOG.md` for the task's tags and paths, then fetch the matching `ltm/n/<id>.md` and the relevant `ltm/edges.md` lines only. Never bulk-load `ltm/n/`.
+3. Code wins over memory. On conflict, trust the code and correct the memory at the end.
+
+**End**, before declaring a plan or feature done:
+
+- `arch`: confirmed structure learned on the way.
+- `hyp`: confirm or falsify working models.
+- `done`: one `#L` line per meaningful change.
+- `prefs`: if the user stated or corrected a build preference, update `.aimemory/prefs.md`, and propose the matching `CLAUDE.md` line, editing it only after the user's OK.
+- `ltm`: promote only cold durable facts, never open hypotheses or prefs.
+
+Skip both steps for a trivial one-file edit with no architectural learning.
+
 # Commands
 
 - After a fresh clone and after any `.env.*` change: `dart run build_runner clean && dart run build_runner build --delete-conflicting-outputs`. envied generates `lib/env/*.g.dart` (gitignored); the app does not compile without them. The `clean` is required: build_runner does not track `.env.*` files, so without it a `.env.*` change is silently ignored and the old values stay in the generated code.
@@ -24,14 +49,6 @@
 - On failure a bloc emits `RegistrationError` / `AuthError`, then re-emits the previous ready state; the navigator's `BlocListener` shows the toast and keeps the current page stack.
 - UI kit is `shadcn_flutter`, not Material: use its `Scaffold` (`headers` / `footers`), `PrimaryButton`, `GhostButton`, `showToast`. Import `package:flutter/material.dart` only with `show` for what shadcn lacks.
 - No sibling dependencies within the same architectural layer: lift state up to a common ancestor and pass it down, or push it down and subscribe to it.
-
-# Domain gotchas
-
-- Passenger registration: the last screen is the `notifications` step; leaving it calls `POST /v1/passengers`, which finalizes the registration (`COMPLETE`) and creates the user. A finalized registration skips the registration screens: `AuthBloc` checks `RegistrationFlowEntity.isComplete` and goes home.
-
-# Known issues
-
-- CI (`.github/workflows/main.yaml`) only runs on push / PR to `main` and pins Flutter `3.35.x`, while `pubspec.yaml` requires `flutter: ^3.38.1`.
 
 # Repo conventions
 
