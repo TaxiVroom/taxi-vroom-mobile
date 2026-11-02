@@ -7,6 +7,11 @@ sealed class PassengerFlowEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+// The app started: the passenger may have a ride going on.
+final class PassengerFlowStarted extends PassengerFlowEvent {
+  const PassengerFlowStarted();
+}
+
 // "Où allez-vous ?".
 final class PassengerDestinationSearchOpened extends PassengerFlowEvent {
   const PassengerDestinationSearchOpened();

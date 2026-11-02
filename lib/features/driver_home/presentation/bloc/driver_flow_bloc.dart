@@ -1,9 +1,11 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/features/driver_home/domain/entities/current_driver_ride.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_documents.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
 import 'package:mobile/features/driver_home/domain/usecases/arrive_at_pickup_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_documents_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_passenger_cancellation_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_ride_usecase.dart';
@@ -14,17 +16,20 @@ part 'driver_flow_state.dart';
 /// Drives the driver screens stack: the documents check at login, then home.
 class DriverFlowBloc extends Bloc<DriverFlowEvent, DriverFlowState> {
   DriverFlowBloc({
+    required LoadCurrentDriverRideUseCase loadCurrentDriverRideUseCase,
     required LoadDriverDocumentsUseCase loadDriverDocumentsUseCase,
     required ArriveAtPickupUseCase arriveAtPickupUseCase,
     required WithdrawFromRideUseCase withdrawFromRideUseCase,
     required WatchPassengerCancellationUseCase
     watchPassengerCancellationUseCase,
-  }) : _loadDriverDocumentsUseCase = loadDriverDocumentsUseCase,
+  }) : _loadCurrentDriverRideUseCase = loadCurrentDriverRideUseCase,
+       _loadDriverDocumentsUseCase = loadDriverDocumentsUseCase,
        _arriveAtPickupUseCase = arriveAtPickupUseCase,
        _withdrawFromRideUseCase = withdrawFromRideUseCase,
        _watchPassengerCancellationUseCase = watchPassengerCancellationUseCase,
        super(const DriverFlowCheckingDocuments()) {
     on<DriverFlowStarted>(_onStarted);
+    on<_DriverCurrentRideFound>(_onCurrentRideFound);
     on<DriverDocumentsPostponed>(_onDocumentsPostponed);
     on<DriverRideAccepted>(_onRideAccepted);
     on<DriverArrivedAtPickup>(_onArrivedAtPickup);
@@ -40,6 +45,7 @@ class DriverFlowBloc extends Bloc<DriverFlowEvent, DriverFlowState> {
     on<DriverDocumentsClosed>(_onDocumentsClosed);
   }
 
+  final LoadCurrentDriverRideUseCase _loadCurrentDriverRideUseCase;
   final LoadDriverDocumentsUseCase _loadDriverDocumentsUseCase;
   final ArriveAtPickupUseCase _arriveAtPickupUseCase;
   final WithdrawFromRideUseCase _withdrawFromRideUseCase;
@@ -50,6 +56,14 @@ class DriverFlowBloc extends Bloc<DriverFlowEvent, DriverFlowState> {
     Emitter<DriverFlowState> emit,
   ) async {
     emit(const DriverFlowCheckingDocuments());
+    // A ride comes first: the passenger waits. If it cannot be told, the app
+    // starts as usual.
+    if (await _loadCurrentDriverRideUseCase() case Ok(
+      value: final current?,
+    )) {
+      add(_DriverCurrentRideFound(current: current));
+      return;
+    }
     final result = await _loadDriverDocumentsUseCase();
     emit(
       switch (result) {
@@ -62,6 +76,23 @@ class DriverFlowBloc extends Bloc<DriverFlowEvent, DriverFlowState> {
         ),
       },
     );
+  }
+
+  Future<void> _onCurrentRideFound(
+    _DriverCurrentRideFound event,
+    Emitter<DriverFlowState> emit,
+  ) async {
+    final ride = event.current.ride;
+    switch (event.current) {
+      case CurrentRideAtPickup():
+        emit(DriverFlowPickup(ride: ride));
+      case CurrentRideAtBoarding(:final arrivedAt):
+        emit(DriverFlowBoarding(ride: ride, arrivedAt: arrivedAt));
+      case CurrentRideInProgress():
+        emit(DriverFlowInRide(ride: ride));
+        return;
+    }
+    await _watchPassengerCancellation(ride, emit);
   }
 
   void _onDocumentsPostponed(
@@ -79,11 +110,16 @@ class DriverFlowBloc extends Bloc<DriverFlowEvent, DriverFlowState> {
   ) async {
     final ride = event.ride;
     emit(DriverFlowPickup(ride: ride));
-    await emit.onEach<void>(
-      _watchPassengerCancellationUseCase(ride.id),
-      onData: (_) => add(_DriverRideCancelledByPassenger(rideId: ride.id)),
-    );
+    await _watchPassengerCancellation(ride, emit);
   }
+
+  Future<void> _watchPassengerCancellation(
+    DriverRide ride,
+    Emitter<DriverFlowState> emit,
+  ) => emit.onEach<void>(
+    _watchPassengerCancellationUseCase(ride.id),
+    onData: (_) => add(_DriverRideCancelledByPassenger(rideId: ride.id)),
+  );
 
   Future<void> _onArrivedAtPickup(
     DriverArrivedAtPickup event,

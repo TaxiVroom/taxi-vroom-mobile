@@ -1,8 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:mobile/features/driver_home/data/models/current_driver_ride_model.dart';
+import 'package:mobile/features/driver_home/data/models/driver_ride_model.dart';
 import 'package:mobile/features/driver_home/data/models/ride_start_model.dart';
 
 abstract class DriverRideRemoteDataSource {
+  // Null without a ride to come back to.
+  Future<CurrentDriverRideModel?> getCurrentRide();
+
   Future<void> arriveAtPickup(String rideId);
 
   Future<RideStartModel> startRide({
@@ -35,6 +40,27 @@ class DriverRideRemoteDataSourceImpl implements DriverRideRemoteDataSource {
 
   final FirebaseDatabase _database;
   final Dio _dio;
+
+  // The API tells the ride and its step; rides/<rideId> holds its details.
+  @override
+  Future<CurrentDriverRideModel?> getCurrentRide() async {
+    final Map<String, dynamic> current;
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/v1/rides/current',
+      );
+      current = response.data!;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+    final rideId = current['id'] as String;
+    final ride = await _database.ref('rides/$rideId').get();
+    return CurrentDriverRideModel.fromJson(
+      current,
+      ride: DriverRideModel.fromSnapshot(rideId, ride),
+    );
+  }
 
   @override
   Future<void> arriveAtPickup(String rideId) =>

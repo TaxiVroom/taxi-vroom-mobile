@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
@@ -9,18 +10,24 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
 import 'package:mobile/core/data/datasources/connection_remote_datasource.dart';
 import 'package:mobile/core/data/datasources/device_location_datasource.dart';
 import 'package:mobile/core/data/datasources/email_availability_remote_datasource.dart';
+import 'package:mobile/core/data/datasources/push_registration_remote_datasource.dart';
 import 'package:mobile/core/data/datasources/route_remote_datasource.dart';
 import 'package:mobile/core/data/repositories/connection_repository_impl.dart';
 import 'package:mobile/core/data/repositories/email_availability_repository_impl.dart';
 import 'package:mobile/core/data/repositories/location_repository_impl.dart';
+import 'package:mobile/core/data/repositories/push_registration_repository_impl.dart';
 import 'package:mobile/core/data/repositories/route_repository_impl.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
+import 'package:mobile/core/domain/usecases/register_push_token_usecase.dart';
+import 'package:mobile/core/domain/usecases/unregister_push_token_usecase.dart';
+import 'package:mobile/core/domain/usecases/watch_push_token_refresh_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
 import 'package:mobile/core/network/auth_interceptor.dart';
 import 'package:mobile/env/app_config.dart';
 import 'package:mobile/features/authentication/data/datasources/auth_remote_datasource.dart';
 import 'package:mobile/features/authentication/data/repositories/auth_repository_impl.dart';
 import 'package:mobile/features/authentication/domain/usecases/get_or_create_registration_flow_usecase.dart';
+import 'package:mobile/features/authentication/domain/usecases/restore_session_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/send_otp_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/sign_out_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/verify_otp_usecase.dart';
@@ -53,6 +60,7 @@ import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecas
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_bookings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_documents_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_usecase.dart';
@@ -86,6 +94,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_useca
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_account_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_current_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
@@ -130,6 +139,11 @@ class App extends StatelessWidget {
     );
     final authDataSource = AuthRemoteDataSourceImpl(FirebaseAuth.instance, dio);
     final authRepo = AuthRepositoryImpl(authDataSource);
+
+    // Téléphone de l'utilisateur, pour lui envoyer des notifications.
+    final pushRegistrationRepo = PushRegistrationRepositoryImpl(
+      PushRegistrationRemoteDataSourceImpl(FirebaseMessaging.instance, dio),
+    );
 
     final emailAvailabilityDataSource = EmailAvailabilityRemoteDataSourceImpl(
       dio,
@@ -305,7 +319,17 @@ class App extends StatelessWidget {
           getOrCreateRegistrationFlowUseCase:
               GetOrCreateRegistrationFlowUseCase(authRepo),
           signOutUseCase: SignOutUseCase(authRepo),
-        ),
+          registerPushTokenUseCase: RegisterPushTokenUseCase(
+            pushRegistrationRepo,
+          ),
+          unregisterPushTokenUseCase: UnregisterPushTokenUseCase(
+            pushRegistrationRepo,
+          ),
+          watchPushTokenRefreshUseCase: WatchPushTokenRefreshUseCase(
+            pushRegistrationRepo,
+          ),
+          restoreSessionUseCase: RestoreSessionUseCase(authRepo),
+        )..add(const AuthSessionRestoreRequested()),
         child: ShadcnApp(
           debugShowCheckedModeBanner: false,
           title: 'TaxiApp',
@@ -335,6 +359,10 @@ class App extends StatelessWidget {
             loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
             getPickupDaysUseCase: const GetPickupDaysUseCase(),
             requestRideUseCase: RequestRideUseCase(rideRepo),
+            loadCurrentRideUseCase: LoadCurrentRideUseCase(rideRepo),
+            loadCurrentDriverRideUseCase: LoadCurrentDriverRideUseCase(
+              driverRideRepo,
+            ),
             watchRideUseCase: WatchRideUseCase(
               rideRepository: rideRepo,
               routeRepository: routeRepo,

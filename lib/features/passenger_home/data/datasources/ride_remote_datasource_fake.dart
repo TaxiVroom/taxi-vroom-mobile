@@ -265,6 +265,9 @@ class RideRemoteDataSourceFake
   }
 
   @override
+  Future<String?> getCurrentRideId() async => null;
+
+  @override
   Future<List<PastRideModel>> getPastRides() async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     return _pastRides.map(PastRideModel.fromJson).toList();

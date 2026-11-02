@@ -34,7 +34,6 @@ class RideRequestRemoteDataSourceImpl implements RideRequestRemoteDataSource {
   final Dio _dio;
 
   // Unknown to the backend yet.
-  static const _unnamedPickup = 'Position du client';
   static const _customerRating = 5.0;
   static const _passengerCount = 1;
   static const _luggageCount = 0;
@@ -72,7 +71,7 @@ class RideRequestRemoteDataSourceImpl implements RideRequestRemoteDataSource {
     await _dio.post<void>('/v1/rides/$requestId/accept');
     // Readable by the driver once the ride is theirs.
     final ride = await _database.ref('rides/$requestId').get();
-    return DriverRideModel.fromJson(_driverRideJson(requestId, ride));
+    return DriverRideModel.fromSnapshot(requestId, ride);
   }
 
   @override
@@ -80,8 +79,8 @@ class RideRequestRemoteDataSourceImpl implements RideRequestRemoteDataSource {
       _dio.post<void>('/v1/rides/$requestId/decline');
 
   Map<String, dynamic> _requestJson(DataSnapshot offer) {
-    final pickup = _place(offer.child('pickup'));
-    final destination = _place(offer.child('destination'));
+    final pickup = DriverRideModel.placeJson(offer.child('pickup'));
+    final destination = DriverRideModel.placeJson(offer.child('destination'));
     return {
       'id': offer.child('rideId').value! as String,
       'sentAt': DateTime.fromMillisecondsSinceEpoch(
@@ -102,26 +101,6 @@ class RideRequestRemoteDataSourceImpl implements RideRequestRemoteDataSource {
       'luggageCount': _luggageCount,
     };
   }
-
-  Map<String, dynamic> _driverRideJson(String rideId, DataSnapshot ride) {
-    final passenger = ride.child('passenger');
-    return {
-      'id': rideId,
-      'customer': {
-        'firstName': passenger.child('firstName').value! as String,
-        'lastName': passenger.child('lastName').value! as String,
-        'phone': passenger.child('phone').value! as String,
-      },
-      'pickup': _place(ride.child('pickup')),
-      'destination': _place(ride.child('destination')),
-    };
-  }
-
-  Map<String, dynamic> _place(DataSnapshot place) => {
-    'name': place.child('name').value as String? ?? _unnamedPickup,
-    'latitude': place.child('latitude').value! as num,
-    'longitude': place.child('longitude').value! as num,
-  };
 
   Coordinates _coordinates(Map<String, dynamic> place) => Coordinates(
     latitude: (place['latitude'] as num).toDouble(),

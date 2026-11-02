@@ -14,6 +14,7 @@ import 'package:mobile/features/driver_home/domain/usecases/accept_ride_request_
 import 'package:mobile/features/driver_home/domain/usecases/arrive_at_pickup_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_documents_usecase.dart';
@@ -56,6 +57,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 /// Réservations / Gains / Compte.
 class DriverHomePage extends StatelessWidget {
   const DriverHomePage({
+    required this.loadCurrentDriverRideUseCase,
     required this.loadDriverDocumentsUseCase,
     required this.loadDriverHomeUseCase,
     required this.setOnlineUseCase,
@@ -82,6 +84,7 @@ class DriverHomePage extends StatelessWidget {
     super.key,
   });
 
+  final LoadCurrentDriverRideUseCase loadCurrentDriverRideUseCase;
   final LoadDriverDocumentsUseCase loadDriverDocumentsUseCase;
   final LoadDriverHomeUseCase loadDriverHomeUseCase;
   final SetOnlineUseCase setOnlineUseCase;
@@ -115,6 +118,7 @@ class DriverHomePage extends StatelessWidget {
       providers: [
         BlocProvider(
           create: (_) => DriverFlowBloc(
+            loadCurrentDriverRideUseCase: loadCurrentDriverRideUseCase,
             loadDriverDocumentsUseCase: loadDriverDocumentsUseCase,
             arriveAtPickupUseCase: arriveAtPickupUseCase,
             withdrawFromRideUseCase: withdrawFromRideUseCase,
@@ -156,13 +160,44 @@ class DriverHomePage extends StatelessWidget {
           ),
         ),
       ],
-      child: BlocBuilder<DriverFlowBloc, DriverFlowState>(
-        builder: (context, flowState) => FlowBuilder<DriverFlowState>(
-          state: flowState,
-          onGeneratePages: (state, _) => _onGeneratePages(context, state),
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<DriverFlowBloc, DriverFlowState>(
+            listenWhen: (previous, _) =>
+                previous is DriverFlowCheckingDocuments,
+            listener: (context, _) => _goBackOnlineDuringRide(context),
+          ),
+          BlocListener<DriverHomeBloc, DriverHomeState>(
+            listenWhen: (previous, current) =>
+                previous is! DriverHomeReady && current is DriverHomeReady,
+            listener: (context, _) => _goBackOnlineDuringRide(context),
+          ),
+        ],
+        child: BlocBuilder<DriverFlowBloc, DriverFlowState>(
+          builder: (context, flowState) => FlowBuilder<DriverFlowState>(
+            state: flowState,
+            onGeneratePages: (state, _) => _onGeneratePages(context, state),
+          ),
         ),
       ),
     );
+  }
+
+  // The app started during a ride: the passenger must see the taxi move. The
+  // ride and the home load in any order.
+  void _goBackOnlineDuringRide(BuildContext context) {
+    final isDuringRide = switch (context.read<DriverFlowBloc>().state) {
+      DriverFlowPickup() || DriverFlowBoarding() || DriverFlowInRide() => true,
+      _ => false,
+    };
+    final homeState = context.read<DriverHomeBloc>().state;
+    if (isDuringRide &&
+        homeState is DriverHomeReady &&
+        !homeState.home.activity.isOnline) {
+      context.read<DriverHomeBloc>().add(
+        const DriverOnlineToggled(isOnline: true),
+      );
+    }
   }
 
   List<Page<void>> _onGeneratePages(

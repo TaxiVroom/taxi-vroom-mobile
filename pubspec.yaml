@@ -34,6 +34,7 @@ dependencies:
   stream_transform: ^2.1.2
   firebase_database: ^12.6.0
   flutter_geo_hash: ^0.0.7
+  firebase_messaging: ^16.7.1
 
 dev_dependencies:
   flutter_native_splash: ^2.4.6

@@ -33,22 +33,24 @@ class LocationRepositoryImpl implements LocationRepository {
   // Not an async* with await for: its cancel would wait for the next
   // position, which never comes while the device does not move.
   @override
-  Stream<Result<Coordinates>> watchPosition() =>
-      _dataSource.watchPosition().transform(
-        StreamTransformer.fromHandlers(
-          handleData: (position, sink) =>
-              sink.add(Result.ok(_toCoordinates(position))),
-          handleError: (error, stackTrace, sink) => switch (error) {
-            LocationServiceDisabledException() => sink.add(
-              const Result.error(_serviceDisabled),
+  Stream<Result<Coordinates>> watchPosition({bool inBackground = false}) =>
+      _dataSource
+          .watchPosition(inBackground: inBackground)
+          .transform(
+            StreamTransformer.fromHandlers(
+              handleData: (position, sink) =>
+                  sink.add(Result.ok(_toCoordinates(position))),
+              handleError: (error, stackTrace, sink) => switch (error) {
+                LocationServiceDisabledException() => sink.add(
+                  const Result.error(_serviceDisabled),
+                ),
+                PermissionDeniedException() => sink.add(
+                  const Result.error(_permissionDenied),
+                ),
+                _ => sink.addError(error, stackTrace),
+              },
             ),
-            PermissionDeniedException() => sink.add(
-              const Result.error(_permissionDenied),
-            ),
-            _ => sink.addError(error, stackTrace),
-          },
-        ),
-      );
+          );
 
   Coordinates _toCoordinates(Position position) =>
       Coordinates(latitude: position.latitude, longitude: position.longitude);

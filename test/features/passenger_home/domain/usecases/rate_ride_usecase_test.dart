@@ -33,6 +33,9 @@ class _FakeRideRepository implements RideRepository {
       throw UnimplementedError();
 
   @override
+  Future<Result<String?>> getCurrentRideId() => throw UnimplementedError();
+
+  @override
   Stream<Result<Ride>> watchRide(String rideId) => throw UnimplementedError();
 
   @override

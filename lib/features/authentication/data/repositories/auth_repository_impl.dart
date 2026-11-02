@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
@@ -35,6 +36,17 @@ class AuthRepositoryImpl implements AuthRepository {
     role: role,
     phone: phone,
   );
+
+  // Refused by the API while the registration is not finished, or no network:
+  // the user goes through the sign-in screens.
+  @override
+  Future<UserRole?> findSessionRole() async {
+    try {
+      return await _dataSource.findSessionRole();
+    } on DioException {
+      return null;
+    }
+  }
 
   @override
   Future<Result<void>> signOut() async {

@@ -45,6 +45,15 @@ class RideRepositoryImpl implements RideRepository {
     }
   }
 
+  @override
+  Future<Result<String?>> getCurrentRideId() async {
+    try {
+      return Result.ok(await _dataSource.getCurrentRideId());
+    } on DioException catch (e) {
+      return Result.error(e.toFailure());
+    }
+  }
+
   // Not an async* with await for: its cancel would wait for the next update,
   // which does not come while the taxi is stopped.
   @override

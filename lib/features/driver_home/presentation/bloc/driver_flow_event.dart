@@ -12,6 +12,16 @@ final class DriverFlowStarted extends DriverFlowEvent {
   const DriverFlowStarted();
 }
 
+// The app started during a ride.
+final class _DriverCurrentRideFound extends DriverFlowEvent {
+  const _DriverCurrentRideFound({required this.current});
+
+  final CurrentDriverRide current;
+
+  @override
+  List<Object?> get props => [current];
+}
+
 // "Plus tard": only offered while no document blocks driving.
 final class DriverDocumentsPostponed extends DriverFlowEvent {
   const DriverDocumentsPostponed();

@@ -1,3 +1,4 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
 
@@ -34,6 +35,27 @@ class DriverRideModel {
       destinationLongitude: (destination['longitude'] as num).toDouble(),
     );
   }
+
+  // From rides/<rideId>, readable by the driver once the ride is theirs.
+  factory DriverRideModel.fromSnapshot(String rideId, DataSnapshot ride) {
+    final passenger = ride.child('passenger');
+    return DriverRideModel.fromJson({
+      'id': rideId,
+      'customer': {
+        'firstName': passenger.child('firstName').value! as String,
+        'lastName': passenger.child('lastName').value! as String,
+        'phone': passenger.child('phone').value! as String,
+      },
+      'pickup': placeJson(ride.child('pickup')),
+      'destination': placeJson(ride.child('destination')),
+    });
+  }
+
+  static Map<String, dynamic> placeJson(DataSnapshot place) => {
+    'name': place.child('name').value! as String,
+    'latitude': place.child('latitude').value! as num,
+    'longitude': place.child('longitude').value! as num,
+  };
 
   final String id;
   final String customerFirstName;

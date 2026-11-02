@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/features/driver_home/domain/entities/current_driver_ride.dart';
 import 'package:mobile/features/driver_home/domain/entities/fare_supplement.dart';
 import 'package:mobile/features/driver_home/domain/entities/ride_checkout.dart';
 import 'package:mobile/features/driver_home/domain/entities/ride_start.dart';
@@ -17,6 +18,10 @@ class _FakeDriverRideRepository implements DriverRideRepository {
     required String rideId,
     required String boardingCode,
   }) async => Result.ok(answer);
+
+  @override
+  Future<Result<CurrentDriverRide?>> getCurrentRide() =>
+      throw UnimplementedError();
 
   @override
   Future<Result<void>> arriveAtPickup(String rideId) =>

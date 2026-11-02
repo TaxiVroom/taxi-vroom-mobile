@@ -10,6 +10,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_useca
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_account_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_current_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
@@ -45,6 +46,7 @@ class PassengerHomePage extends StatelessWidget {
     required this.loadTaxiChoiceUseCase,
     required this.getPickupDaysUseCase,
     required this.requestRideUseCase,
+    required this.loadCurrentRideUseCase,
     required this.watchRideUseCase,
     required this.cancelRideUseCase,
     required this.rateRideUseCase,
@@ -66,6 +68,7 @@ class PassengerHomePage extends StatelessWidget {
   final LoadTaxiChoiceUseCase loadTaxiChoiceUseCase;
   final GetPickupDaysUseCase getPickupDaysUseCase;
   final RequestRideUseCase requestRideUseCase;
+  final LoadCurrentRideUseCase loadCurrentRideUseCase;
   final WatchRideUseCase watchRideUseCase;
   final CancelRideUseCase cancelRideUseCase;
   final RateRideUseCase rateRideUseCase;
@@ -92,8 +95,10 @@ class PassengerHomePage extends StatelessWidget {
           )..add(const PassengerHomeStarted()),
         ),
         BlocProvider(
-          create: (_) =>
-              PassengerFlowBloc(getPickupDaysUseCase: getPickupDaysUseCase),
+          create: (_) => PassengerFlowBloc(
+            getPickupDaysUseCase: getPickupDaysUseCase,
+            loadCurrentRideUseCase: loadCurrentRideUseCase,
+          ),
         ),
         BlocProvider(
           create: (_) => RideHistoryBloc(
@@ -108,10 +113,19 @@ class PassengerHomePage extends StatelessWidget {
           )..add(const AccountRequested()),
         ),
       ],
-      child: BlocBuilder<PassengerFlowBloc, PassengerFlowState>(
-        builder: (context, flowState) => FlowBuilder<PassengerFlowState>(
-          state: flowState,
-          onGeneratePages: (state, _) => _onGeneratePages(context, state),
+      // The ride page needs the passenger's position: looking for a ride
+      // before the home is loaded would leave it out of the pages for good.
+      child: BlocListener<PassengerHomeBloc, PassengerHomeState>(
+        listenWhen: (previous, current) =>
+            previous is! PassengerHomeReady && current is PassengerHomeReady,
+        listener: (context, _) => context.read<PassengerFlowBloc>().add(
+          const PassengerFlowStarted(),
+        ),
+        child: BlocBuilder<PassengerFlowBloc, PassengerFlowState>(
+          builder: (context, flowState) => FlowBuilder<PassengerFlowState>(
+            state: flowState,
+            onGeneratePages: (state, _) => _onGeneratePages(context, state),
+          ),
         ),
       ),
     );

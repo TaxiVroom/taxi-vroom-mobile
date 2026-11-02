@@ -17,7 +17,8 @@ class _FakeLocationRepository implements LocationRepository {
       throw UnimplementedError();
 
   @override
-  Stream<Result<Coordinates>> watchPosition() => positions.stream;
+  Stream<Result<Coordinates>> watchPosition({bool inBackground = false}) =>
+      positions.stream;
 }
 
 // The database: keeps the positions written.

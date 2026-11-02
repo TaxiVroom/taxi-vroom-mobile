@@ -24,6 +24,9 @@ abstract class AuthRemoteDataSource {
     required UserRole role,
     required String phone,
   });
+
+  // The role of the user signed in on this phone. Null without a session.
+  Future<UserRole?> findSessionRole();
   Future<void> signOut();
 }
 
@@ -61,6 +64,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     );
 
     return completer.future;
+  }
+
+  // Firebase keeps the session on the phone: the API tells the role.
+  @override
+  Future<UserRole?> findSessionRole() async {
+    if (_firebaseAuth.currentUser == null) return null;
+    final response = await _dio.get<Map<String, dynamic>>('/v1/me');
+    return response.data!['role'] == 'DRIVER'
+        ? UserRole.driver
+        : UserRole.passenger;
   }
 
   @override

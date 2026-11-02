@@ -19,5 +19,8 @@ abstract class AuthRepository {
     required String phone,
   });
 
+  // Null when nobody is signed in, or when it cannot be told.
+  Future<UserRole?> findSessionRole();
+
   Future<Result<void>> signOut();
 }

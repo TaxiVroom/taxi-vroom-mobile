@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:mobile/core/errors/dio_exception_failure.dart';
 import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/ride_checkout_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/models/ride_start_model.dart';
+import 'package:mobile/features/driver_home/domain/entities/current_driver_ride.dart';
 import 'package:mobile/features/driver_home/domain/entities/fare_supplement.dart';
 import 'package:mobile/features/driver_home/domain/entities/ride_checkout.dart';
 import 'package:mobile/features/driver_home/domain/entities/ride_start.dart';
@@ -30,6 +32,20 @@ class DriverRideRepositoryImpl implements DriverRideRepository {
   static const _noShowTooEarly = ValidationFailure(
     'Attendez 5 minutes après votre arrivée pour signaler le client absent.',
   );
+
+  @override
+  Future<Result<CurrentDriverRide?>> getCurrentRide() async {
+    try {
+      final model = await _dataSource.getCurrentRide();
+      return Result.ok(model?.toDomain());
+    } on DioException catch (e) {
+      return Result.error(e.toFailure());
+    } on FirebaseException catch (e) {
+      return Result.error(
+        ServerFailure(e.message ?? 'Connexion au service impossible.'),
+      );
+    }
+  }
 
   @override
   Future<Result<void>> arriveAtPickup(String rideId) =>

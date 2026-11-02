@@ -16,6 +16,7 @@ import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecas
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_bookings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_documents_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_usecase.dart';
@@ -37,6 +38,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_useca
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_account_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_current_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
@@ -83,6 +85,8 @@ class AuthNavigator extends StatelessWidget {
     required this.loadTaxiChoiceUseCase,
     required this.getPickupDaysUseCase,
     required this.requestRideUseCase,
+    required this.loadCurrentRideUseCase,
+    required this.loadCurrentDriverRideUseCase,
     required this.watchRideUseCase,
     required this.cancelRideUseCase,
     required this.rateRideUseCase,
@@ -147,6 +151,8 @@ class AuthNavigator extends StatelessWidget {
   final LoadTaxiChoiceUseCase loadTaxiChoiceUseCase;
   final GetPickupDaysUseCase getPickupDaysUseCase;
   final RequestRideUseCase requestRideUseCase;
+  final LoadCurrentRideUseCase loadCurrentRideUseCase;
+  final LoadCurrentDriverRideUseCase loadCurrentDriverRideUseCase;
   final WatchRideUseCase watchRideUseCase;
   final CancelRideUseCase cancelRideUseCase;
   final RateRideUseCase rateRideUseCase;
@@ -229,6 +235,12 @@ class AuthNavigator extends StatelessWidget {
     if (state is AuthError) return pages.isNotEmpty ? pages : [welcomePage];
 
     return switch (state) {
+      AuthRestoring() => [
+        const MaterialPage<void>(
+          key: ValueKey('restoring'),
+          child: Scaffold(body: Center(child: CircularProgressIndicator())),
+        ),
+      ],
       AuthInitial() || AuthGoogleSignInLoading() => [welcomePage],
       AuthPhoneNumberInputReady() || AuthPhoneNumberLoading() => [
         welcomePage,
@@ -286,6 +298,7 @@ class AuthNavigator extends StatelessWidget {
             loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
             getPickupDaysUseCase: getPickupDaysUseCase,
             requestRideUseCase: requestRideUseCase,
+            loadCurrentRideUseCase: loadCurrentRideUseCase,
             watchRideUseCase: watchRideUseCase,
             cancelRideUseCase: cancelRideUseCase,
             rateRideUseCase: rateRideUseCase,
@@ -304,6 +317,7 @@ class AuthNavigator extends StatelessWidget {
         MaterialPage<void>(
           key: const ValueKey('driver-home'),
           child: DriverHomePage(
+            loadCurrentDriverRideUseCase: loadCurrentDriverRideUseCase,
             loadDriverDocumentsUseCase: loadDriverDocumentsUseCase,
             loadDriverHomeUseCase: loadDriverHomeUseCase,
             setOnlineUseCase: setOnlineUseCase,

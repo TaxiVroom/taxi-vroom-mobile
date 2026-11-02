@@ -24,6 +24,9 @@ class AuthRemoteDataSourceFake implements AuthRemoteDataSource {
   }
 
   @override
+  Future<UserRole?> findSessionRole() async => null;
+
+  @override
   Future<UserModel> linkGoogleAccount() async {
     await Future<void>.delayed(const Duration(seconds: 1));
     return const UserModel(id: 'fake-google-id', phoneNumber: '');

@@ -1,5 +1,6 @@
 import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/ride_checkout_remote_datasource.dart';
+import 'package:mobile/features/driver_home/data/models/current_driver_ride_model.dart';
 import 'package:mobile/features/driver_home/data/models/ride_checkout_model.dart';
 import 'package:mobile/features/driver_home/data/models/ride_start_model.dart';
 
@@ -9,6 +10,9 @@ import 'package:mobile/features/driver_home/data/models/ride_start_model.dart';
 class DriverRideRemoteDataSourceFake
     implements DriverRideRemoteDataSource, RideCheckoutRemoteDataSource {
   static const _boardingCode = '4817';
+
+  @override
+  Future<CurrentDriverRideModel?> getCurrentRide() async => null;
 
   // Same rule as the server: locked after 5 wrong codes.
   static const _maxAttempts = 5;

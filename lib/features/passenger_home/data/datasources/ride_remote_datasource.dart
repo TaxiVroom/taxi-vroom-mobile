@@ -21,6 +21,9 @@ abstract class RideRemoteDataSource {
 
   // Most recent first.
   Future<List<PastRideModel>> getPastRides();
+
+  // Null without a ride to come back to.
+  Future<String?> getCurrentRideId();
 }
 
 // The ride is estimated, then ordered through the API; the backend then
@@ -210,5 +213,18 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
     return (response.data!['data'] as List<dynamic>)
         .map((ride) => PastRideModel.fromJson(ride as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<String?> getCurrentRideId() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/v1/rides/current',
+      );
+      return response.data!['id'] as String;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
   }
 }

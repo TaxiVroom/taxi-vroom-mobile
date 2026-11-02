@@ -3,10 +3,14 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:mobile/core/constants/app_constants.dart';
+import 'package:mobile/core/domain/usecases/register_push_token_usecase.dart';
+import 'package:mobile/core/domain/usecases/unregister_push_token_usecase.dart';
+import 'package:mobile/core/domain/usecases/watch_push_token_refresh_usecase.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/authentication/domain/entities/user_role.dart';
 import 'package:mobile/features/authentication/domain/usecases/get_or_create_registration_flow_usecase.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/features/authentication/domain/usecases/restore_session_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/send_otp_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/sign_out_usecase.dart';
 import 'package:mobile/features/authentication/domain/usecases/verify_otp_usecase.dart';
@@ -21,11 +25,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required GetOrCreateRegistrationFlowUseCase
     getOrCreateRegistrationFlowUseCase,
     required SignOutUseCase signOutUseCase,
+    required RegisterPushTokenUseCase registerPushTokenUseCase,
+    required UnregisterPushTokenUseCase unregisterPushTokenUseCase,
+    required WatchPushTokenRefreshUseCase watchPushTokenRefreshUseCase,
+    required RestoreSessionUseCase restoreSessionUseCase,
   }) : _sendOtpUseCase = sendOtpUseCase,
        _verifyOtpUseCase = verifyOtpUseCase,
        _getOrCreateRegistrationFlowUseCase = getOrCreateRegistrationFlowUseCase,
        _signOutUseCase = signOutUseCase,
-       super(const AuthInitial()) {
+       _registerPushTokenUseCase = registerPushTokenUseCase,
+       _unregisterPushTokenUseCase = unregisterPushTokenUseCase,
+       _watchPushTokenRefreshUseCase = watchPushTokenRefreshUseCase,
+       _restoreSessionUseCase = restoreSessionUseCase,
+       super(const AuthRestoring()) {
+    on<AuthSessionRestoreRequested>(_onSessionRestoreRequested);
     on<AuthPhoneNumberChanged>(_onPhoneNumberChanged);
     on<AuthPhoneNumberSubmitted>(_onPhoneNumberSubmitted);
     on<AuthOtpSubmitted>(_onOtpSubmitted);
@@ -42,8 +55,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final VerifyOtpUseCase _verifyOtpUseCase;
   final GetOrCreateRegistrationFlowUseCase _getOrCreateRegistrationFlowUseCase;
   final SignOutUseCase _signOutUseCase;
+  final RegisterPushTokenUseCase _registerPushTokenUseCase;
+  final UnregisterPushTokenUseCase _unregisterPushTokenUseCase;
+  final WatchPushTokenRefreshUseCase _watchPushTokenRefreshUseCase;
+  final RestoreSessionUseCase _restoreSessionUseCase;
 
   StreamSubscription<int>? _timerSubscription;
+  StreamSubscription<Result<void>>? _pushTokenRefreshes;
 
   void _onPhoneNumberChanged(
     AuthPhoneNumberChanged event,
@@ -167,7 +185,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Inscription déjà finalisée : on va directement à l'accueil, sans
       // repasser par les écrans d'inscription.
       if (registrationFlow.isComplete) {
-        emit(AuthAuthenticated(role: role));
+        _authenticate(role, emit);
         return;
       }
       // AuthOtpVerified porte la sealed class RegistrationFlowEntity.
@@ -275,7 +293,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthRegistrationCompleted event,
     Emitter<AuthState> emit,
   ) {
-    emit(AuthAuthenticated(role: (state as AuthRoleSelectedState).role));
+    _authenticate((state as AuthRoleSelectedState).role, emit);
+  }
+
+  // Not awaited: a phone that cannot register must not stop the user.
+  void _authenticate(UserRole role, Emitter<AuthState> emit) {
+    emit(AuthAuthenticated(role: role));
+    unawaited(_registerPushTokenUseCase());
+    _pushTokenRefreshes ??= _watchPushTokenRefreshUseCase().listen((_) {});
+  }
+
+  Future<void> _onSessionRestoreRequested(
+    AuthSessionRestoreRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final role = await _restoreSessionUseCase();
+    if (role == null) {
+      emit(const AuthInitial());
+      return;
+    }
+    _authenticate(role, emit);
   }
 
   Future<void> _onSignOutRequested(
@@ -283,6 +320,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     final role = (state as AuthRoleSelectedState).role;
+    await _pushTokenRefreshes?.cancel();
+    _pushTokenRefreshes = null;
+    await _unregisterPushTokenUseCase();
     switch (await _signOutUseCase()) {
       case Ok():
         emit(const AuthInitial());
@@ -295,6 +335,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   @override
   Future<void> close() {
     _timerSubscription?.cancel();
+    _pushTokenRefreshes?.cancel();
     return super.close();
   }
 }

@@ -26,7 +26,8 @@ class ShareDriverPositionUseCase {
   Stream<Result<void>> call() {
     Coordinates? lastMove;
     return _locationRepository
-        .watchPosition()
+        // The driver keeps getting rides with the phone in their pocket.
+        .watchPosition(inBackground: true)
         .where((result) {
           if (result case Ok(:final value)) {
             final from = lastMove;

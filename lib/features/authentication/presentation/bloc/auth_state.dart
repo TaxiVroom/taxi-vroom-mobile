@@ -9,6 +9,11 @@ sealed class AuthState extends Equatable {
   List<Object?> get props => [];
 }
 
+// The app starts: is someone still signed in on this phone?
+final class AuthRestoring extends AuthState {
+  const AuthRestoring();
+}
+
 final class AuthInitial extends AuthState {
   const AuthInitial();
 }

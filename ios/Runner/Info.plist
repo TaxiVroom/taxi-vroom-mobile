@@ -4,6 +4,14 @@
 <dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Votre position sert à trouver les taxis libres autour de vous et à pré-remplir votre adresse de départ.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Pour les chauffeurs : votre position sert à vous proposer des courses quand vous êtes en ligne, même si l'application n'est pas à l'écran.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>location</string>
+		<string>remote-notification</string>
+	</array>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>

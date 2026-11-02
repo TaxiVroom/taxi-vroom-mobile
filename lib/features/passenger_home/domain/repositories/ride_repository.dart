@@ -13,6 +13,9 @@ abstract class RideRepository {
   // EstimateExpiredFailure when the price is too old.
   Future<Result<String>> requestRide(TaxiOffer offer);
 
+  // The ride to come back to when the app starts: null without one.
+  Future<Result<String?>> getCurrentRideId();
+
   // Emits the ride every time its status or position changes.
   Stream<Result<Ride>> watchRide(String rideId);
 

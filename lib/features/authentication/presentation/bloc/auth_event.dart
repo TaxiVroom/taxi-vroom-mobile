@@ -7,6 +7,10 @@ sealed class AuthEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+final class AuthSessionRestoreRequested extends AuthEvent {
+  const AuthSessionRestoreRequested();
+}
+
 final class AuthPhoneNumberChanged extends AuthEvent {
   const AuthPhoneNumberChanged({required this.internationalPhoneNumber});
 
