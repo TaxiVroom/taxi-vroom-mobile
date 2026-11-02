@@ -12,4 +12,5 @@ passenger: home, search, taxi choice, order, live tracking and receipt are real 
 driver: online, offers, pickup, boarding code, ride and completion are real @ltm:driverApp
 fakes: list on the stillFake line of arch; app.dart comments say how to switch
 reuse: check @ltm:coreShared before writing a widget, a formatter or a stream
-next: real rating and ride history, then push notifications, then advance bookings
+push: shipped on Android, iOS waits for hardware, spec docs/specs/notifications-push.md in the API repo
+next: advance bookings

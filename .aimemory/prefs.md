@@ -1,4 +1,5 @@
 #P id|rule
+specHowItWorks|HARD: each spec has a "Comment ça marche" section: the concrete technical flow end to end, simple and global, with short arrow diagrams between the actors, readable without the code. See taxi-vroom-api/docs/specs/notifications-push.md
 specFirst|HARD: a feature starts with a spec in taxi-vroom-api/docs/specs/<nom>.md, which covers both repos. Spec work writes documents only. Code needs the user's explicit go; answering open points is not that go
 memoryStrict|HARD: always follow .aimemory strictly; it wins over any other memory of how to work. User, 2026-11-02
 stepPause|HARD: on a spec plan, implement one step, then stop for the user's OK
@@ -6,6 +7,17 @@ moneyCents|HARD: every amount is an integer in cents, named with the suffix Cent
 blocOnly|HARD: Bloc with a sealed event file for any new state holder, never Cubit; no synchronous query methods on blocs, the data goes in the state
 formatTouchedOnly|HARD: dart format and dart fix --apply only on changed paths, never the whole lib/ or test/: on 2026-09-27 it rewrote 43 unrelated files. Check git status for out-of-scope files before reporting
 depsCommands|HARD: flutter pub add/remove (--dev for dev deps), never hand-edit dependency lines in pubspec.yaml; show the exact command used
-firebaseDocs|HARD: anything Firebase is based exclusively on firebase.google.com docs, read first and cited. If the doc has no answer (no official Dart GeoFire), say so and ask before using another source
-mapboxDocs|HARD: anything Mapbox is based exclusively on the official Mapbox docs; only the public pk. token, in the gitignored .env.* files, never displayed
+officialDocs|HARD: anything touching a third-party library, API or platform is based on its official documentation, read first and cited, for the version installed. Never from memory. If the doc has no answer (no official Dart GeoFire), say so and ask before using another source
+mapboxToken|HARD: only the public pk. Mapbox token, in the gitignored .env.* files, never displayed
+platforms|HARD: every feature targets Android and iOS, never Android only. The user has no Mac, no paid Apple account and no iPhone yet: test on Android, prepare iOS, and never call anything done on iOS before it was tested there
 testsScope|Unit tests only on business rules, pure Dart, TDD
+testsBehavior|A test asserts behavior: never that a constant equals its own literal
+stopAndRevisePlan|HARD: implement only what the accepted plan says. A case, edge or better shape it did not cover: stop, do not improvise, revise the plan with the user before writing more code
+reuseFirst|HARD: before adding a method, widget or class, search for the existing one and reuse or extend it. Ask before adding a new class when existing code no longer covers the case
+splitUseCases|Prefer two simple use cases over one with create-or-update or exists-or-not branches
+noTinyHelperFiles|No one-off helper file for a trivial wrapper: inline it, or a private method on the class that owns it
+noTrivialPrivate|No private method that only wraps a map, a where or a Set: inline it
+helpersOnModel|Domain helpers live on the entity, not in free functions or utils files; core/utils is for formatting only
+booleanRule|A complex boolean rule goes in a named private getter or method, with early returns or named values, never a nested ternary
+namedTypes|Public object shapes are named classes or typedefs, not inline records
+commitStyle|Commit only when the user asks, in Conventional Commits

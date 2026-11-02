@@ -25,7 +25,9 @@ RideModel>mapsTo>RideEntity
 tabs: Accueil, Courses, Compte; screens above them come from the FlowBuilder stack
 ride subtypes: SearchingDriver, NoDriverFound, PassengerNoShow, DriverApproaching, DriverArrived, InProgress, Completed
 watchRide uses switchMap on status: DRIVER_EN_ROUTE is exposed as DRIVER_APPROACHING
-the driver name comes from the API as "Prénom N."; rating, vehicle and plate are simulated
+the driver name, rating and completed rides come from the API; "Nouveau" without a rating; taxi number, city, vehicle and plate are simulated
+rating: 0 star sends nothing; a failed send still ends the ride, with a message that the rating is lost (RideEnded.isRatingLost); spec taxi-vroom-api/docs/specs/notation-et-historique.md
+history: "À venir" is simulated, "Passées" comes from GET /v1/rides; reloaded each time the tab opens; last 50, no paging
 the boarding code is read once from the API per status, it never goes through Firebase
 while the driver comes, each position asks Mapbox for the road and the ETA; in ride, the road to the destination and the arrival time; a failed route only removes the line
 in ride the passenger sees the estimated range: the meter is not connected

@@ -34,4 +34,4 @@ start: 4-digit code, a 422 means refused; attemptsLeft 0 locks at once without a
 no-show: available after 5 min at the pickup
 checkout: meterCents typed by the driver from the legal meter, supplements simulated; "Reprendre la course" undoes a mistaken end, nothing was sent yet; payment on board
 guidance uses the device GPS; DrivingPositionDataSourceFake simulates a drive without moving
-values the API does not send yet: customer rating 5.0, 1 passenger, 0 luggage, pickup name "Position du client"
+values the API does not send yet: customer rating 5.0, 1 passenger, 0 luggage
