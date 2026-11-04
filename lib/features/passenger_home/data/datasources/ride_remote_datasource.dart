@@ -55,8 +55,12 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
   Stream<RideModel> _rideModels(String rideId, DataSnapshot ride) {
     final status = ride.child('status').value! as String;
     return switch (status) {
-      'SEARCHING_DRIVER' || 'NO_DRIVER_FOUND' || 'PASSENGER_NO_SHOW' =>
-        Stream.value(RideModel.fromJson({'id': rideId, 'status': status})),
+      'SEARCHING_DRIVER' ||
+      'NO_DRIVER_FOUND' ||
+      'PASSENGER_NO_SHOW' ||
+      'CANCELLED' => Stream.value(
+        RideModel.fromJson({'id': rideId, 'status': status}),
+      ),
       'DRIVER_EN_ROUTE' => _withBoardingCode(
         rideId,
         ride,
@@ -94,8 +98,6 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
       'COMPLETED' => Stream.value(
         RideModel.fromJson(_withDriverJson(rideId, ride, _completedJson(ride))),
       ),
-      // Only the passenger cancels: their screen already left the ride.
-      'CANCELLED' => const Stream.empty(),
       _ => Stream.error(FormatException('Statut de course inconnu : $status')),
     };
   }

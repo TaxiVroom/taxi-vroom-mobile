@@ -67,7 +67,7 @@ class _RideHistoryTabState extends State<RideHistoryTab> {
                       const RideHistoryRequested(),
                     ),
                   ),
-                  RideHistoryReady(:final history) => _buildHistory(history),
+                  RideHistoryReady() => _buildHistory(state),
                 },
               ),
             ),
@@ -77,15 +77,30 @@ class _RideHistoryTabState extends State<RideHistoryTab> {
     );
   }
 
-  Widget _buildHistory(RideHistory history) {
+  Widget _buildHistory(RideHistoryReady state) {
+    final history = state.history;
+    final failureMessage = state.failureMessage;
     if (_showsUpcoming) {
-      return history.upcoming.isEmpty
-          ? _buildEmpty('Aucune course réservée.')
-          : ListView(
-              children: [
-                for (final ride in history.upcoming) _buildBookedRide(ride),
-              ],
-            );
+      return ListView(
+        children: [
+          if (failureMessage != null) ...[
+            Text(
+              failureMessage,
+              style: const TextStyle(fontSize: 13, color: AppColors.muted),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (history.upcoming.isEmpty)
+            _buildEmpty('Aucune course réservée.')
+          else
+            for (final ride in history.upcoming)
+              _buildBookedRide(
+                ride,
+                isCancelling: state.cancellingId == ride.id,
+                canCancel: state.cancellingId == null,
+              ),
+        ],
+      );
     }
     return history.past.isEmpty
         ? _buildEmpty('Aucune course pour l’instant.')
@@ -100,7 +115,19 @@ class _RideHistoryTabState extends State<RideHistoryTab> {
     return Text(message, style: const TextStyle(color: AppColors.muted));
   }
 
-  Widget _buildBookedRide(BookedRide ride) {
+  // A driver may commit until 30 min before; then the closest free one is
+  // asked.
+  String _driverLine(String? driverFirstName) => driverFirstName == null
+      ? 'En attente d’un chauffeur. Sinon, le taxi libre le plus proche est '
+            'appelé 30 min avant.'
+      : '$driverFirstName viendra vous chercher. Vous serez prévenu à son '
+            'départ.';
+
+  Widget _buildBookedRide(
+    BookedRide ride, {
+    required bool isCancelling,
+    required bool canCancel,
+  }) {
     final pickup = formatPickupTime(ride.scheduledPickup, now: DateTime.now());
     final estimate = formatEuroRange(ride.minPriceCents, ride.maxPriceCents);
     return Container(
@@ -140,9 +167,9 @@ class _RideHistoryTabState extends State<RideHistoryTab> {
             style: const TextStyle(fontSize: 13, color: AppColors.muted),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Chauffeur attribué 30 min avant, vous recevrez une notification.',
-            style: TextStyle(fontSize: 12, color: AppColors.muted),
+          Text(
+            _driverLine(ride.driverFirstName),
+            style: const TextStyle(fontSize: 12, color: AppColors.muted),
           ),
           const SizedBox(height: 12),
           Row(
@@ -158,10 +185,18 @@ class _RideHistoryTabState extends State<RideHistoryTab> {
               const SizedBox(width: 8),
               Expanded(
                 child: DestructiveButton(
-                  onPressed: () => context.read<RideHistoryBloc>().add(
-                    BookingCancelRequested(bookingId: ride.id),
-                  ),
+                  onPressed: canCancel
+                      ? () => context.read<RideHistoryBloc>().add(
+                          BookingCancelRequested(bookingId: ride.id),
+                        )
+                      : null,
                   alignment: Alignment.center,
+                  trailing: isCancelling
+                      ? const AspectRatio(
+                          aspectRatio: 1,
+                          child: CircularProgressIndicator(onSurface: true),
+                        )
+                      : null,
                   child: const Text('Annuler'),
                 ),
               ),

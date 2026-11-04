@@ -7,6 +7,16 @@ abstract class PushRegistrationRemoteDataSource {
 
   Stream<String> get tokenRefreshes;
 
+  // The ride of each message received while the app is on screen, which
+  // the system does not show; null for a message about no ride.
+  Stream<String?> get foregroundRideIds;
+
+  // The ride of each notification touched while the app was in background.
+  Stream<String?> get openedRideIds;
+
+  // The ride of the notification that launched the app, once.
+  Future<String?> getLaunchRideId();
+
   Future<void> saveToken(String token);
 
   Future<void> deleteToken();
@@ -29,6 +39,27 @@ class PushRegistrationRemoteDataSourceImpl
 
   @override
   Stream<String> get tokenRefreshes => _messaging.onTokenRefresh;
+
+  // The backend puts the ride's id in the message's data.
+  static const _rideIdKey = 'rideId';
+
+  // https://firebase.google.com/docs/cloud-messaging/flutter/receive-messages
+  @override
+  Stream<String?> get foregroundRideIds =>
+      FirebaseMessaging.onMessage.map(_rideId);
+
+  @override
+  Stream<String?> get openedRideIds =>
+      FirebaseMessaging.onMessageOpenedApp.map(_rideId);
+
+  // Removed once read, says the doc: later calls give null.
+  @override
+  Future<String?> getLaunchRideId() async {
+    final message = await _messaging.getInitialMessage();
+    return message == null ? null : _rideId(message);
+  }
+
+  String? _rideId(RemoteMessage message) => message.data[_rideIdKey] as String?;
 
   @override
   Future<void> saveToken(String token) =>

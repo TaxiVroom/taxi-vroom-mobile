@@ -72,7 +72,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     final currentState = state;
     if (currentState is! RideTracking) return;
     switch (currentState.ride) {
-      case RideNoDriverFound() || RidePassengerNoShow():
+      case RideNoDriverFound() || RidePassengerNoShow() || RideCancelled():
         emit(const RideEnded());
       default:
         return;

@@ -81,6 +81,8 @@ class RideRequestRemoteDataSourceImpl implements RideRequestRemoteDataSource {
   Map<String, dynamic> _requestJson(DataSnapshot offer) {
     final pickup = DriverRideModel.placeJson(offer.child('pickup'));
     final destination = DriverRideModel.placeJson(offer.child('destination'));
+    // Only written for a booking that starts.
+    final pickupAt = offer.child('pickupAt').value as int?;
     return {
       'id': offer.child('rideId').value! as String,
       'sentAt': DateTime.fromMillisecondsSinceEpoch(
@@ -99,6 +101,9 @@ class RideRequestRemoteDataSourceImpl implements RideRequestRemoteDataSource {
       },
       'passengerCount': _passengerCount,
       'luggageCount': _luggageCount,
+      'scheduledPickup': pickupAt == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(pickupAt).toIso8601String(),
     };
   }
 

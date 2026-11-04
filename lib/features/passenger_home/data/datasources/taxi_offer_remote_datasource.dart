@@ -4,12 +4,14 @@ import 'package:mobile/features/passenger_home/data/models/taxi_offer_model.dart
 abstract class TaxiOfferRemoteDataSource {
   // Each offer is a ride the backend priced from the closest free taxi: its
   // id is what the passenger orders.
+  // With scheduledPickup, the ride is priced for that time, to be booked.
   Future<List<TaxiOfferModel>> getOffers({
     required double fromLatitude,
     required double fromLongitude,
     required double toLatitude,
     required double toLongitude,
     required String destinationName,
+    DateTime? scheduledPickup,
   });
 }
 
@@ -27,6 +29,7 @@ class TaxiOfferRemoteDataSourceImpl implements TaxiOfferRemoteDataSource {
     required double toLatitude,
     required double toLongitude,
     required String destinationName,
+    DateTime? scheduledPickup,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/v1/rides',
@@ -36,6 +39,8 @@ class TaxiOfferRemoteDataSourceImpl implements TaxiOfferRemoteDataSource {
         'destinationName': destinationName,
         'destinationLatitude': toLatitude,
         'destinationLongitude': toLongitude,
+        if (scheduledPickup != null)
+          'pickupAt': scheduledPickup.toUtc().toIso8601String(),
       },
     );
     final estimate = response.data!;

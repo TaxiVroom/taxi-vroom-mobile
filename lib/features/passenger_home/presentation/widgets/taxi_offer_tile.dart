@@ -10,10 +10,18 @@ class TaxiOfferTile extends StatelessWidget {
     required this.offer,
     required this.isSelected,
     required this.onPressed,
+    this.showsPickupEta = true,
     super.key,
   });
 
   final TaxiOffer offer;
+
+  // Only for a taxi now: a booked one has no taxi yet.
+  final bool showsPickupEta;
+
+  // "4 places, à 3 min".
+  String get _withPickupEta =>
+      '${offer.description}, à ${offer.pickupEtaMinutes} min';
   final bool isSelected;
   final VoidCallback onPressed;
 
@@ -45,7 +53,7 @@ class TaxiOfferTile extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${offer.description}, à ${offer.pickupEtaMinutes} min',
+                    showsPickupEta ? _withPickupEta : offer.description,
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.muted,

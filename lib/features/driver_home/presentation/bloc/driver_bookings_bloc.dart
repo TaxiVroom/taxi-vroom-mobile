@@ -2,8 +2,12 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_bookings.dart';
+import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
 import 'package:mobile/features/driver_home/domain/usecases/accept_booking_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/depart_for_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_bookings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/refuse_booking_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_booking_usecase.dart';
 
 part 'driver_bookings_event.dart';
 part 'driver_bookings_state.dart';
@@ -14,15 +18,27 @@ class DriverBookingsBloc
   DriverBookingsBloc({
     required LoadDriverBookingsUseCase loadDriverBookingsUseCase,
     required AcceptBookingUseCase acceptBookingUseCase,
+    required WithdrawFromBookingUseCase withdrawFromBookingUseCase,
+    required RefuseBookingUseCase refuseBookingUseCase,
+    required DepartForBookingUseCase departForBookingUseCase,
   }) : _loadDriverBookingsUseCase = loadDriverBookingsUseCase,
        _acceptBookingUseCase = acceptBookingUseCase,
+       _withdrawFromBookingUseCase = withdrawFromBookingUseCase,
+       _refuseBookingUseCase = refuseBookingUseCase,
+       _departForBookingUseCase = departForBookingUseCase,
        super(const DriverBookingsLoading()) {
     on<DriverBookingsRequested>(_onRequested);
     on<DriverBookingAccepted>(_onAccepted);
+    on<DriverBookingWithdrawn>(_onWithdrawn);
+    on<DriverBookingRefused>(_onRefused);
+    on<DriverBookingDeparted>(_onDeparted);
   }
 
   final LoadDriverBookingsUseCase _loadDriverBookingsUseCase;
   final AcceptBookingUseCase _acceptBookingUseCase;
+  final WithdrawFromBookingUseCase _withdrawFromBookingUseCase;
+  final RefuseBookingUseCase _refuseBookingUseCase;
+  final DepartForBookingUseCase _departForBookingUseCase;
 
   Future<void> _onRequested(
     DriverBookingsRequested event,
@@ -30,6 +46,62 @@ class DriverBookingsBloc
   ) async {
     // A refresh keeps the list on screen instead of a loader.
     if (state is! DriverBookingsReady) emit(const DriverBookingsLoading());
+    await _reload(emit);
+  }
+
+  Future<void> _onAccepted(
+    DriverBookingAccepted event,
+    Emitter<DriverBookingsState> emit,
+  ) => _answer(emit, event.bookingId, _acceptBookingUseCase.call);
+
+  Future<void> _onWithdrawn(
+    DriverBookingWithdrawn event,
+    Emitter<DriverBookingsState> emit,
+  ) => _answer(emit, event.bookingId, _withdrawFromBookingUseCase.call);
+
+  Future<void> _onRefused(
+    DriverBookingRefused event,
+    Emitter<DriverBookingsState> emit,
+  ) => _answer(
+    emit,
+    event.bookingId,
+    _refuseBookingUseCase.call,
+    isRefusal: true,
+  );
+
+  // Like an answer, but the ride comes back: the home opens the pickup
+  // screen from DriverBookingsDeparted.
+  Future<void> _onDeparted(
+    DriverBookingDeparted event,
+    Emitter<DriverBookingsState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! DriverBookingsReady ||
+        currentState.answeringId != null) {
+      return;
+    }
+
+    emit(
+      DriverBookingsReady(
+        bookings: currentState.bookings,
+        answeringId: event.bookingId,
+      ),
+    );
+    switch (await _departForBookingUseCase(event.bookingId)) {
+      case Ok(:final value):
+        emit(DriverBookingsDeparted(ride: value));
+        await _reload(emit);
+      case Error(:final error):
+        emit(
+          DriverBookingsReady(
+            bookings: currentState.bookings,
+            failureMessage: error.message,
+          ),
+        );
+    }
+  }
+
+  Future<void> _reload(Emitter<DriverBookingsState> emit) async {
     switch (await _loadDriverBookingsUseCase()) {
       case Ok(:final value):
         emit(DriverBookingsReady(bookings: value));
@@ -38,30 +110,29 @@ class DriverBookingsBloc
     }
   }
 
-  Future<void> _onAccepted(
-    DriverBookingAccepted event,
+  // One answer at a time; the lists are reloaded once it is taken.
+  Future<void> _answer(
     Emitter<DriverBookingsState> emit,
-  ) async {
+    String bookingId,
+    Future<Result<void>> Function(String bookingId) send, {
+    bool isRefusal = false,
+  }) async {
     final currentState = state;
     if (currentState is! DriverBookingsReady ||
-        currentState.acceptingId != null) {
+        currentState.answeringId != null) {
       return;
     }
 
     emit(
       DriverBookingsReady(
         bookings: currentState.bookings,
-        acceptingId: event.bookingId,
+        answeringId: bookingId,
+        isRefusing: isRefusal,
       ),
     );
-    switch (await _acceptBookingUseCase(event.bookingId)) {
+    switch (await send(bookingId)) {
       case Ok():
-        switch (await _loadDriverBookingsUseCase()) {
-          case Ok(:final value):
-            emit(DriverBookingsReady(bookings: value));
-          case Error(:final error):
-            emit(DriverBookingsFailure(message: error.message));
-        }
+        await _reload(emit);
       case Error(:final error):
         emit(
           DriverBookingsReady(

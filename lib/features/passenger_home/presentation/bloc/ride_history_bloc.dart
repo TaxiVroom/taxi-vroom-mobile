@@ -35,11 +35,29 @@ class RideHistoryBloc extends Bloc<RideHistoryEvent, RideHistoryState> {
     BookingCancelRequested event,
     Emitter<RideHistoryState> emit,
   ) async {
+    // One cancellation at a time: a second tap would send it twice.
+    final currentState = state;
+    if (currentState is! RideHistoryReady ||
+        currentState.cancellingId != null) {
+      return;
+    }
+    emit(
+      RideHistoryReady(
+        history: currentState.history,
+        cancellingId: event.bookingId,
+      ),
+    );
     switch (await _cancelBookingUseCase(event.bookingId)) {
       case Ok():
         await _load(emit);
+      // The list stays, with the message under it.
       case Error(:final error):
-        emit(RideHistoryFailure(message: error.message));
+        emit(
+          RideHistoryReady(
+            history: currentState.history,
+            failureMessage: error.message,
+          ),
+        );
     }
   }
 

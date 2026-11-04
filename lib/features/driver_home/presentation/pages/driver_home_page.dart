@@ -14,6 +14,7 @@ import 'package:mobile/features/driver_home/domain/usecases/accept_ride_request_
 import 'package:mobile/features/driver_home/domain/usecases/arrive_at_pickup_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/depart_for_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_bookings_usecase.dart';
@@ -21,6 +22,7 @@ import 'package:mobile/features/driver_home/domain/usecases/load_driver_document
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/refuse_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_receives_bookings_usecase.dart';
@@ -30,6 +32,7 @@ import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifi
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_passenger_cancellation_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_ride_usecase.dart';
 import 'package:mobile/features/driver_home/presentation/bloc/driver_account_bloc.dart';
 import 'package:mobile/features/driver_home/presentation/bloc/driver_bookings_bloc.dart';
@@ -77,6 +80,9 @@ class DriverHomePage extends StatelessWidget {
     required this.completeRideUseCase,
     required this.loadDriverBookingsUseCase,
     required this.acceptBookingUseCase,
+    required this.withdrawFromBookingUseCase,
+    required this.refuseBookingUseCase,
+    required this.departForBookingUseCase,
     required this.loadWeeklyEarningsUseCase,
     required this.loadDriverAccountUseCase,
     required this.updateDriverNotificationsUseCase,
@@ -104,6 +110,9 @@ class DriverHomePage extends StatelessWidget {
   final CompleteRideUseCase completeRideUseCase;
   final LoadDriverBookingsUseCase loadDriverBookingsUseCase;
   final AcceptBookingUseCase acceptBookingUseCase;
+  final WithdrawFromBookingUseCase withdrawFromBookingUseCase;
+  final RefuseBookingUseCase refuseBookingUseCase;
+  final DepartForBookingUseCase departForBookingUseCase;
   final LoadWeeklyEarningsUseCase loadWeeklyEarningsUseCase;
   final LoadDriverAccountUseCase loadDriverAccountUseCase;
   final UpdateDriverNotificationsUseCase updateDriverNotificationsUseCase;
@@ -150,6 +159,9 @@ class DriverHomePage extends StatelessWidget {
           create: (_) => DriverBookingsBloc(
             loadDriverBookingsUseCase: loadDriverBookingsUseCase,
             acceptBookingUseCase: acceptBookingUseCase,
+            withdrawFromBookingUseCase: withdrawFromBookingUseCase,
+            refuseBookingUseCase: refuseBookingUseCase,
+            departForBookingUseCase: departForBookingUseCase,
           )..add(const DriverBookingsRequested()),
         ),
         BlocProvider(
@@ -471,6 +483,14 @@ class _DriveTab extends StatelessWidget {
           listenWhen: (_, current) => current is RideRequestTaken,
           listener: (context, state) => context.read<DriverFlowBloc>().add(
             DriverRideAccepted(ride: (state as RideRequestTaken).ride),
+          ),
+        ),
+        // "Je pars" on a booking: the same pickup screen as an accepted
+        // request.
+        BlocListener<DriverBookingsBloc, DriverBookingsState>(
+          listenWhen: (_, current) => current is DriverBookingsDeparted,
+          listener: (context, state) => context.read<DriverFlowBloc>().add(
+            DriverRideAccepted(ride: (state as DriverBookingsDeparted).ride),
           ),
         ),
         // Back from a ride: new requests can come in again.

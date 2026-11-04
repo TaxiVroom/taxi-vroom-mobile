@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
+import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/authentication/domain/entities/user_role.dart';
 import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
@@ -14,13 +15,15 @@ import 'package:mobile/features/driver_home/domain/usecases/accept_ride_request_
 import 'package:mobile/features/driver_home/domain/usecases/arrive_at_pickup_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/depart_for_booking_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_bookings_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_documents_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/refuse_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_receives_bookings_usecase.dart';
@@ -30,6 +33,7 @@ import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifi
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_passenger_cancellation_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_ride_usecase.dart';
 import 'package:mobile/features/driver_home/presentation/pages/driver_home_page.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
@@ -86,6 +90,7 @@ class AuthNavigator extends StatelessWidget {
     required this.getPickupDaysUseCase,
     required this.requestRideUseCase,
     required this.loadCurrentRideUseCase,
+    required this.watchPushedRidesUseCase,
     required this.loadCurrentDriverRideUseCase,
     required this.watchRideUseCase,
     required this.cancelRideUseCase,
@@ -115,6 +120,9 @@ class AuthNavigator extends StatelessWidget {
     required this.completeRideUseCase,
     required this.loadDriverBookingsUseCase,
     required this.acceptBookingUseCase,
+    required this.withdrawFromBookingUseCase,
+    required this.refuseBookingUseCase,
+    required this.departForBookingUseCase,
     required this.loadWeeklyEarningsUseCase,
     required this.loadDriverAccountUseCase,
     required this.updateDriverNotificationsUseCase,
@@ -152,6 +160,7 @@ class AuthNavigator extends StatelessWidget {
   final GetPickupDaysUseCase getPickupDaysUseCase;
   final RequestRideUseCase requestRideUseCase;
   final LoadCurrentRideUseCase loadCurrentRideUseCase;
+  final WatchPushedRidesUseCase watchPushedRidesUseCase;
   final LoadCurrentDriverRideUseCase loadCurrentDriverRideUseCase;
   final WatchRideUseCase watchRideUseCase;
   final CancelRideUseCase cancelRideUseCase;
@@ -186,6 +195,9 @@ class AuthNavigator extends StatelessWidget {
   final CompleteRideUseCase completeRideUseCase;
   final LoadDriverBookingsUseCase loadDriverBookingsUseCase;
   final AcceptBookingUseCase acceptBookingUseCase;
+  final WithdrawFromBookingUseCase withdrawFromBookingUseCase;
+  final RefuseBookingUseCase refuseBookingUseCase;
+  final DepartForBookingUseCase departForBookingUseCase;
   final LoadWeeklyEarningsUseCase loadWeeklyEarningsUseCase;
   final LoadDriverAccountUseCase loadDriverAccountUseCase;
   final UpdateDriverNotificationsUseCase updateDriverNotificationsUseCase;
@@ -299,6 +311,7 @@ class AuthNavigator extends StatelessWidget {
             getPickupDaysUseCase: getPickupDaysUseCase,
             requestRideUseCase: requestRideUseCase,
             loadCurrentRideUseCase: loadCurrentRideUseCase,
+            watchPushedRidesUseCase: watchPushedRidesUseCase,
             watchRideUseCase: watchRideUseCase,
             cancelRideUseCase: cancelRideUseCase,
             rateRideUseCase: rateRideUseCase,
@@ -338,6 +351,9 @@ class AuthNavigator extends StatelessWidget {
             completeRideUseCase: completeRideUseCase,
             loadDriverBookingsUseCase: loadDriverBookingsUseCase,
             acceptBookingUseCase: acceptBookingUseCase,
+            withdrawFromBookingUseCase: withdrawFromBookingUseCase,
+            refuseBookingUseCase: refuseBookingUseCase,
+            departForBookingUseCase: departForBookingUseCase,
             loadWeeklyEarningsUseCase: loadWeeklyEarningsUseCase,
             loadDriverAccountUseCase: loadDriverAccountUseCase,
             updateDriverNotificationsUseCase: updateDriverNotificationsUseCase,

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
     show
+        CameraOptions,
         CameraViewportState,
         CircleAnnotationManager,
         CircleAnnotationOptions,
@@ -74,8 +75,10 @@ class _RideMapState extends State<RideMap> {
   // every rebuild, which would undo the camera following the taxi.
   late final _viewport = CameraViewportState(
     center: widget.origin.toPoint(),
-    zoom: 14,
+    zoom: _zoom,
   );
+
+  static const _zoom = 14.0;
 
   MapboxMap? _map;
   PolylineAnnotationManager? _routeLine;
@@ -106,6 +109,12 @@ class _RideMapState extends State<RideMap> {
 
   Future<void> _onMapCreated(MapboxMap map) async {
     _map = map;
+    // The viewport alone can leave the map on the globe, and a ride without
+    // a route (no taxi found) never moves the camera: it is set right away,
+    // like PassengerHomeMap does.
+    await map.setCamera(
+      CameraOptions(center: widget.origin.toPoint(), zoom: _zoom),
+    );
     await _showDevicePosition();
     // Created first so the route line stays under the taxi marker.
     _routeLine = await map.annotations.createPolylineAnnotationManager();

@@ -288,8 +288,7 @@ class _PickupTimeSheetState extends State<PickupTimeSheet> {
       ),
       const SizedBox(height: 8),
       const Text(
-        'Supplément de réservation selon le tarif de la ville, affiché avant '
-        'de valider. Annulation gratuite jusqu’à 1 h avant.',
+        'Annulation gratuite.',
         style: TextStyle(fontSize: 12, color: AppColors.muted),
       ),
     ];

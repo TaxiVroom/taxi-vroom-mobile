@@ -1,39 +1,37 @@
 import 'package:mobile/features/driver_home/data/datasources/driver_booking_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/models/driver_booking_model.dart';
+import 'package:mobile/features/driver_home/data/models/driver_ride_model.dart';
 
-/// Implémentation de développement avec données de test.
-/// Deux réservations à prendre, deux déjà acceptées. Accepter une réservation
-/// la fait passer d'une liste à l'autre, en mémoire.
+/// Implémentation de développement avec données de test, au format de l'API.
+/// Deux réservations à prendre, deux déjà acceptées. Accepter ou se désister
+/// fait passer une réservation d'une liste à l'autre, en mémoire ; refuser la
+/// retire des disponibles.
 class DriverBookingRemoteDataSourceFake
     implements DriverBookingRemoteDataSource {
   DriverBookingRemoteDataSourceFake() {
     final today = DateTime.now();
     DateTime at(int days, int hour, int minute) =>
         DateTime(today.year, today.month, today.day + days, hour, minute);
-
     _available.addAll([
       _booking(
         id: 'fake-available-1',
         scheduledPickup: at(1, 6, 15),
         pickupName: '8 rue du Dôme',
         destinationName: 'Aéroport Strasbourg-Entzheim',
-        distanceKm: 14.8,
+        tripMeters: 14800,
         minPriceCents: 2700,
         maxPriceCents: 3300,
         customerFirstName: 'Léa',
-        luggageCount: 2,
       ),
       _booking(
         id: 'fake-available-2',
         scheduledPickup: at(2, 8, 30),
         pickupName: 'Gare de Strasbourg',
         destinationName: 'Hôpital de Hautepierre',
-        distanceKm: 4.7,
+        tripMeters: 4700,
         minPriceCents: 1400,
         maxPriceCents: 1700,
         customerFirstName: 'Paul',
-        luggageCount: 0,
-        requirement: 'Taxi Accès demandé',
       ),
     ]);
     _accepted.addAll([
@@ -42,22 +40,20 @@ class DriverBookingRemoteDataSourceFake
         scheduledPickup: at(1, 8, 30),
         pickupName: 'Gare de Strasbourg',
         destinationName: 'Hôpital de Hautepierre',
-        distanceKm: 4.7,
+        tripMeters: 4700,
         minPriceCents: 1400,
         maxPriceCents: 1700,
         customerFirstName: 'Marc',
-        luggageCount: 2,
       ),
       _booking(
         id: 'fake-accepted-2',
         scheduledPickup: at(3, 17, 45),
         pickupName: 'Place Kléber',
         destinationName: 'Parlement européen',
-        distanceKm: 3.1,
+        tripMeters: 3100,
         minPriceCents: 1100,
         maxPriceCents: 1400,
         customerFirstName: 'Inès',
-        luggageCount: 1,
       ),
     ]);
   }
@@ -72,7 +68,10 @@ class DriverBookingRemoteDataSourceFake
   }
 
   @override
-  Future<List<DriverBookingModel>> getAvailableBookings() async {
+  Future<List<DriverBookingModel>> getAvailableBookings({
+    required double latitude,
+    required double longitude,
+  }) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     return _sorted(_available);
   }
@@ -80,37 +79,59 @@ class DriverBookingRemoteDataSourceFake
   @override
   Future<void> acceptBooking(String bookingId) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
-    final booking = _available.firstWhere((b) => b['id'] == bookingId);
-    _available.remove(booking);
-    _accepted.add(booking);
+    _move(bookingId, from: _available, to: _accepted);
+  }
+
+  @override
+  Future<void> withdrawFromBooking(String bookingId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    _move(bookingId, from: _accepted, to: _available);
+  }
+
+  @override
+  Future<void> refuseBooking(String bookingId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    _available.removeWhere((booking) => booking['id'] == bookingId);
+  }
+
+  // No fake booking reaches its deadline: "Je pars" is never shown.
+  @override
+  Future<DriverRideModel> departForBooking(String bookingId) =>
+      throw UnsupportedError('No simulated booking can be left for.');
+
+  void _move(
+    String bookingId, {
+    required List<Map<String, dynamic>> from,
+    required List<Map<String, dynamic>> to,
+  }) {
+    final booking = from.firstWhere((b) => b['id'] == bookingId);
+    from.remove(booking);
+    to.add(booking);
   }
 
   List<DriverBookingModel> _sorted(List<Map<String, dynamic>> bookings) => [
     for (final booking in bookings) DriverBookingModel.fromJson(booking),
   ]..sort((a, b) => a.scheduledPickup.compareTo(b.scheduledPickup));
 
+  // The JSON of GET /v1/bookings/available and /accepted.
   Map<String, dynamic> _booking({
     required String id,
     required DateTime scheduledPickup,
     required String pickupName,
     required String destinationName,
-    required double distanceKm,
+    required int tripMeters,
     required int minPriceCents,
     required int maxPriceCents,
     required String customerFirstName,
-    required int luggageCount,
-    String? requirement,
   }) => {
     'id': id,
-    'scheduledPickup': scheduledPickup.toIso8601String(),
-    'pickupName': pickupName,
+    'pickupAt': scheduledPickup.toUtc().toIso8601String(),
+    'originName': pickupName,
     'destinationName': destinationName,
-    'distanceKm': distanceKm,
-    'minPriceCents': minPriceCents,
-    'maxPriceCents': maxPriceCents,
-    'customerFirstName': customerFirstName,
-    'passengerCount': 1,
-    'luggageCount': luggageCount,
-    'requirement': requirement,
+    'tripMeters': tripMeters,
+    'estimatedPriceMinCents': minPriceCents,
+    'estimatedPriceMaxCents': maxPriceCents,
+    'passengerFirstName': customerFirstName,
+    'canDepart': false,
   };
 }

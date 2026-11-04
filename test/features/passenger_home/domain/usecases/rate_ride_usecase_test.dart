@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride_compliment.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride_history.dart';
@@ -42,12 +40,8 @@ class _FakeRideRepository implements RideRepository {
   Future<Result<void>> cancelRide(String rideId) => throw UnimplementedError();
 
   @override
-  Future<Result<String>> bookRide({
-    required Coordinates origin,
-    required Place destination,
-    required TaxiOffer offer,
-    required DateTime scheduledPickup,
-  }) => throw UnimplementedError();
+  Future<Result<String>> bookRide(TaxiOffer offer) =>
+      throw UnimplementedError();
 
   @override
   Future<Result<void>> cancelBooking(String bookingId) =>

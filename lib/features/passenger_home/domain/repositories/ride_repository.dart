@@ -27,14 +27,9 @@ abstract class RideRepository {
     required List<RideCompliment> compliments,
   });
 
-  // Books a ride in advance, with the offer and estimate shown to the
-  // passenger. Returns the id of the booking.
-  Future<Result<String>> bookRide({
-    required Coordinates origin,
-    required Place destination,
-    required TaxiOffer offer,
-    required DateTime scheduledPickup,
-  });
+  // Books the offer priced for later, at its price. Returns the id of the
+  // booking. Fails with EstimateExpiredFailure when the price is too old.
+  Future<Result<String>> bookRide(TaxiOffer offer);
 
   Future<Result<void>> cancelBooking(String bookingId);
 

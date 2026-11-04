@@ -33,6 +33,10 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
 
   final Coordinates _origin;
   final Place _destination;
+
+  // Null for a taxi now; otherwise the ride is priced for it and booked.
+  // Set by each TaxiChoiceStarted: the passenger may change it on screen.
+  DateTime? _scheduledPickup;
   final LoadTaxiChoiceUseCase _loadTaxiChoiceUseCase;
   final RequestRideUseCase _requestRideUseCase;
   final BookRideUseCase _bookRideUseCase;
@@ -41,16 +45,22 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
     TaxiChoiceStarted event,
     Emitter<TaxiChoiceState> emit,
   ) async {
+    _scheduledPickup = event.scheduledPickup;
     emit(const TaxiChoiceLoading());
     await _load(emit);
   }
 
-  // A new estimate each time: the backend prices from the taxis free now.
+  // A new estimate each time: the backend prices from the taxis free now, or
+  // at the tariff of the pickup time for a booking.
   Future<void> _load(
     Emitter<TaxiChoiceState> emit, {
     String? orderFailureMessage,
   }) async {
-    switch (await _loadTaxiChoiceUseCase(from: _origin, to: _destination)) {
+    switch (await _loadTaxiChoiceUseCase(
+      from: _origin,
+      to: _destination,
+      scheduledPickup: _scheduledPickup,
+    )) {
       case Ok(:final value):
         emit(
           TaxiChoiceReady(
@@ -133,12 +143,7 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
         isOrdering: true,
       ),
     );
-    switch (await _bookRideUseCase(
-      origin: _origin,
-      destination: _destination,
-      offer: offer,
-      scheduledPickup: event.scheduledPickup,
-    )) {
+    switch (await _bookRideUseCase(offer)) {
       case Ok(:final value):
         emit(
           TaxiChoiceReady(
@@ -147,6 +152,9 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
             bookedRideId: value,
           ),
         );
+      // The passenger sees the new price before booking again.
+      case Error(error: EstimateExpiredFailure(:final message)):
+        await _load(emit, orderFailureMessage: message);
       case Error(:final error):
         emit(
           TaxiChoiceReady(

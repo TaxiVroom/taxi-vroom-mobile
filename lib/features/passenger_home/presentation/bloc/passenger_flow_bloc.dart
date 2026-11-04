@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/domain/entities/pickup_day.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
@@ -15,10 +16,15 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
   PassengerFlowBloc({
     required GetPickupDaysUseCase getPickupDaysUseCase,
     required LoadCurrentRideUseCase loadCurrentRideUseCase,
+    required WatchPushedRidesUseCase watchPushedRidesUseCase,
   }) : _getPickupDaysUseCase = getPickupDaysUseCase,
        _loadCurrentRideUseCase = loadCurrentRideUseCase,
-       super(const PassengerFlowHome()) {
+       _watchPushedRidesUseCase = watchPushedRidesUseCase,
+       super(const PassengerFlowStarting()) {
     on<PassengerFlowStarted>(_onStarted);
+    on<PassengerHomeFailed>(_onHomeFailed);
+    on<PassengerPushesWatched>(_onPushesWatched);
+    on<_PassengerPushedRideOpened>(_onPushedRideOpened);
     on<PassengerDestinationSearchOpened>(_onDestinationSearchOpened);
     on<PassengerDestinationSelected>(_onDestinationSelected);
     on<PassengerRideOrdered>(_onRideOrdered);
@@ -31,15 +37,62 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
 
   final GetPickupDaysUseCase _getPickupDaysUseCase;
   final LoadCurrentRideUseCase _loadCurrentRideUseCase;
+  final WatchPushedRidesUseCase _watchPushedRidesUseCase;
 
-  // If it cannot be told, the home stays: nothing else depends on it.
+  // The notifications are followed once, however often the home reloads.
+  bool _watchesPushes = false;
+
+  // Opens the ride to come back to, or leaves the start for the home. If the
+  // ride cannot be told, the home shows: nothing else depends on it. A ride
+  // already followed stays as it is.
   Future<void> _onStarted(
     PassengerFlowStarted event,
     Emitter<PassengerFlowState> emit,
   ) async {
+    if (state is PassengerFlowRide) return;
     if (await _loadCurrentRideUseCase() case Ok(value: final rideId?)) {
       emit(PassengerFlowRide(rideId: rideId));
+      return;
     }
+    if (state is PassengerFlowStarting) emit(const PassengerFlowHome());
+  }
+
+  // The home shows its error and "Réessayer" instead of the loader; once it
+  // loads, PassengerFlowStarted looks for the ride again.
+  void _onHomeFailed(
+    PassengerHomeFailed event,
+    Emitter<PassengerFlowState> emit,
+  ) {
+    if (state is PassengerFlowStarting) emit(const PassengerFlowHome());
+  }
+
+  // A notification may be a booked ride that started: the passenger must see
+  // its search, its taxi, or that none was found. Without a ride in it, the
+  // current ride is asked again.
+  Future<void> _onPushesWatched(
+    PassengerPushesWatched event,
+    Emitter<PassengerFlowState> emit,
+  ) async {
+    if (_watchesPushes) return;
+    _watchesPushes = true;
+    await emit.onEach<String?>(
+      _watchPushedRidesUseCase(),
+      onData: (rideId) => add(
+        rideId == null
+            ? const PassengerFlowStarted()
+            : _PassengerPushedRideOpened(rideId: rideId),
+      ),
+    );
+  }
+
+  // A ride already followed stays on screen, even for another ride's
+  // notification.
+  void _onPushedRideOpened(
+    _PassengerPushedRideOpened event,
+    Emitter<PassengerFlowState> emit,
+  ) {
+    if (state is PassengerFlowRide) return;
+    emit(PassengerFlowRide(rideId: event.rideId));
   }
 
   void _onDestinationSearchOpened(
@@ -112,8 +165,9 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
         PassengerFlowTaxiChoice() => PassengerFlowDestinationSearch(
           scheduledPickup: state.scheduledPickup,
         ),
-        // Leaving an ordered ride goes through "Annuler la course" only.
-        PassengerFlowRide() => state,
+        // Leaving an ordered ride goes through "Annuler la course" only; the
+        // start ends on its own.
+        PassengerFlowRide() || PassengerFlowStarting() => state,
         _ => PassengerFlowHome(scheduledPickup: state.scheduledPickup),
       },
     );
@@ -137,7 +191,8 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
       scheduledPickup: scheduledPickup,
       pickupDays: pickupDays,
     ),
-    // The pickup time of an ordered ride can't change anymore.
-    PassengerFlowRide() => state,
+    // The pickup time of an ordered ride can't change anymore; nothing to
+    // change while starting.
+    PassengerFlowRide() || PassengerFlowStarting() => state,
   };
 }

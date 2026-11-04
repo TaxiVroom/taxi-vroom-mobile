@@ -4,6 +4,7 @@ import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/utils/rating_formatter.dart';
+import 'package:mobile/core/utils/time_formatter.dart';
 import 'package:mobile/features/driver_home/domain/entities/ride_request.dart';
 import 'package:mobile/features/driver_home/domain/entities/routed_ride_request.dart';
 import 'package:mobile/features/driver_home/presentation/bloc/ride_request_bloc.dart';
@@ -100,6 +101,11 @@ class RideRequestSheet extends StatelessWidget {
     );
   }
 
+  // "Réservation pour 11:56": the passenger booked, and waits at that time.
+  String _kindLabel(DateTime? scheduledPickup) => scheduledPickup == null
+      ? 'Course immédiate'
+      : 'Réservation pour ${formatClockTime(scheduledPickup)}';
+
   Widget _buildHeader(RideRequestOffered state) {
     final request = state.offer.request;
     return Row(
@@ -108,9 +114,9 @@ class RideRequestSheet extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Course immédiate',
-                style: TextStyle(fontSize: 12, color: AppColors.muted),
+              Text(
+                _kindLabel(request.scheduledPickup),
+                style: const TextStyle(fontSize: 12, color: AppColors.muted),
               ),
               Text(
                 formatEuroRange(request.minPriceCents, request.maxPriceCents),

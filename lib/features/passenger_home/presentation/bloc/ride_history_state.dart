@@ -12,12 +12,22 @@ final class RideHistoryLoading extends RideHistoryState {
 }
 
 final class RideHistoryReady extends RideHistoryState {
-  const RideHistoryReady({required this.history});
+  const RideHistoryReady({
+    required this.history,
+    this.cancellingId,
+    this.failureMessage,
+  });
 
   final RideHistory history;
 
+  // The booking being cancelled, if any.
+  final String? cancellingId;
+
+  // Why the last cancellation failed.
+  final String? failureMessage;
+
   @override
-  List<Object?> get props => [history];
+  List<Object?> get props => [history, cancellingId, failureMessage];
 }
 
 final class RideHistoryFailure extends RideHistoryState {

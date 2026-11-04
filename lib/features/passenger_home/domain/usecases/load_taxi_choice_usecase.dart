@@ -18,9 +18,11 @@ class LoadTaxiChoiceUseCase {
   final RouteRepository _routeRepository;
   final TaxiOfferRepository _taxiOfferRepository;
 
+  // With scheduledPickup, the offers are priced for that time, to be booked.
   Future<Result<TaxiChoice>> call({
     required Coordinates from,
     required Place to,
+    DateTime? scheduledPickup,
   }) async {
     final RideRoute route;
     switch (await _routeRepository.getRoute(from: from, to: to.coordinates)) {
@@ -31,7 +33,11 @@ class LoadTaxiChoiceUseCase {
     }
 
     final List<TaxiOffer> offers;
-    switch (await _taxiOfferRepository.getOffers(from: from, to: to)) {
+    switch (await _taxiOfferRepository.getOffers(
+      from: from,
+      to: to,
+      scheduledPickup: scheduledPickup,
+    )) {
       case Ok(:final value):
         offers = value;
       case Error(:final error):

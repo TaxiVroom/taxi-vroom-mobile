@@ -10,6 +10,7 @@ class BookedRide extends Equatable {
     required this.offerName,
     required this.minPriceCents,
     required this.maxPriceCents,
+    required this.driverFirstName,
   });
 
   final String id;
@@ -22,6 +23,9 @@ class BookedRide extends Equatable {
   final int minPriceCents;
   final int maxPriceCents;
 
+  // The driver who committed to it; null while none did.
+  final String? driverFirstName;
+
   @override
   List<Object?> get props => [
     id,
@@ -31,5 +35,6 @@ class BookedRide extends Equatable {
     offerName,
     minPriceCents,
     maxPriceCents,
+    driverFirstName,
   ];
 }

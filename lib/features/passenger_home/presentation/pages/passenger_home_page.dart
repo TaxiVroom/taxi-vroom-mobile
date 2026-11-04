@@ -1,6 +1,7 @@
 import 'package:flow_builder/flow_builder.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
+import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/authentication/presentation/navigator/auth_navigator.dart'
     show AuthNavigator;
@@ -47,6 +48,7 @@ class PassengerHomePage extends StatelessWidget {
     required this.getPickupDaysUseCase,
     required this.requestRideUseCase,
     required this.loadCurrentRideUseCase,
+    required this.watchPushedRidesUseCase,
     required this.watchRideUseCase,
     required this.cancelRideUseCase,
     required this.rateRideUseCase,
@@ -69,6 +71,7 @@ class PassengerHomePage extends StatelessWidget {
   final GetPickupDaysUseCase getPickupDaysUseCase;
   final RequestRideUseCase requestRideUseCase;
   final LoadCurrentRideUseCase loadCurrentRideUseCase;
+  final WatchPushedRidesUseCase watchPushedRidesUseCase;
   final WatchRideUseCase watchRideUseCase;
   final CancelRideUseCase cancelRideUseCase;
   final RateRideUseCase rateRideUseCase;
@@ -98,6 +101,7 @@ class PassengerHomePage extends StatelessWidget {
           create: (_) => PassengerFlowBloc(
             getPickupDaysUseCase: getPickupDaysUseCase,
             loadCurrentRideUseCase: loadCurrentRideUseCase,
+            watchPushedRidesUseCase: watchPushedRidesUseCase,
           ),
         ),
         BlocProvider(
@@ -113,14 +117,27 @@ class PassengerHomePage extends StatelessWidget {
           )..add(const AccountRequested()),
         ),
       ],
-      // The ride page needs the passenger's position: looking for a ride
-      // before the home is loaded would leave it out of the pages for good.
-      child: BlocListener<PassengerHomeBloc, PassengerHomeState>(
-        listenWhen: (previous, current) =>
-            previous is! PassengerHomeReady && current is PassengerHomeReady,
-        listener: (context, _) => context.read<PassengerFlowBloc>().add(
-          const PassengerFlowStarted(),
-        ),
+      child: MultiBlocListener(
+        listeners: [
+          // The ride page needs the passenger's position: looking for a ride,
+          // or opening the one of a notification, before the home is loaded
+          // would leave it out of the pages for good.
+          BlocListener<PassengerHomeBloc, PassengerHomeState>(
+            listenWhen: (previous, current) =>
+                previous is! PassengerHomeReady &&
+                current is PassengerHomeReady,
+            listener: (context, _) => context.read<PassengerFlowBloc>()
+              ..add(const PassengerFlowStarted())
+              ..add(const PassengerPushesWatched()),
+          ),
+          // Its error and "Réessayer" replace the start's loader.
+          BlocListener<PassengerHomeBloc, PassengerHomeState>(
+            listenWhen: (_, current) => current is PassengerHomeFailure,
+            listener: (context, _) => context.read<PassengerFlowBloc>().add(
+              const PassengerHomeFailed(),
+            ),
+          ),
+        ],
         child: BlocBuilder<PassengerFlowBloc, PassengerFlowState>(
           builder: (context, flowState) => FlowBuilder<PassengerFlowState>(
             state: flowState,
@@ -135,6 +152,17 @@ class PassengerHomePage extends StatelessWidget {
     BuildContext context,
     PassengerFlowState flowState,
   ) {
+    // Until the app knows where to go: nothing to tap that would lead
+    // elsewhere than the ride about to open.
+    if (flowState is PassengerFlowStarting) {
+      return const [
+        MaterialPage<void>(
+          key: ValueKey('passenger-starting'),
+          child: Scaffold(child: Center(child: CircularProgressIndicator())),
+        ),
+      ];
+    }
+
     final tabsPage = MaterialPage<void>(
       key: const ValueKey('passenger-tabs'),
       child: _PassengerTabs(onSignOutRequested: onSignOutRequested),
@@ -156,7 +184,8 @@ class PassengerHomePage extends StatelessWidget {
     );
 
     return switch (flowState) {
-      PassengerFlowHome() => [tabsPage],
+      // The start is handled above; listed for the switch to be complete.
+      PassengerFlowStarting() || PassengerFlowHome() => [tabsPage],
       PassengerFlowDestinationSearch() => [tabsPage, destinationPage],
       PassengerFlowTaxiChoice(:final destination, :final scheduledPickup) => [
         tabsPage,

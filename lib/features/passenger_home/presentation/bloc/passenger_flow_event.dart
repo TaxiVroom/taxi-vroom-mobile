@@ -12,6 +12,27 @@ final class PassengerFlowStarted extends PassengerFlowEvent {
   const PassengerFlowStarted();
 }
 
+// The passenger home could not load: its error shows instead of the start.
+final class PassengerHomeFailed extends PassengerFlowEvent {
+  const PassengerHomeFailed();
+}
+
+// The passenger home is loaded: notifications received on screen or touched
+// are followed while it lives.
+final class PassengerPushesWatched extends PassengerFlowEvent {
+  const PassengerPushesWatched();
+}
+
+// A notification about this ride was received on screen or touched.
+final class _PassengerPushedRideOpened extends PassengerFlowEvent {
+  const _PassengerPushedRideOpened({required this.rideId});
+
+  final String rideId;
+
+  @override
+  List<Object?> get props => [rideId];
+}
+
 // "Où allez-vous ?".
 final class PassengerDestinationSearchOpened extends PassengerFlowEvent {
   const PassengerDestinationSearchOpened();

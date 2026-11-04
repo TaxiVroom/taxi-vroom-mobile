@@ -20,7 +20,6 @@ class RideRepositoryImpl implements RideRepository {
 
   final RideRemoteDataSource _dataSource;
 
-  // No backend yet: simulated.
   final RideBookingRemoteDataSource _bookingDataSource;
 
   // The passenger got in meanwhile, or the ride already stopped.
@@ -28,9 +27,16 @@ class RideRepositoryImpl implements RideRepository {
     'La course ne peut plus être annulée.',
   );
 
-  // The only 422 of the order (RIDE.ESTIMATE_EXPIRED in the API).
+  // The only 422 of the order and the booking (RIDE.ESTIMATE_EXPIRED in the
+  // API).
   static const _estimateExpired = EstimateExpiredFailure(
     'Le prix a été mis à jour : vérifiez-le avant de commander.',
+  );
+
+  // The only 400 of the booking (RIDE.PICKUP_TIME_NOT_BOOKABLE): the pickup
+  // got too close while the passenger looked at the price.
+  static const _pickupTimeNotBookable = ValidationFailure(
+    'Cet horaire ne peut plus être réservé, choisissez-en un autre.',
   );
 
   @override
@@ -88,28 +94,16 @@ class RideRepositoryImpl implements RideRepository {
   }
 
   @override
-  Future<Result<String>> bookRide({
-    required Coordinates origin,
-    required Place destination,
-    required TaxiOffer offer,
-    required DateTime scheduledPickup,
-  }) async {
+  Future<Result<String>> bookRide(TaxiOffer offer) async {
     try {
-      final bookingId = await _bookingDataSource.bookRide(
-        originLatitude: origin.latitude,
-        originLongitude: origin.longitude,
-        destinationLatitude: destination.coordinates.latitude,
-        destinationLongitude: destination.coordinates.longitude,
-        destinationName: destination.name,
-        offerId: offer.id,
-        offerName: offer.name,
-        minPriceCents: offer.minPriceCents,
-        maxPriceCents: offer.maxPriceCents,
-        scheduledPickup: scheduledPickup,
-      );
-      return Result.ok(bookingId);
+      await _bookingDataSource.bookRide(offer.rideId);
+      return Result.ok(offer.rideId);
     } on DioException catch (e) {
-      return Result.error(e.toFailure());
+      return Result.error(switch (e.response?.statusCode) {
+        422 => _estimateExpired,
+        400 => _pickupTimeNotBookable,
+        _ => e.toFailure(),
+      });
     }
   }
 

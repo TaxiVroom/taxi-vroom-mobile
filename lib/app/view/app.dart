@@ -20,8 +20,9 @@ import 'package:mobile/core/data/repositories/route_repository_impl.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/core/domain/usecases/register_push_token_usecase.dart';
 import 'package:mobile/core/domain/usecases/unregister_push_token_usecase.dart';
-import 'package:mobile/core/domain/usecases/watch_push_token_refresh_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
+import 'package:mobile/core/domain/usecases/watch_push_token_refresh_usecase.dart';
+import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
 import 'package:mobile/core/network/auth_interceptor.dart';
 import 'package:mobile/env/app_config.dart';
 import 'package:mobile/features/authentication/data/datasources/auth_remote_datasource.dart';
@@ -36,7 +37,7 @@ import 'package:mobile/features/authentication/presentation/navigator/auth_navig
 import 'package:mobile/features/driver_home/data/datasources/demand_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_account_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_activity_remote_datasource_fake.dart';
-import 'package:mobile/features/driver_home/data/datasources/driver_booking_remote_datasource_fake.dart';
+import 'package:mobile/features/driver_home/data/datasources/driver_booking_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_document_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_presence_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource.dart';
@@ -58,13 +59,15 @@ import 'package:mobile/features/driver_home/domain/usecases/accept_ride_request_
 import 'package:mobile/features/driver_home/domain/usecases/arrive_at_pickup_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/depart_for_booking_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_bookings_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_documents_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/refuse_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_receives_bookings_usecase.dart';
@@ -74,13 +77,14 @@ import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifi
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_passenger_cancellation_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/data/datasources/account_remote_datasource_fake.dart';
 import 'package:mobile/features/passenger_home/data/datasources/nearby_taxi_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/place_search_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/recent_destination_remote_datasource_fake.dart';
+import 'package:mobile/features/passenger_home/data/datasources/ride_booking_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource.dart';
-import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource_fake.dart';
 import 'package:mobile/features/passenger_home/data/datasources/taxi_offer_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/repositories/account_repository_impl.dart';
 import 'package:mobile/features/passenger_home/data/repositories/nearby_taxi_repository_impl.dart';
@@ -178,12 +182,11 @@ class App extends StatelessWidget {
       ),
     );
 
-    // Course simulée : estimation, suivi, notation, réservations et
-    // historique. Une seule instance, qui garde l'estimation pour la commande.
-    final rideFake = RideRemoteDataSourceFake();
+    // Pour tout simuler (estimation, suivi, notation, réservations et
+    // historique) : une seule instance de RideRemoteDataSourceFake(), qui garde
+    // l'estimation pour la commande, passée au choix du taxi et à la course.
 
-    // Choix du taxi : prix estimé par le backend, qui crée la course. Pour
-    // tout simuler, passer rideFake à la place, et aussi à la course.
+    // Choix du taxi : prix estimé par le backend, qui crée la course.
     final loadTaxiChoiceUseCase = LoadTaxiChoiceUseCase(
       routeRepository: routeRepo,
       taxiOfferRepository: TaxiOfferRepositoryImpl(
@@ -206,13 +209,12 @@ class App extends StatelessWidget {
       databaseURL: config.firebaseDatabaseUrl,
     );
 
-    // Course : commandée, annulée et notée via l'API, suivie dans Firebase.
-    // Réservations et historique restent simulés. Une seule instance,
-    // partagée par la commande, le suivi et l'annulation. Pour tout simuler,
-    // passer rideFake en premier argument aussi.
+    // Course : commandée, réservée, annulée et notée via l'API, suivie dans
+    // Firebase. Une seule instance, partagée par la commande, le suivi et
+    // l'annulation.
     final rideRepo = RideRepositoryImpl(
       RideRemoteDataSourceImpl(realtimeDatabase, dio),
-      rideFake,
+      RideBookingRemoteDataSourceImpl(dio),
     );
     // Connexion à Firebase, pour prévenir chauffeur et passager quand elle est
     // perdue.
@@ -264,10 +266,11 @@ class App extends StatelessWidget {
       DriverRideRemoteDataSourceImpl(realtimeDatabase, dio),
       driverRideFake,
     );
-    // Réservations chauffeur : une seule instance, partagée par l'accueil
-    // (prochaine réservation) et l'onglet Réservations.
+    // Réservations chauffeur, via l'API : une seule instance, partagée par
+    // l'accueil (prochaine réservation) et l'onglet Réservations. Pour
+    // simuler, passer DriverBookingRemoteDataSourceFake().
     final driverBookingRepo = DriverBookingRepositoryImpl(
-      DriverBookingRemoteDataSourceFake(),
+      DriverBookingRemoteDataSourceImpl(dio, realtimeDatabase),
     );
     // Documents du chauffeur : une seule instance, pour le contrôle à la
     // connexion et l'onglet Compte. Pour voir l'écran « Vos documents » à la
@@ -359,7 +362,13 @@ class App extends StatelessWidget {
             loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
             getPickupDaysUseCase: const GetPickupDaysUseCase(),
             requestRideUseCase: RequestRideUseCase(rideRepo),
-            loadCurrentRideUseCase: LoadCurrentRideUseCase(rideRepo),
+            loadCurrentRideUseCase: LoadCurrentRideUseCase(
+              rideRepository: rideRepo,
+              pushRegistrationRepository: pushRegistrationRepo,
+            ),
+            watchPushedRidesUseCase: WatchPushedRidesUseCase(
+              pushRegistrationRepo,
+            ),
             loadCurrentDriverRideUseCase: LoadCurrentDriverRideUseCase(
               driverRideRepo,
             ),
@@ -422,9 +431,17 @@ class App extends StatelessWidget {
             loadRideCheckoutUseCase: LoadRideCheckoutUseCase(driverRideRepo),
             completeRideUseCase: CompleteRideUseCase(driverRideRepo),
             loadDriverBookingsUseCase: LoadDriverBookingsUseCase(
-              driverBookingRepo,
+              driverBookingRepository: driverBookingRepo,
+              locationRepository: locationRepo,
             ),
             acceptBookingUseCase: AcceptBookingUseCase(driverBookingRepo),
+            withdrawFromBookingUseCase: WithdrawFromBookingUseCase(
+              driverBookingRepo,
+            ),
+            refuseBookingUseCase: RefuseBookingUseCase(driverBookingRepo),
+            departForBookingUseCase: DepartForBookingUseCase(
+              driverBookingRepo,
+            ),
             // Gains : pas encore d'endpoint backend, semaine fake.
             loadWeeklyEarningsUseCase: LoadWeeklyEarningsUseCase(
               EarningsRepositoryImpl(EarningsRemoteDataSourceFake()),

@@ -16,6 +16,12 @@ sealed class PassengerFlowState extends Equatable {
   List<Object?> get props => [scheduledPickup, pickupDays];
 }
 
+// The app just started: it does not know yet whether a ride must be opened,
+// the one of a notification or the current one. Nothing to tap meanwhile.
+final class PassengerFlowStarting extends PassengerFlowState {
+  const PassengerFlowStarting();
+}
+
 final class PassengerFlowHome extends PassengerFlowState {
   const PassengerFlowHome({super.scheduledPickup, super.pickupDays});
 }

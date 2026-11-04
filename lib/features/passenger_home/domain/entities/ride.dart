@@ -27,6 +27,15 @@ final class RideNoDriverFound extends Ride {
   List<Object?> get props => [id];
 }
 
+// The passenger cancelled it. Only seen when the ride is opened afterwards,
+// e.g. from an old notification: cancelling from its screen leaves it.
+final class RideCancelled extends Ride {
+  const RideCancelled({required super.id});
+
+  @override
+  List<Object?> get props => [id];
+}
+
 // The driver waited at the pickup and reported the passenger absent.
 final class RidePassengerNoShow extends Ride {
   const RidePassengerNoShow({required super.id});

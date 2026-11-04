@@ -62,7 +62,7 @@ class TaxiChoicePage extends StatelessWidget {
             loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
             requestRideUseCase: requestRideUseCase,
             bookRideUseCase: bookRideUseCase,
-          )..add(const TaxiChoiceStarted()),
+          )..add(TaxiChoiceStarted(scheduledPickup: scheduledPickup)),
         ),
         BlocProvider(
           create: (_) => ArrivalPickupBloc(
@@ -72,12 +72,25 @@ class TaxiChoicePage extends StatelessWidget {
           ),
         ),
       ],
-      child: BlocListener<TaxiChoiceBloc, TaxiChoiceState>(
-        listenWhen: (_, current) =>
-            current is TaxiChoiceReady &&
-            (current.orderedRideId != null || current.bookedRideId != null),
-        listener: (context, state) =>
-            _onOrderConfirmed(context, state as TaxiChoiceReady),
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<TaxiChoiceBloc, TaxiChoiceState>(
+            listenWhen: (_, current) =>
+                current is TaxiChoiceReady &&
+                (current.orderedRideId != null || current.bookedRideId != null),
+            listener: (context, state) =>
+                _onOrderConfirmed(context, state as TaxiChoiceReady),
+          ),
+          // Another pickup time is another price: the tariff of its hour.
+          BlocListener<PassengerFlowBloc, PassengerFlowState>(
+            listenWhen: (previous, current) =>
+                current is PassengerFlowTaxiChoice &&
+                previous.scheduledPickup != current.scheduledPickup,
+            listener: (context, state) => context.read<TaxiChoiceBloc>().add(
+              TaxiChoiceStarted(scheduledPickup: state.scheduledPickup),
+            ),
+          ),
+        ],
         child: PopScope(
           canPop: false,
           // The hardware back goes through the flow bloc, not the Navigator.
@@ -115,8 +128,9 @@ class TaxiChoicePage extends StatelessWidget {
       TaxiChoiceLoading() => const Center(child: CircularProgressIndicator()),
       TaxiChoiceFailure(:final message) => RetryMessage(
         message: message,
-        onRetry: () =>
-            context.read<TaxiChoiceBloc>().add(const TaxiChoiceStarted()),
+        onRetry: () => context.read<TaxiChoiceBloc>().add(
+          TaxiChoiceStarted(scheduledPickup: scheduledPickup),
+        ),
       ),
       TaxiChoiceReady(:final choice, :final selectedOfferId) => Stack(
         children: [
@@ -179,6 +193,7 @@ class TaxiChoicePage extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: TaxiOfferTile(
               offer: offer,
+              showsPickupEta: scheduledPickup == null,
               isSelected: offer.id == selectedOfferId,
               onPressed: () => context.read<TaxiChoiceBloc>().add(
                 TaxiOfferSelected(offerId: offer.id),
@@ -187,10 +202,14 @@ class TaxiChoicePage extends StatelessWidget {
           ),
         _buildOptions(),
         const SizedBox(height: 8),
-        const Text(
-          'Estimation, trajet du taxi jusqu’à vous inclus. Le prix final est '
-          'celui du taximètre.',
-          style: TextStyle(fontSize: 12, color: AppColors.muted),
+        Text(
+          scheduledPickup == null
+              ? 'Estimation, trajet du taxi jusqu’à vous inclus. Le prix final '
+                    'est celui du taximètre.'
+              : 'Estimation au tarif de l’heure de prise en charge, trajet du '
+                    'taxi jusqu’à vous inclus (5 km au plus). Le prix final '
+                    'est celui du taximètre.',
+          style: const TextStyle(fontSize: 12, color: AppColors.muted),
         ),
         _buildPriceExplanation(context, choice.offerById(selectedOfferId)),
         if (orderFailureMessage != null) ...[
@@ -240,11 +259,10 @@ class TaxiChoicePage extends StatelessWidget {
   }
 
   void _onOrderPressed(BuildContext context) {
-    final pickup = scheduledPickup;
     context.read<TaxiChoiceBloc>().add(
-      pickup == null
+      scheduledPickup == null
           ? const TaxiRideOrdered()
-          : TaxiRideBooked(scheduledPickup: pickup),
+          : const TaxiRideBooked(),
     );
   }
 

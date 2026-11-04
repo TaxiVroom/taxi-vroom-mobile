@@ -19,6 +19,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/ride_bloc.dart';
+import 'package:mobile/features/passenger_home/presentation/bloc/ride_history_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/driver_summary.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/ride_completed_view.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -63,6 +64,9 @@ class RidePage extends StatelessWidget {
               message: 'Votre note n’a pas pu être envoyée.',
             );
           }
+          // "Mes courses" changed: a booking left "À venir", or a ride
+          // joined "Passées".
+          context.read<RideHistoryBloc>().add(const RideHistoryRequested());
           context.read<PassengerFlowBloc>().add(const PassengerRideEnded());
         },
         // An ordered ride is left through "Annuler la course" or "Terminer".
@@ -175,6 +179,11 @@ class RidePage extends StatelessWidget {
                     text:
                         'Les taxis autour de vous sont occupés. Réessayez '
                         'dans quelques minutes.',
+                  ),
+                  RideCancelled() => _buildStopped(
+                    context,
+                    title: 'Course annulée',
+                    text: 'Vous avez annulé cette course.',
                   ),
                   RidePassengerNoShow() => _buildStopped(
                     context,

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
     show
+        CameraOptions,
         CameraViewportState,
         CircleAnnotationManager,
         CircleAnnotationOptions,
@@ -78,6 +79,11 @@ class _PassengerHomeMapState extends State<PassengerHomeMap> {
   }
 
   Future<void> _onMapCreated(MapboxMap map) async {
+    // The viewport alone left the map on the globe at startup: the camera is
+    // set right away, like RouteMap does.
+    await map.setCamera(
+      CameraOptions(center: widget.position.toPoint(), zoom: _zoom),
+    );
     await map.location.updateSettings(
       LocationComponentSettings(enabled: true, pulsingEnabled: true),
     );
@@ -86,7 +92,7 @@ class _PassengerHomeMapState extends State<PassengerHomeMap> {
   }
 
   // TODO(taxi-glide): taxis jump to their new position every 3 seconds;
-  // make them glide from one position to the next, as Uber does.
+  // make them glide from one position to the next.
   Future<void> _showTaxis() async {
     final taxiMarkers = _taxiMarkers;
     if (taxiMarkers == null) return;

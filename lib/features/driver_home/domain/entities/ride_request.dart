@@ -1,8 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:mobile/core/domain/entities/coordinates.dart';
 
-// A passenger asks for a taxi right now: offered to the driver, who must
-// answer before the time runs out.
+// A passenger asks for a taxi right now, or their booking starts: offered to
+// the driver, who must answer before the time runs out.
 class RideRequest extends Equatable {
   const RideRequest({
     required this.id,
@@ -18,6 +18,7 @@ class RideRequest extends Equatable {
     required this.customerRating,
     required this.passengerCount,
     required this.luggageCount,
+    this.scheduledPickup,
   });
 
   // After this, the request goes to another driver.
@@ -41,6 +42,9 @@ class RideRequest extends Equatable {
   final double customerRating;
   final int passengerCount;
   final int luggageCount;
+
+  // Only for a booking: when the passenger waits for the taxi.
+  final DateTime? scheduledPickup;
 
   // Whole seconds left to answer, never below 0.
   int secondsLeft(DateTime now) {
@@ -66,5 +70,6 @@ class RideRequest extends Equatable {
     customerRating,
     passengerCount,
     luggageCount,
+    scheduledPickup,
   ];
 }

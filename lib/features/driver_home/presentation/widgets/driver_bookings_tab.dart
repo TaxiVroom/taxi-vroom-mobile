@@ -27,7 +27,8 @@ class _DriverBookingsTabState extends State<DriverBookingsTab> {
     return SafeArea(
       child: BlocBuilder<DriverBookingsBloc, DriverBookingsState>(
         builder: (context, state) => switch (state) {
-          DriverBookingsLoading() => const Center(
+          // Departed: the pickup screen opens, the lists reload meanwhile.
+          DriverBookingsLoading() || DriverBookingsDeparted() => const Center(
             child: CircularProgressIndicator(),
           ),
           DriverBookingsFailure(:final message) => RetryMessage(
@@ -92,17 +93,24 @@ class _DriverBookingsTabState extends State<DriverBookingsTab> {
           _buildBooking(
             context,
             booking,
-            isAccepting: state.acceptingId == booking.id,
+            isAnswering: state.answeringId == booking.id,
+            isRefusing: state.isRefusing,
+            canAnswer: state.answeringId == null,
           ),
       ],
     );
   }
 
+  // One answer at a time: while one is sent, no button reacts, and the
+  // loader turns on the button tapped.
   Widget _buildBooking(
     BuildContext context,
     DriverBooking booking, {
-    required bool isAccepting,
+    required bool isAnswering,
+    required bool isRefusing,
+    required bool canAnswer,
   }) {
+    final bloc = context.read<DriverBookingsBloc>();
     final requirement = booking.requirement;
     final luggage = switch (booking.luggageCount) {
       0 => null,
@@ -147,28 +155,70 @@ class _DriverBookingsTabState extends State<DriverBookingsTab> {
             details,
             style: const TextStyle(fontSize: 12, color: AppColors.muted),
           ),
-          if (!_showsAccepted) ...[
-            const SizedBox(height: 10),
+          const SizedBox(height: 10),
+          if (_showsAccepted && booking.canDepart)
             PrimaryButton(
-              onPressed: isAccepting
-                  ? null
-                  : () => context.read<DriverBookingsBloc>().add(
-                      DriverBookingAccepted(bookingId: booking.id),
-                    ),
-              alignment: Alignment.center,
-              trailing: isAccepting
-                  ? const AspectRatio(
-                      aspectRatio: 1,
-                      child: CircularProgressIndicator(onSurface: true),
-                    )
+              onPressed: canAnswer
+                  ? () => bloc.add(DriverBookingDeparted(bookingId: booking.id))
                   : null,
-              child: const Text('Accepter'),
+              alignment: Alignment.center,
+              trailing: isAnswering ? _loader(onSurface: true) : null,
+              child: const Text('Je pars'),
+            )
+          else if (_showsAccepted)
+            OutlineButton(
+              onPressed: canAnswer
+                  ? () =>
+                        bloc.add(DriverBookingWithdrawn(bookingId: booking.id))
+                  : null,
+              alignment: Alignment.center,
+              trailing: isAnswering ? _loader(onSurface: false) : null,
+              child: const Text('Se désister'),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: OutlineButton(
+                    onPressed: canAnswer
+                        ? () => bloc.add(
+                            DriverBookingRefused(bookingId: booking.id),
+                          )
+                        : null,
+                    alignment: Alignment.center,
+                    trailing: isAnswering && isRefusing
+                        ? _loader(onSurface: false)
+                        : null,
+                    child: const Text('Refuser'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: PrimaryButton(
+                    onPressed: canAnswer
+                        ? () => bloc.add(
+                            DriverBookingAccepted(bookingId: booking.id),
+                          )
+                        : null,
+                    alignment: Alignment.center,
+                    trailing: isAnswering && !isRefusing
+                        ? _loader(onSurface: true)
+                        : null,
+                    child: const Text('Accepter'),
+                  ),
+                ),
+              ],
             ),
-          ],
         ],
       ),
     );
   }
+
+  // In a button, as long as its text: onSurface on a filled button.
+  Widget _loader({required bool onSurface}) => AspectRatio(
+    aspectRatio: 1,
+    child: CircularProgressIndicator(onSurface: onSurface),
+  );
 
   // "Demain 06:15", green like the other bookings in the app.
   Widget _buildPickupTime(DriverBooking booking) {

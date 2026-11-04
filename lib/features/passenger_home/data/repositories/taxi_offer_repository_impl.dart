@@ -13,7 +13,7 @@ class TaxiOfferRepositoryImpl implements TaxiOfferRepository {
 
   final TaxiOfferRemoteDataSource _dataSource;
 
-  // The server's 422 codes (see the API's ride.errors.ts).
+  // The server's 400 and 422 codes (see the API's ride.errors.ts).
   static const _refusals = {
     'RIDE.AREA_NOT_SERVED': ValidationFailure(
       "Taxi Vroom n'est pas encore disponible dans votre département.",
@@ -21,12 +21,16 @@ class TaxiOfferRepositoryImpl implements TaxiOfferRepository {
     'RIDE.NO_DRIVER_AVAILABLE': ValidationFailure(
       'Aucun taxi disponible pour le moment.',
     ),
+    'RIDE.PICKUP_TIME_NOT_BOOKABLE': ValidationFailure(
+      'Cet horaire ne peut plus être réservé, choisissez-en un autre.',
+    ),
   };
 
   @override
   Future<Result<List<TaxiOffer>>> getOffers({
     required Coordinates from,
     required Place to,
+    DateTime? scheduledPickup,
   }) async {
     try {
       final models = await _dataSource.getOffers(
@@ -35,6 +39,7 @@ class TaxiOfferRepositoryImpl implements TaxiOfferRepository {
         toLatitude: to.coordinates.latitude,
         toLongitude: to.coordinates.longitude,
         destinationName: to.name,
+        scheduledPickup: scheduledPickup,
       );
       return Result.ok(models.map((m) => m.toDomain()).toList());
     } on DioException catch (e) {
@@ -44,8 +49,9 @@ class TaxiOfferRepositoryImpl implements TaxiOfferRepository {
 
   Failure? _refusal(DioException e) {
     final response = e.response;
-    if (response?.statusCode != 422) return null;
-    final data = response!.data as Map<String, dynamic>;
-    return _refusals[data['code']];
+    final statusCode = response?.statusCode;
+    if (statusCode != 400 && statusCode != 422) return null;
+    final data = response!.data;
+    return data is Map<String, dynamic> ? _refusals[data['code']] : null;
   }
 }

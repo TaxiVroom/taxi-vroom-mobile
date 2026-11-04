@@ -13,6 +13,7 @@ sealed class RideModel {
     return switch (status) {
       'SEARCHING_DRIVER' => SearchingDriverRideModel(id: id),
       'NO_DRIVER_FOUND' => NoDriverFoundRideModel(id: id),
+      'CANCELLED' => CancelledRideModel(id: id),
       'PASSENGER_NO_SHOW' => PassengerNoShowRideModel(id: id),
       'DRIVER_APPROACHING' => DriverApproachingRideModel(json),
       'DRIVER_ARRIVED' => DriverArrivedRideModel(json),
@@ -39,6 +40,13 @@ final class NoDriverFoundRideModel extends RideModel {
 
   @override
   Ride toDomain() => RideNoDriverFound(id: id);
+}
+
+final class CancelledRideModel extends RideModel {
+  const CancelledRideModel({required super.id});
+
+  @override
+  Ride toDomain() => RideCancelled(id: id);
 }
 
 final class PassengerNoShowRideModel extends RideModel {

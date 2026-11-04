@@ -1,8 +1,8 @@
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-/// An action confirmed by sliding the thumb to the end, like Uber's "swipe
-/// Complete": a deliberate gesture, which a tap by mistake cannot trigger.
+/// An action confirmed by sliding the thumb to the end: a deliberate
+/// gesture, which a tap by mistake cannot trigger.
 /// shadcn has no such button, and its [Slider] is fixed at 16 pixels high:
 /// built here with a drag on the thumb only.
 class SwipeButton extends StatefulWidget {

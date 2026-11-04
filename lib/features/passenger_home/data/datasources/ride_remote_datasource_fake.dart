@@ -50,9 +50,9 @@ class RideRemoteDataSourceFake
         scheduledPickup: today.add(
           const Duration(days: 1, hours: 6, minutes: 15),
         ),
-        offerName: 'Taxi',
         minPriceCents: 2700,
         maxPriceCents: 3300,
+        driverFirstName: 'Jean',
       ),
       _bookingJson(
         id: 'fake-booking-seed-2',
@@ -61,7 +61,6 @@ class RideRemoteDataSourceFake
         scheduledPickup: today.add(
           const Duration(days: 3, hours: 18, minutes: 30),
         ),
-        offerName: 'Taxi Van',
         minPriceCents: 1400,
         maxPriceCents: 1700,
       ),
@@ -112,6 +111,9 @@ class RideRemoteDataSourceFake
   int _maxPriceCents = 0;
   bool _isCancelled = false;
 
+  // Of the latest estimate, to book it.
+  DateTime? _scheduledPickup;
+
   // One taxi priced from the national caps, with a ±10 % range.
   @override
   Future<List<TaxiOfferModel>> getOffers({
@@ -120,8 +122,10 @@ class RideRemoteDataSourceFake
     required double toLatitude,
     required double toLongitude,
     required String destinationName,
+    DateTime? scheduledPickup,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
+    _scheduledPickup = scheduledPickup;
     _originLatitude = fromLatitude;
     _originLongitude = fromLongitude;
     _destinationLatitude = toLatitude;
@@ -199,51 +203,39 @@ class RideRemoteDataSourceFake
     required List<String> compliments,
   }) => Future<void>.delayed(const Duration(milliseconds: 400));
 
+  // Books the latest estimate, like the backend.
   @override
-  Future<String> bookRide({
-    required double originLatitude,
-    required double originLongitude,
-    required double destinationLatitude,
-    required double destinationLongitude,
-    required String destinationName,
-    required String offerId,
-    required String offerName,
-    required int minPriceCents,
-    required int maxPriceCents,
-    required DateTime scheduledPickup,
-  }) async {
+  Future<void> bookRide(String rideId) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
-    final bookingId = 'fake-booking-${_bookings.length + 1}';
     _bookings.add(
       _bookingJson(
-        id: bookingId,
+        id: 'fake-booking-${_bookings.length + 1}',
         originName: 'Ma position',
-        destinationName: destinationName,
-        scheduledPickup: scheduledPickup,
-        offerName: offerName,
-        minPriceCents: minPriceCents,
-        maxPriceCents: maxPriceCents,
+        destinationName: _destinationName,
+        scheduledPickup: _scheduledPickup ?? DateTime.now(),
+        minPriceCents: _minPriceCents,
+        maxPriceCents: _maxPriceCents,
       ),
     );
-    return bookingId;
   }
 
+  // The JSON of GET /v1/rides/booked.
   Map<String, dynamic> _bookingJson({
     required String id,
     required String originName,
     required String destinationName,
     required DateTime scheduledPickup,
-    required String offerName,
     required int minPriceCents,
     required int maxPriceCents,
+    String? driverFirstName,
   }) => {
     'id': id,
     'originName': originName,
     'destinationName': destinationName,
-    'scheduledPickup': scheduledPickup.toIso8601String(),
-    'offerName': offerName,
-    'minPriceCents': minPriceCents,
-    'maxPriceCents': maxPriceCents,
+    'pickupAt': scheduledPickup.toUtc().toIso8601String(),
+    'estimatedPriceMinCents': minPriceCents,
+    'estimatedPriceMaxCents': maxPriceCents,
+    'driverFirstName': driverFirstName,
   };
 
   @override
@@ -257,8 +249,8 @@ class RideRemoteDataSourceFake
     await Future<void>.delayed(const Duration(milliseconds: 400));
     final upcoming = [..._bookings]
       ..sort(
-        (a, b) => (a['scheduledPickup'] as String).compareTo(
-          b['scheduledPickup'] as String,
+        (a, b) => (a['pickupAt'] as String).compareTo(
+          b['pickupAt'] as String,
         ),
       );
     return upcoming.map(BookedRideModel.fromJson).toList();

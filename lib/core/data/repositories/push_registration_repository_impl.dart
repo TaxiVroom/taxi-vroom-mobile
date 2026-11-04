@@ -7,6 +7,7 @@ import 'package:mobile/core/domain/repositories/push_registration_repository.dar
 import 'package:mobile/core/errors/dio_exception_failure.dart';
 import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:stream_transform/stream_transform.dart';
 
 class PushRegistrationRepositoryImpl implements PushRegistrationRepository {
   const PushRegistrationRepositoryImpl(this._dataSource);
@@ -25,6 +26,20 @@ class PushRegistrationRepositoryImpl implements PushRegistrationRepository {
   @override
   Stream<Result<void>> watchTokenRefresh() => _dataSource.tokenRefreshes
       .asyncMap((token) => _send(() => _dataSource.saveToken(token)));
+
+  @override
+  Stream<String?> watchPushedRides() =>
+      _dataSource.foregroundRideIds.merge(_dataSource.openedRideIds);
+
+  // No ride to open when Firebase cannot tell: the app starts as usual.
+  @override
+  Future<String?> getLaunchRideId() async {
+    try {
+      return await _dataSource.getLaunchRideId();
+    } on FirebaseException {
+      return null;
+    }
+  }
 
   Future<Result<void>> _send(Future<void> Function() request) async {
     try {

@@ -4,7 +4,7 @@ import 'package:mobile/features/passenger_home/domain/entities/pickup_day.dart';
 class GetPickupDaysUseCase {
   const GetPickupDaysUseCase();
 
-  // Today and the next 30 days, like G7 and Uber.
+  // Today and the next 30 days.
   static const _bookableDays = 31;
   static const _slotStep = Duration(minutes: 15);
 
