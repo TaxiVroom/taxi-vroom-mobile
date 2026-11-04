@@ -37,7 +37,7 @@ DriverHome>uses>DriverRideSource
 stack=Flutter+Bloc+flow_builder+shadcn_flutter+Dio+Firebase(Auth,RTDB)+Mapbox(maps,Directions,SearchBox)+geolocator
 size=about 385 dart files in lib, 20 test files, 85 tests
 mapboxCalls=a second Dio pointed at api.mapbox.com, without the auth interceptor, so the Firebase token never leaves for Mapbox
-stillFake=passenger: bookings, account, recent destinations, driver's taxi number, city and vehicle; driver: activity, bookings, account, earnings, zone demand, documents check, checkout supplements, customer rating
+stillFake=passenger: account, recent destinations, driver's taxi number, city and vehicle; driver: activity (incl. "Recevoir les réservations"), account, earnings, zone demand, documents check, checkout supplements, customer rating
 emulators=a wiped emulator starts in California and has about 5 GB free; run both with -d all, two flutter run at once fight over build/
 rtdbListBug=firebase_database 12.6.0: .children on a list read through .child() crashes, the plugin numbers it from -1; read .value instead. A top-level snapshot of keyed entries is fine
 blocLint=dart run bloc_tools:bloc lint . asks for an update: answer n on stdin; 6 pre-existing warnings in registration_bloc
@@ -46,10 +46,11 @@ ciFlutterMismatch=CI (.github/workflows/main.yaml) only runs on push or PR to ma
 templateLeftover=lib/counter is the Very Good template, the only Cubit left; its tests still run
 releaseTodo=before the first staging/prod build, create taxi-vroom-staging and taxi-vroom-prod public Mapbox tokens: the same dev token is in .env.dev, .env.stg and .env.prod
 pushDisplay=FCM notification messages: the system shows them, none on screen while the app is in the foreground; no background handler; channel rides created in MainActivity.kt
+bookings=passenger: TaxiChoiceStarted carries scheduledPickup, the estimate is priced for it and booked by ride id; foreground pushes (FirebaseMessaging.onMessage) re-run PassengerFlowStarted. Driver: LoadDriverBookingsUseCase needs the position; passenger and luggage counts are fixed in the model like for offers; "Je pars" (canDepart from the API) emits DriverBookingsDeparted, which driver_home_page turns into DriverRideAccepted, the same path as an accepted offer
 rideResume=passenger: PassengerFlowStarted waits for PassengerHomeReady, the ride page needs the position and FlowBuilder does not regenerate pages on an unchanged state; driver: DriverFlowStarted checks the ride before the documents and goes back online
 
 # stub for LTM overflow
-#N product|@ltm|ltm:product|Uber-like for French taxis; realtime and supply decisions
+#N product|@ltm|ltm:product|Ride-hailing for French taxis; realtime and supply decisions
 #N passengerMockup|@ltm|ltm:passengerMockup|HTML mockup of the passenger workflow
 #N passengerApp|@ltm|ltm:passengerApp|passenger screens, flow states, ride tracking, booking rules
 #N driverApp|@ltm|ltm:driverApp|driver screens, flow states, presence, offers, ride steps

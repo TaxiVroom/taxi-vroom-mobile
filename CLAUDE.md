@@ -7,6 +7,8 @@ Always loaded:
 @.aimemory/INDEX.md
 @.aimemory/prefs.md
 
+- Every decision or correction of the user about a feature goes into its spec right away, unasked (see `specSync` in `.aimemory/prefs.md`).
+
 **Start** of non-trivial work (planning, and again when executing an accepted plan):
 
 1. Load the other hot shards: `arch.md`, `hyp.md`, `done.md`.

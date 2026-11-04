@@ -1,6 +1,7 @@
 #P id|rule
 specHowItWorks|HARD: each spec has a "Comment ça marche" section: the concrete technical flow end to end, simple and global, with short arrow diagrams between the actors, readable without the code. See taxi-vroom-api/docs/specs/notifications-push.md
 specFirst|HARD: a feature starts with a spec in taxi-vroom-api/docs/specs/<nom>.md, which covers both repos. Spec work writes documents only. Code needs the user's explicit go; answering open points is not that go
+specSync|HARD: every decision, answer or correction of the user about a feature goes into its spec in the same turn, unasked: a decision row marked "validé par le user, <date>", the open point closed, the plan steps adjusted. User, 2026-11-03
 memoryStrict|HARD: always follow .aimemory strictly; it wins over any other memory of how to work. User, 2026-11-02
 stepPause|HARD: on a spec plan, implement one step, then stop for the user's OK
 moneyCents|HARD: every amount is an integer in cents, named with the suffix Cents, never a double; euros only through the price formatters
@@ -21,3 +22,4 @@ helpersOnModel|Domain helpers live on the entity, not in free functions or utils
 booleanRule|A complex boolean rule goes in a named private getter or method, with early returns or named values, never a nested ternary
 namedTypes|Public object shapes are named classes or typedefs, not inline records
 commitStyle|Commit only when the user asks, in Conventional Commits
+noCompetitorNames|HARD: the app may follow the market's usual ways of working, but no competitor or other app is ever named in the repo (code, comments, specs, memory): state the rule and its business reason instead. User, 2026-11-04
