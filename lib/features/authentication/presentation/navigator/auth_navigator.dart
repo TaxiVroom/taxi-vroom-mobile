@@ -30,7 +30,6 @@ import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.d
 import 'package:mobile/features/driver_home/domain/usecases/set_receives_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifications_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_passenger_cancellation_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
@@ -51,7 +50,6 @@ import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase
 import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
-import 'package:mobile/features/passenger_home/domain/usecases/update_notifications_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_nearby_taxis_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/presentation/pages/passenger_home_page.dart';
@@ -98,7 +96,6 @@ class AuthNavigator extends StatelessWidget {
     required this.loadRideHistoryUseCase,
     required this.cancelBookingUseCase,
     required this.loadAccountUseCase,
-    required this.updateNotificationsUseCase,
     required this.loadDriverDocumentsUseCase,
     required this.loadDriverHomeUseCase,
     required this.setOnlineUseCase,
@@ -123,7 +120,6 @@ class AuthNavigator extends StatelessWidget {
     required this.departForBookingUseCase,
     required this.loadWeeklyEarningsUseCase,
     required this.loadDriverAccountUseCase,
-    required this.updateDriverNotificationsUseCase,
     super.key,
   });
 
@@ -167,7 +163,6 @@ class AuthNavigator extends StatelessWidget {
   final LoadRideHistoryUseCase loadRideHistoryUseCase;
   final CancelBookingUseCase cancelBookingUseCase;
   final LoadAccountUseCase loadAccountUseCase;
-  final UpdateNotificationsUseCase updateNotificationsUseCase;
 
   // Use cases de l'accueil chauffeur, transmis à DriverHomePage.
   final LoadDriverDocumentsUseCase loadDriverDocumentsUseCase;
@@ -197,7 +192,6 @@ class AuthNavigator extends StatelessWidget {
   final DepartForBookingUseCase departForBookingUseCase;
   final LoadWeeklyEarningsUseCase loadWeeklyEarningsUseCase;
   final LoadDriverAccountUseCase loadDriverAccountUseCase;
-  final UpdateDriverNotificationsUseCase updateDriverNotificationsUseCase;
 
   @override
   Widget build(BuildContext context) {
@@ -317,7 +311,6 @@ class AuthNavigator extends StatelessWidget {
             loadRideHistoryUseCase: loadRideHistoryUseCase,
             cancelBookingUseCase: cancelBookingUseCase,
             loadAccountUseCase: loadAccountUseCase,
-            updateNotificationsUseCase: updateNotificationsUseCase,
             onSignOutRequested: () =>
                 context.read<AuthBloc>().add(const AuthSignOutRequested()),
           ),
@@ -354,7 +347,6 @@ class AuthNavigator extends StatelessWidget {
             watchPushedRidesUseCase: watchPushedRidesUseCase,
             loadWeeklyEarningsUseCase: loadWeeklyEarningsUseCase,
             loadDriverAccountUseCase: loadDriverAccountUseCase,
-            updateDriverNotificationsUseCase: updateDriverNotificationsUseCase,
             onSignOutRequested: () =>
                 context.read<AuthBloc>().add(const AuthSignOutRequested()),
           ),

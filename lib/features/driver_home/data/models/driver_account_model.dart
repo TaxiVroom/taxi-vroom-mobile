@@ -9,7 +9,6 @@ class DriverAccountModel {
     required this.vehicleModel,
     required this.plate,
     required this.plateDepartment,
-    required this.notificationsEnabled,
   });
 
   factory DriverAccountModel.fromJson(Map<String, dynamic> json) {
@@ -22,7 +21,6 @@ class DriverAccountModel {
       vehicleModel: vehicle['model'] as String,
       plate: vehicle['plate'] as String,
       plateDepartment: vehicle['department'] as String,
-      notificationsEnabled: json['notificationsEnabled'] as bool,
     );
   }
 
@@ -33,7 +31,6 @@ class DriverAccountModel {
   final String vehicleModel;
   final String plate;
   final String plateDepartment;
-  final bool notificationsEnabled;
 
   DriverAccount toDomain() => DriverAccount(
     firstName: firstName,
@@ -43,6 +40,5 @@ class DriverAccountModel {
     vehicleModel: vehicleModel,
     plate: plate,
     plateDepartment: plateDepartment,
-    notificationsEnabled: notificationsEnabled,
   );
 }

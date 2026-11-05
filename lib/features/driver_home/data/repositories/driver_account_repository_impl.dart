@@ -19,14 +19,4 @@ class DriverAccountRepositoryImpl implements DriverAccountRepository {
       return Result.error(e.toFailure());
     }
   }
-
-  @override
-  Future<Result<void>> setNotificationsEnabled({required bool enabled}) async {
-    try {
-      await _dataSource.setNotificationsEnabled(enabled: enabled);
-      return const Result.ok(null);
-    } on DioException catch (e) {
-      return Result.error(e.toFailure());
-    }
-  }
 }

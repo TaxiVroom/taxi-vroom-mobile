@@ -8,7 +8,6 @@ class PassengerAccountModel {
     required this.phone,
     required this.email,
     required this.savedPlaces,
-    required this.notificationsEnabled,
   });
 
   factory PassengerAccountModel.fromJson(Map<String, dynamic> json) =>
@@ -24,7 +23,6 @@ class PassengerAccountModel {
               address: place['address'] as String,
             ),
         ],
-        notificationsEnabled: json['notificationsEnabled'] as bool,
       );
 
   final String firstName;
@@ -32,7 +30,6 @@ class PassengerAccountModel {
   final String phone;
   final String email;
   final List<({String label, String address})> savedPlaces;
-  final bool notificationsEnabled;
 
   PassengerAccount toDomain() => PassengerAccount(
     firstName: firstName,
@@ -43,6 +40,5 @@ class PassengerAccountModel {
       for (final place in savedPlaces)
         SavedPlace(label: place.label, address: place.address),
     ],
-    notificationsEnabled: notificationsEnabled,
   );
 }

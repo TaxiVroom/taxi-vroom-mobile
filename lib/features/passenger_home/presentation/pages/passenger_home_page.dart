@@ -19,7 +19,6 @@ import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase
 import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
-import 'package:mobile/features/passenger_home/domain/usecases/update_notifications_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_nearby_taxis_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/account_bloc.dart';
@@ -57,7 +56,6 @@ class PassengerHomePage extends StatelessWidget {
     required this.loadRideHistoryUseCase,
     required this.cancelBookingUseCase,
     required this.loadAccountUseCase,
-    required this.updateNotificationsUseCase,
     required this.onSignOutRequested,
     super.key,
   });
@@ -80,7 +78,6 @@ class PassengerHomePage extends StatelessWidget {
   final LoadRideHistoryUseCase loadRideHistoryUseCase;
   final CancelBookingUseCase cancelBookingUseCase;
   final LoadAccountUseCase loadAccountUseCase;
-  final UpdateNotificationsUseCase updateNotificationsUseCase;
 
   /// Lets the parent ([AuthNavigator]) sign the passenger out, without this
   /// widget knowing about authentication.
@@ -117,7 +114,6 @@ class PassengerHomePage extends StatelessWidget {
         BlocProvider(
           create: (_) => AccountBloc(
             loadAccountUseCase: loadAccountUseCase,
-            updateNotificationsUseCase: updateNotificationsUseCase,
           )..add(const AccountRequested()),
         ),
       ],

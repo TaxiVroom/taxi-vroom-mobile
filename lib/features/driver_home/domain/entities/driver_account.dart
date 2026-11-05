@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
-// Everything the driver's "Compte" tab shows.
+// Everything the driver's "Compte" tab shows. The notifications line reads
+// the phone's permission instead: NotificationsRow.
 class DriverAccount extends Equatable {
   const DriverAccount({
     required this.firstName,
@@ -10,7 +11,6 @@ class DriverAccount extends Equatable {
     required this.vehicleModel,
     required this.plate,
     required this.plateDepartment,
-    required this.notificationsEnabled,
   });
 
   final String firstName;
@@ -25,21 +25,7 @@ class DriverAccount extends Equatable {
   final String plate;
   final String plateDepartment;
 
-  final bool notificationsEnabled;
-
   String get fullName => '$firstName $lastName';
-
-  DriverAccount withNotificationsEnabled({required bool enabled}) =>
-      DriverAccount(
-        firstName: firstName,
-        lastName: lastName,
-        phone: phone,
-        email: email,
-        vehicleModel: vehicleModel,
-        plate: plate,
-        plateDepartment: plateDepartment,
-        notificationsEnabled: enabled,
-      );
 
   @override
   List<Object?> get props => [
@@ -50,6 +36,5 @@ class DriverAccount extends Equatable {
     vehicleModel,
     plate,
     plateDepartment,
-    notificationsEnabled,
   ];
 }

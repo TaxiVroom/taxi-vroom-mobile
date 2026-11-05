@@ -31,7 +31,6 @@ import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.d
 import 'package:mobile/features/driver_home/domain/usecases/set_receives_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifications_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_passenger_cancellation_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
@@ -89,7 +88,6 @@ class DriverHomePage extends StatelessWidget {
     required this.watchPushedRidesUseCase,
     required this.loadWeeklyEarningsUseCase,
     required this.loadDriverAccountUseCase,
-    required this.updateDriverNotificationsUseCase,
     required this.onSignOutRequested,
     super.key,
   });
@@ -120,7 +118,6 @@ class DriverHomePage extends StatelessWidget {
   final WatchPushedRidesUseCase watchPushedRidesUseCase;
   final LoadWeeklyEarningsUseCase loadWeeklyEarningsUseCase;
   final LoadDriverAccountUseCase loadDriverAccountUseCase;
-  final UpdateDriverNotificationsUseCase updateDriverNotificationsUseCase;
 
   /// Lets the parent ([AuthNavigator]) sign the driver out, without this
   /// widget knowing about authentication.
@@ -152,7 +149,6 @@ class DriverHomePage extends StatelessWidget {
         BlocProvider(
           create: (_) => DriverAccountBloc(
             loadDriverAccountUseCase: loadDriverAccountUseCase,
-            updateDriverNotificationsUseCase: updateDriverNotificationsUseCase,
           )..add(const DriverAccountRequested()),
         ),
         BlocProvider(

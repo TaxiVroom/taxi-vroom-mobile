@@ -78,7 +78,6 @@ import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.d
 import 'package:mobile/features/driver_home/domain/usecases/set_receives_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/update_driver_notifications_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_passenger_cancellation_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
@@ -111,7 +110,6 @@ import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase
 import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
-import 'package:mobile/features/passenger_home/domain/usecases/update_notifications_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_nearby_taxis_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
 import 'package:mobile/features/registration/driver/data/datasources/driver_registration_remote_datasource.dart';
@@ -405,7 +403,6 @@ class App extends StatelessWidget {
             loadRideHistoryUseCase: LoadRideHistoryUseCase(rideRepo),
             cancelBookingUseCase: CancelBookingUseCase(rideRepo),
             loadAccountUseCase: LoadAccountUseCase(accountRepo),
-            updateNotificationsUseCase: UpdateNotificationsUseCase(accountRepo),
             loadDriverDocumentsUseCase: LoadDriverDocumentsUseCase(
               driverDocumentRepo,
             ),
@@ -471,9 +468,6 @@ class App extends StatelessWidget {
             loadDriverAccountUseCase: LoadDriverAccountUseCase(
               driverAccountRepository: driverAccountRepo,
               driverDocumentRepository: driverDocumentRepo,
-            ),
-            updateDriverNotificationsUseCase: UpdateDriverNotificationsUseCase(
-              driverAccountRepo,
             ),
             driverUpdateRegistrationFlowUseCase: UpdateRegistrationFlowUseCase(
               driverRegistrationRepo,

@@ -11,12 +11,3 @@ sealed class AccountEvent extends Equatable {
 final class AccountRequested extends AccountEvent {
   const AccountRequested();
 }
-
-final class AccountNotificationsToggled extends AccountEvent {
-  const AccountNotificationsToggled({required this.enabled});
-
-  final bool enabled;
-
-  @override
-  List<Object?> get props => [enabled];
-}

@@ -3,6 +3,4 @@ import 'package:mobile/features/passenger_home/domain/entities/passenger_account
 
 abstract class AccountRepository {
   Future<Result<PassengerAccount>> getAccount();
-
-  Future<Result<void>> setNotificationsEnabled({required bool enabled});
 }

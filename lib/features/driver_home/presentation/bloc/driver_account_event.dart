@@ -11,12 +11,3 @@ sealed class DriverAccountEvent extends Equatable {
 final class DriverAccountRequested extends DriverAccountEvent {
   const DriverAccountRequested();
 }
-
-final class DriverAccountNotificationsToggled extends DriverAccountEvent {
-  const DriverAccountNotificationsToggled({required this.enabled});
-
-  final bool enabled;
-
-  @override
-  List<Object?> get props => [enabled];
-}
