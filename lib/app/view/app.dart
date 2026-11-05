@@ -20,6 +20,7 @@ import 'package:mobile/core/data/repositories/push_registration_repository_impl.
 import 'package:mobile/core/data/repositories/route_repository_impl.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/core/domain/usecases/ensure_notification_permission_usecase.dart';
+import 'package:mobile/core/domain/usecases/enable_notifications_usecase.dart';
 import 'package:mobile/core/domain/usecases/load_notification_permission_usecase.dart';
 import 'package:mobile/core/domain/usecases/open_notification_settings_usecase.dart';
 import 'package:mobile/core/presentation/bloc/notification_permission_bloc.dart';
@@ -341,6 +342,9 @@ class App extends StatelessWidget {
               verifyOtpUseCase: VerifyOtpUseCase(authRepo),
               getOrCreateRegistrationFlowUseCase:
                   GetOrCreateRegistrationFlowUseCase(authRepo),
+              enableNotificationsUseCase: const EnableNotificationsUseCase(
+                notificationPermissionRepo,
+              ),
               signOutUseCase: SignOutUseCase(authRepo),
               registerPushTokenUseCase: RegisterPushTokenUseCase(
                 pushRegistrationRepo,

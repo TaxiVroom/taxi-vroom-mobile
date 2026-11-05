@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:mobile/core/domain/entities/notification_permission.dart';
+import 'package:mobile/core/domain/usecases/enable_notifications_usecase.dart';
 import 'package:mobile/core/domain/usecases/ensure_notification_permission_usecase.dart';
 import 'package:mobile/core/domain/usecases/load_notification_permission_usecase.dart';
 import 'package:mobile/core/domain/usecases/open_notification_settings_usecase.dart';
@@ -19,10 +20,12 @@ class NotificationPermissionBloc
     ensureNotificationPermissionUseCase,
     required LoadNotificationPermissionUseCase
     loadNotificationPermissionUseCase,
+    required EnableNotificationsUseCase enableNotificationsUseCase,
     required OpenNotificationSettingsUseCase openNotificationSettingsUseCase,
   }) : _ensureNotificationPermissionUseCase =
            ensureNotificationPermissionUseCase,
        _loadNotificationPermissionUseCase = loadNotificationPermissionUseCase,
+       _enableNotificationsUseCase = enableNotificationsUseCase,
        _openNotificationSettingsUseCase = openNotificationSettingsUseCase,
        super(const NotificationPermissionState()) {
     on<NotificationPermissionChecked>(_onChecked);
@@ -34,6 +37,7 @@ class NotificationPermissionBloc
   final EnsureNotificationPermissionUseCase
   _ensureNotificationPermissionUseCase;
   final LoadNotificationPermissionUseCase _loadNotificationPermissionUseCase;
+  final EnableNotificationsUseCase _enableNotificationsUseCase;
   final OpenNotificationSettingsUseCase _openNotificationSettingsUseCase;
 
   // A failed check shows nothing: the action already went through.
@@ -50,9 +54,7 @@ class NotificationPermissionBloc
       NotificationPermissionState(
         permission: permission,
         checks: state.checks + 1,
-        blockedFor: permission == NotificationPermission.permanentlyDenied
-            ? event.need
-            : null,
+        blockedFor: (permission?.needsSettings ?? false) ? event.need : null,
       ),
     );
   }
@@ -66,18 +68,12 @@ class NotificationPermissionBloc
     }
   }
 
-  // In the account tab, the person asked for it: the settings open at once
-  // when the dialog can no longer show.
   Future<void> _onEnabled(
     NotificationPermissionEnabled event,
     Emitter<NotificationPermissionState> emit,
   ) async {
-    final result = await _ensureNotificationPermissionUseCase();
-    if (result case Ok(:final value)) {
+    if (await _enableNotificationsUseCase() case Ok(:final value)) {
       emit(_withPermission(value));
-      if (value == NotificationPermission.permanentlyDenied) {
-        await _openNotificationSettingsUseCase();
-      }
     }
   }
 
