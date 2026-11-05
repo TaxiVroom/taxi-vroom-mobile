@@ -12,6 +12,13 @@ final class RideHistoryRequested extends RideHistoryEvent {
   const RideHistoryRequested();
 }
 
+// The passenger home is shown: each notification received on screen or
+// touched reloads the list, e.g. "Réservation confirmée", which no screen
+// opens. Spec mes-courses-a-jour.md.
+final class RideHistoryPushesWatched extends RideHistoryEvent {
+  const RideHistoryPushesWatched();
+}
+
 final class BookingCancelRequested extends RideHistoryEvent {
   const BookingCancelRequested({required this.bookingId});
 

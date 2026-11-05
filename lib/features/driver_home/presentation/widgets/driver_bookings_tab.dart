@@ -4,6 +4,7 @@ import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
 import 'package:mobile/core/widgets/choice_button.dart';
+import 'package:mobile/core/widgets/message_toast.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_booking.dart';
 import 'package:mobile/features/driver_home/presentation/bloc/driver_bookings_bloc.dart';
@@ -25,7 +26,15 @@ class _DriverBookingsTabState extends State<DriverBookingsTab> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: BlocBuilder<DriverBookingsBloc, DriverBookingsState>(
+      child: BlocConsumer<DriverBookingsBloc, DriverBookingsState>(
+        // A failed answer: the same message at the bottom as elsewhere.
+        listenWhen: (_, current) =>
+            current is DriverBookingsReady && current.failureMessage != null,
+        listener: (context, state) => showMessageToast(
+          context,
+          title: 'Action impossible',
+          message: (state as DriverBookingsReady).failureMessage!,
+        ),
         builder: (context, state) => switch (state) {
           // Departed: the pickup screen opens, the lists reload meanwhile.
           DriverBookingsLoading() || DriverBookingsDeparted() => const Center(
@@ -46,7 +55,6 @@ class _DriverBookingsTabState extends State<DriverBookingsTab> {
   Widget _buildReady(BuildContext context, DriverBookingsReady state) {
     final bookings = state.bookings;
     final shown = _showsAccepted ? bookings.accepted : bookings.available;
-    final failureMessage = state.failureMessage;
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -74,13 +82,6 @@ class _DriverBookingsTabState extends State<DriverBookingsTab> {
             ),
           ],
         ),
-        if (failureMessage != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            failureMessage,
-            style: const TextStyle(fontSize: 13, color: AppColors.muted),
-          ),
-        ],
         const SizedBox(height: 14),
         if (shown.isEmpty)
           Text(

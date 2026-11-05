@@ -351,6 +351,7 @@ class AuthNavigator extends StatelessWidget {
             withdrawFromBookingUseCase: withdrawFromBookingUseCase,
             refuseBookingUseCase: refuseBookingUseCase,
             departForBookingUseCase: departForBookingUseCase,
+            watchPushedRidesUseCase: watchPushedRidesUseCase,
             loadWeeklyEarningsUseCase: loadWeeklyEarningsUseCase,
             loadDriverAccountUseCase: loadDriverAccountUseCase,
             updateDriverNotificationsUseCase: updateDriverNotificationsUseCase,

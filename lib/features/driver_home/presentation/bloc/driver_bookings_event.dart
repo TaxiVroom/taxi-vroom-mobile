@@ -12,6 +12,13 @@ final class DriverBookingsRequested extends DriverBookingsEvent {
   const DriverBookingsRequested();
 }
 
+// The driver home is shown: each notification received on screen or touched
+// reloads the lists, e.g. "Réservation annulée" by the passenger. Spec
+// mes-courses-a-jour.md.
+final class DriverBookingsPushesWatched extends DriverBookingsEvent {
+  const DriverBookingsPushesWatched();
+}
+
 // "Se désister" on an accepted booking, before it starts.
 final class DriverBookingWithdrawn extends DriverBookingsEvent {
   const DriverBookingWithdrawn({required this.bookingId});

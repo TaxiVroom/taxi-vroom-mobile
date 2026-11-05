@@ -105,10 +105,14 @@ class PassengerHomePage extends StatelessWidget {
           ),
         ),
         BlocProvider(
-          create: (_) => RideHistoryBloc(
-            loadRideHistoryUseCase: loadRideHistoryUseCase,
-            cancelBookingUseCase: cancelBookingUseCase,
-          )..add(const RideHistoryRequested()),
+          create: (_) =>
+              RideHistoryBloc(
+                  loadRideHistoryUseCase: loadRideHistoryUseCase,
+                  cancelBookingUseCase: cancelBookingUseCase,
+                  watchPushedRidesUseCase: watchPushedRidesUseCase,
+                )
+                ..add(const RideHistoryRequested())
+                ..add(const RideHistoryPushesWatched()),
         ),
         BlocProvider(
           create: (_) => AccountBloc(

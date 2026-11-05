@@ -3,11 +3,11 @@ import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
 import 'package:mobile/core/widgets/choice_button.dart';
+import 'package:mobile/core/widgets/message_toast.dart';
 import 'package:mobile/core/widgets/place_list_tile.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/passenger_home/domain/entities/booked_ride.dart';
 import 'package:mobile/features/passenger_home/domain/entities/past_ride.dart';
-import 'package:mobile/features/passenger_home/domain/entities/ride_history.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/ride_history_bloc.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -56,7 +56,17 @@ class _RideHistoryTabState extends State<RideHistoryTab> {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: BlocBuilder<RideHistoryBloc, RideHistoryState>(
+              child: BlocConsumer<RideHistoryBloc, RideHistoryState>(
+                // A failed cancellation: the same message at the bottom as
+                // elsewhere.
+                listenWhen: (_, current) =>
+                    current is RideHistoryReady &&
+                    current.failureMessage != null,
+                listener: (context, state) => showMessageToast(
+                  context,
+                  title: 'Annulation impossible',
+                  message: (state as RideHistoryReady).failureMessage!,
+                ),
                 builder: (context, state) => switch (state) {
                   RideHistoryLoading() => const Center(
                     child: CircularProgressIndicator(),
@@ -79,17 +89,9 @@ class _RideHistoryTabState extends State<RideHistoryTab> {
 
   Widget _buildHistory(RideHistoryReady state) {
     final history = state.history;
-    final failureMessage = state.failureMessage;
     if (_showsUpcoming) {
       return ListView(
         children: [
-          if (failureMessage != null) ...[
-            Text(
-              failureMessage,
-              style: const TextStyle(fontSize: 13, color: AppColors.muted),
-            ),
-            const SizedBox(height: 12),
-          ],
           if (history.upcoming.isEmpty)
             _buildEmpty('Aucune course réservée.')
           else

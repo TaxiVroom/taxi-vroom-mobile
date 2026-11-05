@@ -1,5 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
+import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_bookings.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
@@ -21,7 +23,9 @@ class DriverBookingsBloc
     required WithdrawFromBookingUseCase withdrawFromBookingUseCase,
     required RefuseBookingUseCase refuseBookingUseCase,
     required DepartForBookingUseCase departForBookingUseCase,
-  }) : _loadDriverBookingsUseCase = loadDriverBookingsUseCase,
+    required WatchPushedRidesUseCase watchPushedRidesUseCase,
+  }) : _watchPushedRidesUseCase = watchPushedRidesUseCase,
+       _loadDriverBookingsUseCase = loadDriverBookingsUseCase,
        _acceptBookingUseCase = acceptBookingUseCase,
        _withdrawFromBookingUseCase = withdrawFromBookingUseCase,
        _refuseBookingUseCase = refuseBookingUseCase,
@@ -32,7 +36,14 @@ class DriverBookingsBloc
     on<DriverBookingWithdrawn>(_onWithdrawn);
     on<DriverBookingRefused>(_onRefused);
     on<DriverBookingDeparted>(_onDeparted);
+    on<DriverBookingsPushesWatched>(_onPushesWatched);
   }
+
+  final WatchPushedRidesUseCase _watchPushedRidesUseCase;
+
+  // DriverBookingsPushesWatched may come again: the notifications are
+  // followed once.
+  bool _watchesPushes = false;
 
   final LoadDriverBookingsUseCase _loadDriverBookingsUseCase;
   final AcceptBookingUseCase _acceptBookingUseCase;
@@ -40,10 +51,32 @@ class DriverBookingsBloc
   final RefuseBookingUseCase _refuseBookingUseCase;
   final DepartForBookingUseCase _departForBookingUseCase;
 
+  // The same stream as the passenger's: Firebase broadcasts onMessage and
+  // onMessageOpenedApp.
+  // Docs: https://firebase.google.com/docs/cloud-messaging/flutter/receive
+  Future<void> _onPushesWatched(
+    DriverBookingsPushesWatched event,
+    Emitter<DriverBookingsState> emit,
+  ) async {
+    if (_watchesPushes) return;
+    _watchesPushes = true;
+    await emit.onEach<String?>(
+      _watchPushedRidesUseCase(),
+      onData: (_) => add(const DriverBookingsRequested()),
+    );
+  }
+
   Future<void> _onRequested(
     DriverBookingsRequested event,
     Emitter<DriverBookingsState> emit,
   ) async {
+    // An answer being sent reloads the lists at its end: not under the
+    // driver's finger meanwhile.
+    final currentState = state;
+    if (currentState is DriverBookingsReady &&
+        currentState.answeringId != null) {
+      return;
+    }
     // A refresh keeps the list on screen instead of a loader.
     if (state is! DriverBookingsReady) emit(const DriverBookingsLoading());
     await _reload(emit);
@@ -92,13 +125,25 @@ class DriverBookingsBloc
         emit(DriverBookingsDeparted(ride: value));
         await _reload(emit);
       case Error(:final error):
-        emit(
-          DriverBookingsReady(
-            bookings: currentState.bookings,
-            failureMessage: error.message,
-          ),
-        );
+        await _onAnswerFailed(emit, currentState, error);
     }
+  }
+
+  // The tab tells it by a message. A refusal by the server (taken, cancelled,
+  // driver busy) means the booking changed meanwhile: the lists are reloaded
+  // so it shows as it is now. A lost connection keeps them as they were.
+  Future<void> _onAnswerFailed(
+    Emitter<DriverBookingsState> emit,
+    DriverBookingsReady before,
+    Failure error,
+  ) async {
+    emit(
+      DriverBookingsReady(
+        bookings: before.bookings,
+        failureMessage: error.message,
+      ),
+    );
+    if (error is ValidationFailure) await _reload(emit);
   }
 
   Future<void> _reload(Emitter<DriverBookingsState> emit) async {
@@ -134,12 +179,7 @@ class DriverBookingsBloc
       case Ok():
         await _reload(emit);
       case Error(:final error):
-        emit(
-          DriverBookingsReady(
-            bookings: currentState.bookings,
-            failureMessage: error.message,
-          ),
-        );
+        await _onAnswerFailed(emit, currentState, error);
     }
   }
 }

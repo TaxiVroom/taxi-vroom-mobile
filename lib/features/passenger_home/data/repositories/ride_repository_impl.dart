@@ -113,7 +113,14 @@ class RideRepositoryImpl implements RideRepository {
       await _bookingDataSource.cancelBooking(bookingId);
       return const Result.ok(null);
     } on DioException catch (e) {
-      return Result.error(e.toFailure());
+      // A 409: the booking changed meanwhile, e.g. it already started.
+      return Result.error(
+        e.response?.statusCode == 409
+            ? const ValidationFailure(
+                'Cette réservation a déjà commencé ou a été annulée.',
+              )
+            : e.toFailure(),
+      );
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:flow_builder/flow_builder.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
+import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
 import 'package:mobile/core/presentation/bloc/notification_permission_bloc.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/price_formatter.dart';
@@ -85,6 +86,7 @@ class DriverHomePage extends StatelessWidget {
     required this.withdrawFromBookingUseCase,
     required this.refuseBookingUseCase,
     required this.departForBookingUseCase,
+    required this.watchPushedRidesUseCase,
     required this.loadWeeklyEarningsUseCase,
     required this.loadDriverAccountUseCase,
     required this.updateDriverNotificationsUseCase,
@@ -115,6 +117,7 @@ class DriverHomePage extends StatelessWidget {
   final WithdrawFromBookingUseCase withdrawFromBookingUseCase;
   final RefuseBookingUseCase refuseBookingUseCase;
   final DepartForBookingUseCase departForBookingUseCase;
+  final WatchPushedRidesUseCase watchPushedRidesUseCase;
   final LoadWeeklyEarningsUseCase loadWeeklyEarningsUseCase;
   final LoadDriverAccountUseCase loadDriverAccountUseCase;
   final UpdateDriverNotificationsUseCase updateDriverNotificationsUseCase;
@@ -158,13 +161,17 @@ class DriverHomePage extends StatelessWidget {
           )..add(const EarningsRequested()),
         ),
         BlocProvider(
-          create: (_) => DriverBookingsBloc(
-            loadDriverBookingsUseCase: loadDriverBookingsUseCase,
-            acceptBookingUseCase: acceptBookingUseCase,
-            withdrawFromBookingUseCase: withdrawFromBookingUseCase,
-            refuseBookingUseCase: refuseBookingUseCase,
-            departForBookingUseCase: departForBookingUseCase,
-          )..add(const DriverBookingsRequested()),
+          create: (_) =>
+              DriverBookingsBloc(
+                  loadDriverBookingsUseCase: loadDriverBookingsUseCase,
+                  acceptBookingUseCase: acceptBookingUseCase,
+                  withdrawFromBookingUseCase: withdrawFromBookingUseCase,
+                  refuseBookingUseCase: refuseBookingUseCase,
+                  departForBookingUseCase: departForBookingUseCase,
+                  watchPushedRidesUseCase: watchPushedRidesUseCase,
+                )
+                ..add(const DriverBookingsRequested())
+                ..add(const DriverBookingsPushesWatched()),
         ),
         BlocProvider(
           create: (_) => RideRequestBloc(
