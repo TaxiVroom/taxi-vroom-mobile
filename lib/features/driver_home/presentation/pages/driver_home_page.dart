@@ -189,6 +189,24 @@ class DriverHomePage extends StatelessWidget {
                 previous is! DriverHomeReady && current is DriverHomeReady,
             listener: (context, _) => _goBackOnlineDuringRide(context),
           ),
+          // Requests only come in while the driver is online. Listened to
+          // here, not in the drive tab: a listener misses the state already
+          // there when it appears, and the app may go back online before the
+          // tab exists.
+          BlocListener<DriverHomeBloc, DriverHomeState>(
+            listenWhen: (previous, current) =>
+                _isOnline(previous) != _isOnline(current),
+            listener: _onOnlineChanged,
+          ),
+          // Back from a ride: new requests can come in again.
+          BlocListener<DriverFlowBloc, DriverFlowState>(
+            listenWhen: (previous, current) =>
+                _isOnRide(previous) && current is DriverFlowHome,
+            listener: (context, _) => _onOnlineChanged(
+              context,
+              context.read<DriverHomeBloc>().state,
+            ),
+          ),
         ],
         child: BlocBuilder<DriverFlowBloc, DriverFlowState>(
           builder: (context, flowState) => FlowBuilder<DriverFlowState>(
@@ -214,6 +232,26 @@ class DriverHomePage extends StatelessWidget {
       context.read<DriverHomeBloc>().add(
         const DriverOnlineToggled(isOnline: true),
       );
+    }
+  }
+
+  static bool _isOnRide(DriverFlowState state) =>
+      state is DriverFlowPickup ||
+      state is DriverFlowBoarding ||
+      state is DriverFlowInRide ||
+      state is DriverFlowCheckout;
+
+  static bool _isOnline(DriverHomeState state) =>
+      state is DriverHomeReady && state.home.activity.isOnline;
+
+  void _onOnlineChanged(BuildContext context, DriverHomeState state) {
+    final rideRequests = context.read<RideRequestBloc>();
+    if (state is DriverHomeReady && state.home.activity.isOnline) {
+      rideRequests.add(
+        RideRequestsWatched(driverPosition: state.home.position),
+      );
+    } else {
+      rideRequests.add(const RideRequestsUnwatched());
     }
   }
 
@@ -463,7 +501,8 @@ class _DriveTab extends StatelessWidget {
         // screen.
         BlocListener<DriverHomeBloc, DriverHomeState>(
           listenWhen: (previous, current) =>
-              !_isOnline(previous) && _isOnline(current),
+              !DriverHomePage._isOnline(previous) &&
+              DriverHomePage._isOnline(current),
           listener: (context, _) => _checkNotifications(
             context,
             NotificationNeed.rideRequests,
@@ -484,12 +523,6 @@ class _DriveTab extends StatelessWidget {
               current.checks != previous.checks && current.blockedFor != null,
           listener: (context, state) =>
               showNotificationsBlockedToast(context, state.blockedFor!),
-        ),
-        // Requests only come in while the driver is online.
-        BlocListener<DriverHomeBloc, DriverHomeState>(
-          listenWhen: (previous, current) =>
-              _isOnline(previous) != _isOnline(current),
-          listener: _onOnlineChanged,
         ),
         BlocListener<RideRequestBloc, RideRequestState>(
           listenWhen: (previous, current) =>
@@ -524,21 +557,17 @@ class _DriveTab extends StatelessWidget {
             DriverRideAccepted(ride: (state as DriverBookingsDeparted).ride),
           ),
         ),
-        // Back from a ride: new requests can come in again.
+        // Back from a ride cancelled by the passenger: the driver is told.
         BlocListener<DriverFlowBloc, DriverFlowState>(
           listenWhen: (previous, current) =>
-              _isOnRide(previous) && current is DriverFlowHome,
-          listener: (context, state) {
-            final notice = (state as DriverFlowHome).notice;
-            if (notice != null) {
-              showMessageToast(
-                context,
-                title: 'Course annulée',
-                message: notice,
-              );
-            }
-            _onOnlineChanged(context, context.read<DriverHomeBloc>().state);
-          },
+              DriverHomePage._isOnRide(previous) &&
+              current is DriverFlowHome &&
+              current.notice != null,
+          listener: (context, state) => showMessageToast(
+            context,
+            title: 'Course annulée',
+            message: (state as DriverFlowHome).notice!,
+          ),
         ),
       ],
       child: BlocBuilder<DriverHomeBloc, DriverHomeState>(
@@ -563,15 +592,6 @@ class _DriveTab extends StatelessWidget {
     _ => null,
   };
 
-  bool _isOnRide(DriverFlowState state) =>
-      state is DriverFlowPickup ||
-      state is DriverFlowBoarding ||
-      state is DriverFlowInRide ||
-      state is DriverFlowCheckout;
-
-  bool _isOnline(DriverHomeState state) =>
-      state is DriverHomeReady && state.home.activity.isOnline;
-
   // The answer sent was "Accepter", and the booking is now an accepted one.
   bool _isBookingAccepted(
     DriverBookingsState previous,
@@ -595,17 +615,6 @@ class _DriveTab extends StatelessWidget {
       context.read<NotificationPermissionBloc>().add(
         NotificationPermissionChecked(need: need),
       );
-
-  void _onOnlineChanged(BuildContext context, DriverHomeState state) {
-    final rideRequests = context.read<RideRequestBloc>();
-    if (state is DriverHomeReady && state.home.activity.isOnline) {
-      rideRequests.add(
-        RideRequestsWatched(driverPosition: state.home.position),
-      );
-    } else {
-      rideRequests.add(const RideRequestsUnwatched());
-    }
-  }
 
   Widget _buildReady(BuildContext context, DriverHomeReady state) {
     final home = state.home;
