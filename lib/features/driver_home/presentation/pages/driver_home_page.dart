@@ -1,10 +1,12 @@
 import 'package:flow_builder/flow_builder.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
+import 'package:mobile/core/presentation/bloc/notification_permission_bloc.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/widgets/map_pill.dart';
 import 'package:mobile/core/widgets/message_toast.dart';
+import 'package:mobile/core/widgets/notifications_blocked.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_home.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
@@ -454,6 +456,32 @@ class _DriveTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocListener(
       listeners: [
+        // Online: requests come by notification when the app is not on
+        // screen.
+        BlocListener<DriverHomeBloc, DriverHomeState>(
+          listenWhen: (previous, current) =>
+              !_isOnline(previous) && _isOnline(current),
+          listener: (context, _) => _checkNotifications(
+            context,
+            NotificationNeed.rideRequests,
+          ),
+        ),
+        // "Accepter": the booking's reminder comes by notification.
+        BlocListener<DriverBookingsBloc, DriverBookingsState>(
+          listenWhen: _isBookingAccepted,
+          listener: (context, _) => _checkNotifications(
+            context,
+            NotificationNeed.bookingReminder,
+          ),
+        ),
+        // Only the settings can allow them now: the driver is told what they
+        // miss, once per check.
+        BlocListener<NotificationPermissionBloc, NotificationPermissionState>(
+          listenWhen: (previous, current) =>
+              current.checks != previous.checks && current.blockedFor != null,
+          listener: (context, state) =>
+              showNotificationsBlockedToast(context, state.blockedFor!),
+        ),
         // Requests only come in while the driver is online.
         BlocListener<DriverHomeBloc, DriverHomeState>(
           listenWhen: (previous, current) =>
@@ -540,6 +568,30 @@ class _DriveTab extends StatelessWidget {
 
   bool _isOnline(DriverHomeState state) =>
       state is DriverHomeReady && state.home.activity.isOnline;
+
+  // The answer sent was "Accepter", and the booking is now an accepted one.
+  bool _isBookingAccepted(
+    DriverBookingsState previous,
+    DriverBookingsState current,
+  ) {
+    if (previous is! DriverBookingsReady || current is! DriverBookingsReady) {
+      return false;
+    }
+    final bookingId = previous.answeringId;
+    if (bookingId == null || previous.isRefusing) return false;
+    final wasAvailable = previous.bookings.available.any(
+      (booking) => booking.id == bookingId,
+    );
+    final isAccepted = current.bookings.accepted.any(
+      (booking) => booking.id == bookingId,
+    );
+    return wasAvailable && isAccepted;
+  }
+
+  void _checkNotifications(BuildContext context, NotificationNeed need) =>
+      context.read<NotificationPermissionBloc>().add(
+        NotificationPermissionChecked(need: need),
+      );
 
   void _onOnlineChanged(BuildContext context, DriverHomeState state) {
     final rideRequests = context.read<RideRequestBloc>();

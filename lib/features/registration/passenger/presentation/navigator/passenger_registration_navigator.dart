@@ -2,9 +2,9 @@ import 'package:flow_builder/flow_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
+import 'package:mobile/core/domain/usecases/ensure_notification_permission_usecase.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/registration/passenger/domain/usecases/complete_passenger_registration_usecase.dart';
-import 'package:mobile/features/registration/passenger/domain/usecases/request_notification_permission_usecase.dart';
 import 'package:mobile/features/registration/passenger/presentation/bloc/passenger_registration_bloc.dart';
 import 'package:mobile/features/registration/shared/bloc/registration_bloc.dart';
 import 'package:mobile/features/registration/shared/bloc/registration_state.dart';
@@ -23,7 +23,7 @@ class PassengerRegistrationNavigator extends StatefulWidget {
     super.key,
     required this.registrationFlow,
     required this.updateRegistrationFlowUseCase,
-    required this.requestNotificationPermissionUseCase,
+    required this.ensureNotificationPermissionUseCase,
     required this.checkEmailAvailabilityUseCase,
     required this.completePassengerRegistrationUseCase,
     required this.onAuthenticated,
@@ -31,9 +31,10 @@ class PassengerRegistrationNavigator extends StatefulWidget {
 
   final PassengerRegistrationFlowEntity registrationFlow;
   final UpdateRegistrationFlowUseCase updateRegistrationFlowUseCase;
-  final RequestNotificationPermissionUseCase requestNotificationPermissionUseCase;
+  final EnsureNotificationPermissionUseCase ensureNotificationPermissionUseCase;
   final CheckEmailAvailabilityUseCase checkEmailAvailabilityUseCase;
-  final CompletePassengerRegistrationUseCase completePassengerRegistrationUseCase;
+  final CompletePassengerRegistrationUseCase
+  completePassengerRegistrationUseCase;
 
   /// Permet au parent ([AuthNavigator]) de naviguer vers l'écran principal
   /// sans que ce widget ait besoin de connaître la navigation extérieure.
@@ -54,8 +55,8 @@ class _PassengerRegistrationNavigatorState
     _bloc = PassengerRegistrationBloc(
       registrationFlow: widget.registrationFlow,
       updateRegistrationFlowUseCase: widget.updateRegistrationFlowUseCase,
-      requestNotificationPermissionUseCase:
-          widget.requestNotificationPermissionUseCase,
+      ensureNotificationPermissionUseCase:
+          widget.ensureNotificationPermissionUseCase,
       checkEmailAvailabilityUseCase: widget.checkEmailAvailabilityUseCase,
       completePassengerRegistrationUseCase:
           widget.completePassengerRegistrationUseCase,
@@ -155,18 +156,18 @@ class _PassengerRegistrationNavigatorState
 
     return switch (state) {
       RegistrationSocialLinkReady() ||
-      RegistrationGoogleSignInLoading() =>
-        [socialPage],
+      RegistrationGoogleSignInLoading() => [socialPage],
       RegistrationEmailInputReady() ||
       RegistrationEmailChecking() ||
-      RegistrationEmailTaken() =>
-        [socialPage, emailPage],
+      RegistrationEmailTaken() => [socialPage, emailPage],
       RegistrationNameInputReady() ||
-      RegistrationRegistering() =>
-        [socialPage, emailPage, namePage],
-      RegistrationNotificationReady() ||
-      RegistrationAuthenticated() =>
-        [socialPage, emailPage, namePage, notificationsPage],
+      RegistrationRegistering() => [socialPage, emailPage, namePage],
+      RegistrationNotificationReady() || RegistrationAuthenticated() => [
+        socialPage,
+        emailPage,
+        namePage,
+        notificationsPage,
+      ],
       _ => pages.isNotEmpty ? pages : [socialPage],
     };
   }

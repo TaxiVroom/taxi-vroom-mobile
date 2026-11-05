@@ -26,3 +26,8 @@ class EstimateExpiredFailure extends ValidationFailure {
 class LocationFailure extends Failure {
   const LocationFailure(super.message);
 }
+
+// The phone could not tell or change a permission.
+class PermissionFailure extends Failure {
+  const PermissionFailure(super.message);
+}

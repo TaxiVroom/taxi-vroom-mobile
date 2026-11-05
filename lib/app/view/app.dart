@@ -15,9 +15,14 @@ import 'package:mobile/core/data/datasources/route_remote_datasource.dart';
 import 'package:mobile/core/data/repositories/connection_repository_impl.dart';
 import 'package:mobile/core/data/repositories/email_availability_repository_impl.dart';
 import 'package:mobile/core/data/repositories/location_repository_impl.dart';
+import 'package:mobile/core/data/repositories/notification_permission_repository_impl.dart';
 import 'package:mobile/core/data/repositories/push_registration_repository_impl.dart';
 import 'package:mobile/core/data/repositories/route_repository_impl.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
+import 'package:mobile/core/domain/usecases/ensure_notification_permission_usecase.dart';
+import 'package:mobile/core/domain/usecases/load_notification_permission_usecase.dart';
+import 'package:mobile/core/domain/usecases/open_notification_settings_usecase.dart';
+import 'package:mobile/core/presentation/bloc/notification_permission_bloc.dart';
 import 'package:mobile/core/domain/usecases/register_push_token_usecase.dart';
 import 'package:mobile/core/domain/usecases/unregister_push_token_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
@@ -111,19 +116,15 @@ import 'package:mobile/features/passenger_home/domain/usecases/watch_nearby_taxi
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
 import 'package:mobile/features/registration/driver/data/datasources/driver_registration_remote_datasource.dart';
 import 'package:mobile/features/registration/driver/data/datasources/registration_document_remote_datasource.dart';
-import 'package:mobile/features/registration/driver/data/repositories/driver_notification_repository_impl.dart';
 import 'package:mobile/features/registration/driver/data/repositories/driver_registration_repository_impl.dart';
 import 'package:mobile/features/registration/driver/data/repositories/registration_document_repository_impl.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_types_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_uploaded_documents_usecase.dart';
-import 'package:mobile/features/registration/driver/domain/usecases/request_driver_notification_permission_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/upload_registration_document_usecase.dart';
 import 'package:mobile/features/registration/passenger/data/datasources/registration_remote_datasource.dart';
-import 'package:mobile/features/registration/passenger/data/repositories/notification_repository_impl.dart';
 import 'package:mobile/features/registration/passenger/data/repositories/registration_repository_impl.dart';
 import 'package:mobile/features/registration/passenger/domain/usecases/complete_passenger_registration_usecase.dart';
-import 'package:mobile/features/registration/passenger/domain/usecases/request_notification_permission_usecase.dart';
 import 'package:mobile/features/registration/shared/domain/usecases/update_registration_flow_usecase.dart';
 import 'package:mobile/l10n/l10n.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -162,7 +163,11 @@ class App extends StatelessWidget {
     // Passager.
     final registrationDataSource = RegistrationRemoteDataSourceImpl(dio);
     final registrationRepo = RegistrationRepositoryImpl(registrationDataSource);
-    final passengerNotifRepo = NotificationRepositoryImpl();
+    // La permission des notifications : à l'inscription, puis aux actions qui
+    // en dépendent et dans l'onglet Compte. Spec permission-notifications.md.
+    const notificationPermissionRepo = NotificationPermissionRepositoryImpl();
+    const ensureNotificationPermissionUseCase =
+        EnsureNotificationPermissionUseCase(notificationPermissionRepo);
 
     // Recherche d'adresses : appel direct à Mapbox, sans l'intercepteur Firebase
     // (le token d'auth de l'app ne doit pas partir chez Mapbox).
@@ -304,7 +309,6 @@ class App extends StatelessWidget {
     final driverRegistrationRepo = DriverRegistrationRepositoryImpl(
       driverRegistrationDataSource,
     );
-    final driverNotifRepo = DriverNotificationRepositoryImpl();
 
     final registrationDocumentDataSource =
         RegistrationDocumentRemoteDataSourceImpl(dio);
@@ -315,24 +319,44 @@ class App extends StatelessWidget {
     return ScreenUtilInit(
       designSize: const Size(390, 844),
       minTextAdapt: true,
-      child: BlocProvider(
-        create: (_) => AuthBloc(
-          sendOtpUseCase: SendOtpUseCase(authRepo),
-          verifyOtpUseCase: VerifyOtpUseCase(authRepo),
-          getOrCreateRegistrationFlowUseCase:
-              GetOrCreateRegistrationFlowUseCase(authRepo),
-          signOutUseCase: SignOutUseCase(authRepo),
-          registerPushTokenUseCase: RegisterPushTokenUseCase(
-            pushRegistrationRepo,
+      child: MultiBlocProvider(
+        providers: [
+          // Above the app: the pages of both roles tell it after an action,
+          // and its dialogs open over any screen.
+          BlocProvider(
+            create: (_) => NotificationPermissionBloc(
+              ensureNotificationPermissionUseCase:
+                  ensureNotificationPermissionUseCase,
+              loadNotificationPermissionUseCase:
+                  const LoadNotificationPermissionUseCase(
+                    notificationPermissionRepo,
+                  ),
+              openNotificationSettingsUseCase:
+                  const OpenNotificationSettingsUseCase(
+                    notificationPermissionRepo,
+                  ),
+            ),
           ),
-          unregisterPushTokenUseCase: UnregisterPushTokenUseCase(
-            pushRegistrationRepo,
+          BlocProvider(
+            create: (_) => AuthBloc(
+              sendOtpUseCase: SendOtpUseCase(authRepo),
+              verifyOtpUseCase: VerifyOtpUseCase(authRepo),
+              getOrCreateRegistrationFlowUseCase:
+                  GetOrCreateRegistrationFlowUseCase(authRepo),
+              signOutUseCase: SignOutUseCase(authRepo),
+              registerPushTokenUseCase: RegisterPushTokenUseCase(
+                pushRegistrationRepo,
+              ),
+              unregisterPushTokenUseCase: UnregisterPushTokenUseCase(
+                pushRegistrationRepo,
+              ),
+              watchPushTokenRefreshUseCase: WatchPushTokenRefreshUseCase(
+                pushRegistrationRepo,
+              ),
+              restoreSessionUseCase: RestoreSessionUseCase(authRepo),
+            )..add(const AuthSessionRestoreRequested()),
           ),
-          watchPushTokenRefreshUseCase: WatchPushTokenRefreshUseCase(
-            pushRegistrationRepo,
-          ),
-          restoreSessionUseCase: RestoreSessionUseCase(authRepo),
-        )..add(const AuthSessionRestoreRequested()),
+        ],
         child: ShadcnApp(
           debugShowCheckedModeBanner: false,
           title: 'TaxiApp',
@@ -348,8 +372,6 @@ class App extends StatelessWidget {
           home: AuthNavigator(
             passengerUpdateRegistrationFlowUseCase:
                 UpdateRegistrationFlowUseCase(registrationRepo),
-            requestNotificationPermissionUseCase:
-                RequestNotificationPermissionUseCase(passengerNotifRepo),
             completePassengerRegistrationUseCase:
                 CompletePassengerRegistrationUseCase(registrationRepo),
             loadPassengerHomeUseCase: loadPassengerHomeUseCase,
@@ -456,8 +478,8 @@ class App extends StatelessWidget {
             driverUpdateRegistrationFlowUseCase: UpdateRegistrationFlowUseCase(
               driverRegistrationRepo,
             ),
-            requestDriverNotificationPermissionUseCase:
-                RequestDriverNotificationPermissionUseCase(driverNotifRepo),
+            ensureNotificationPermissionUseCase:
+                ensureNotificationPermissionUseCase,
             checkEmailAvailabilityUseCase: checkEmailAvailabilityUseCase,
             getDocumentTypesUseCase: GetDocumentTypesUseCase(
               registrationDocumentRepo,

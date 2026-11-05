@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/entities/coordinates.dart';
+import 'package:mobile/core/presentation/bloc/notification_permission_bloc.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
 import 'package:mobile/core/widgets/bottom_panel.dart';
 import 'package:mobile/core/widgets/map_pill.dart';
 import 'package:mobile/core/widgets/message_toast.dart';
+import 'package:mobile/core/widgets/notifications_blocked.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_choice.dart';
@@ -78,8 +82,9 @@ class TaxiChoicePage extends StatelessWidget {
             listenWhen: (_, current) =>
                 current is TaxiChoiceReady &&
                 (current.orderedRideId != null || current.bookedRideId != null),
-            listener: (context, state) =>
-                _onOrderConfirmed(context, state as TaxiChoiceReady),
+            listener: (context, state) => unawaited(
+              _onOrderConfirmed(context, state as TaxiChoiceReady),
+            ),
           ),
           // Another pickup time is another price: the tariff of its hour.
           BlocListener<PassengerFlowBloc, PassengerFlowState>(
@@ -266,9 +271,32 @@ class TaxiChoicePage extends StatelessWidget {
     );
   }
 
+  // The ride is ordered or booked: the passenger is asked for the
+  // notifications if missing, then leaves this screen.
+  Future<void> _onOrderConfirmed(
+    BuildContext context,
+    TaxiChoiceReady state,
+  ) async {
+    final permissionBloc = context.read<NotificationPermissionBloc>();
+    final checksBefore = permissionBloc.state.checks;
+    permissionBloc.add(
+      const NotificationPermissionChecked(need: NotificationNeed.rideUpdates),
+    );
+    final checked = await permissionBloc.stream.firstWhere(
+      (permission) => permission.checks > checksBefore,
+    );
+    if (!context.mounted) return;
+    final blockedFor = checked.blockedFor;
+    if (blockedFor != null) {
+      await showNotificationsBlockedDialog(context, blockedFor);
+      if (!context.mounted) return;
+    }
+    _leave(context, state);
+  }
+
   // Ordered now: follow the ride. Booked: back home, it waits in
   // "Mes courses".
-  void _onOrderConfirmed(BuildContext context, TaxiChoiceReady state) {
+  void _leave(BuildContext context, TaxiChoiceReady state) {
     final flowBloc = context.read<PassengerFlowBloc>();
     final orderedRideId = state.orderedRideId;
     final pickup = scheduledPickup;

@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/core/widgets/notifications_row.dart';
 import 'package:mobile/core/widgets/place_list_tile.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/core/widgets/section_label.dart';
@@ -53,7 +54,7 @@ class AccountTab extends StatelessWidget {
           // cash.
           const SizedBox(height: 16),
           const SectionLabel('Préférences'),
-          _buildNotifications(context, account),
+          const NotificationsRow(),
           const SizedBox(height: 16),
           const SectionLabel('Assistance'),
           // Help and terms pages are not built yet.
@@ -107,27 +108,6 @@ class AccountTab extends StatelessWidget {
                 style: const TextStyle(color: AppColors.muted),
               ),
             ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNotifications(BuildContext context, PassengerAccount account) {
-    return Row(
-      children: [
-        const Icon(Icons.notifications_outlined, color: AppColors.muted),
-        const SizedBox(width: 12),
-        const Expanded(
-          child: Text(
-            'Notifications',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ),
-        Switch(
-          value: account.notificationsEnabled,
-          onChanged: (enabled) => context.read<AccountBloc>().add(
-            AccountNotificationsToggled(enabled: enabled),
           ),
         ),
       ],

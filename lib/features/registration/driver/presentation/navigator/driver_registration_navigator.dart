@@ -2,11 +2,11 @@ import 'package:flow_builder/flow_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
+import 'package:mobile/core/domain/usecases/ensure_notification_permission_usecase.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_types_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_uploaded_documents_usecase.dart';
-import 'package:mobile/features/registration/driver/domain/usecases/request_driver_notification_permission_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/upload_registration_document_usecase.dart';
 import 'package:mobile/features/registration/driver/presentation/bloc/driver_registration_bloc.dart';
 import 'package:mobile/features/registration/driver/presentation/pages/driver_documents_page.dart';
@@ -27,7 +27,7 @@ class DriverRegistrationNavigator extends StatefulWidget {
     super.key,
     required this.registrationFlow,
     required this.updateRegistrationFlowUseCase,
-    required this.requestDriverNotificationPermissionUseCase,
+    required this.ensureNotificationPermissionUseCase,
     required this.checkEmailAvailabilityUseCase,
     required this.getDocumentTypesUseCase,
     required this.uploadRegistrationDocumentUseCase,
@@ -38,7 +38,7 @@ class DriverRegistrationNavigator extends StatefulWidget {
 
   final DriverRegistrationFlowEntity registrationFlow;
   final UpdateRegistrationFlowUseCase updateRegistrationFlowUseCase;
-  final RequestDriverNotificationPermissionUseCase requestDriverNotificationPermissionUseCase;
+  final EnsureNotificationPermissionUseCase ensureNotificationPermissionUseCase;
   final CheckEmailAvailabilityUseCase checkEmailAvailabilityUseCase;
   final GetDocumentTypesUseCase getDocumentTypesUseCase;
   final UploadRegistrationDocumentUseCase uploadRegistrationDocumentUseCase;
@@ -64,11 +64,12 @@ class _DriverRegistrationNavigatorState
     _bloc = DriverRegistrationBloc(
       registrationFlow: widget.registrationFlow,
       updateRegistrationFlowUseCase: widget.updateRegistrationFlowUseCase,
-      requestDriverNotificationPermissionUseCase:
-          widget.requestDriverNotificationPermissionUseCase,
+      ensureNotificationPermissionUseCase:
+          widget.ensureNotificationPermissionUseCase,
       checkEmailAvailabilityUseCase: widget.checkEmailAvailabilityUseCase,
       getDocumentTypesUseCase: widget.getDocumentTypesUseCase,
-      uploadRegistrationDocumentUseCase: widget.uploadRegistrationDocumentUseCase,
+      uploadRegistrationDocumentUseCase:
+          widget.uploadRegistrationDocumentUseCase,
       getUploadedDocumentsUseCase: widget.getUploadedDocumentsUseCase,
       getDocumentSignedUrlUseCase: widget.getDocumentSignedUrlUseCase,
     );
@@ -173,20 +174,25 @@ class _DriverRegistrationNavigatorState
 
     return switch (state) {
       RegistrationSocialLinkReady() ||
-      RegistrationGoogleSignInLoading() =>
-        [socialPage],
+      RegistrationGoogleSignInLoading() => [socialPage],
       RegistrationEmailInputReady() ||
       RegistrationEmailChecking() ||
-      RegistrationEmailTaken() =>
-        [socialPage, emailPage],
+      RegistrationEmailTaken() => [socialPage, emailPage],
       RegistrationNameInputReady() ||
-      RegistrationRegistering() =>
-        [socialPage, emailPage, namePage],
-      DriverRegDocumentsReady() =>
-        [socialPage, emailPage, namePage, documentsPage],
-      DriverRegSuccessReady() ||
-      RegistrationAuthenticated() =>
-        [socialPage, emailPage, namePage, documentsPage, successPage],
+      RegistrationRegistering() => [socialPage, emailPage, namePage],
+      DriverRegDocumentsReady() => [
+        socialPage,
+        emailPage,
+        namePage,
+        documentsPage,
+      ],
+      DriverRegSuccessReady() || RegistrationAuthenticated() => [
+        socialPage,
+        emailPage,
+        namePage,
+        documentsPage,
+        successPage,
+      ],
       _ => pages.isNotEmpty ? pages : [socialPage],
     };
   }
