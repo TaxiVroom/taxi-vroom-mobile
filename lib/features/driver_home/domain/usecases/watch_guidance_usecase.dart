@@ -7,7 +7,8 @@ import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/driver_home/domain/repositories/driving_position_repository.dart';
 
 // Guides the driver from where they are to [to]: the turn-by-turn route is
-// computed once, then each new position gives the next maneuver.
+// computed once, guided from its start right away, then each new position
+// gives the next maneuver.
 class WatchGuidanceUseCase {
   const WatchGuidanceUseCase({
     required LocationRepository locationRepository,
@@ -45,6 +46,10 @@ class WatchGuidanceUseCase {
         yield Result.error(error);
         return;
     }
+
+    // Guided at once from where the route starts: the next GPS position may
+    // take seconds, and the driver would see an empty screen meanwhile.
+    yield Result.ok(route.guidanceFrom(start));
 
     // yield*, not await for: leaving the screen must stop the guidance at
     // once, even while the taxi is stopped and no new position comes.

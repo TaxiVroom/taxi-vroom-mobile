@@ -19,15 +19,25 @@ final class TaxiChoiceStarted extends TaxiChoiceEvent {
   List<Object?> get props => [scheduledPickup];
 }
 
-// The passenger taps "Commander le taxi".
+// The passenger taps "Commander le taxi", then confirms the [pickup].
 final class TaxiRideOrdered extends TaxiChoiceEvent {
-  const TaxiRideOrdered();
+  const TaxiRideOrdered({required this.pickup});
+
+  final Coordinates pickup;
+
+  @override
+  List<Object?> get props => [pickup];
 }
 
-// The passenger taps "Réserver le taxi": the offer was priced for the pickup
-// time.
+// The passenger taps "Réserver le taxi", then confirms the [pickup]: the
+// offer was priced for the pickup time.
 final class TaxiRideBooked extends TaxiChoiceEvent {
-  const TaxiRideBooked();
+  const TaxiRideBooked({required this.pickup});
+
+  final Coordinates pickup;
+
+  @override
+  List<Object?> get props => [pickup];
 }
 
 final class TaxiOfferSelected extends TaxiChoiceEvent {

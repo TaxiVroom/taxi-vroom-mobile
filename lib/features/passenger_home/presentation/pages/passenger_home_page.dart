@@ -8,6 +8,7 @@ import 'package:mobile/features/authentication/presentation/navigator/auth_navig
 import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_booking_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/find_place_at_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_account_usecase.dart';
@@ -15,6 +16,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/load_current_ride
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/offer_from_pickup_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
@@ -43,6 +45,8 @@ class PassengerHomePage extends StatelessWidget {
     required this.watchConnectionUseCase,
     required this.suggestDestinationsUseCase,
     required this.selectDestinationUseCase,
+    required this.findPlaceAtUseCase,
+    required this.offerFromPickupUseCase,
     required this.loadTaxiChoiceUseCase,
     required this.getPickupDaysUseCase,
     required this.requestRideUseCase,
@@ -65,6 +69,8 @@ class PassengerHomePage extends StatelessWidget {
   final WatchConnectionUseCase watchConnectionUseCase;
   final SuggestDestinationsUseCase suggestDestinationsUseCase;
   final SelectDestinationUseCase selectDestinationUseCase;
+  final FindPlaceAtUseCase findPlaceAtUseCase;
+  final OfferFromPickupUseCase offerFromPickupUseCase;
   final LoadTaxiChoiceUseCase loadTaxiChoiceUseCase;
   final GetPickupDaysUseCase getPickupDaysUseCase;
   final RequestRideUseCase requestRideUseCase;
@@ -177,9 +183,11 @@ class PassengerHomePage extends StatelessWidget {
       key: const ValueKey('destination-search'),
       child: DestinationSearchPage(
         origin: homeState.home.position,
+        pickupPlace: flowState.pickupPlace,
         recentDestinations: homeState.home.recentDestinations,
         suggestDestinationsUseCase: suggestDestinationsUseCase,
         selectDestinationUseCase: selectDestinationUseCase,
+        findPlaceAtUseCase: findPlaceAtUseCase,
       ),
     );
 
@@ -187,29 +195,36 @@ class PassengerHomePage extends StatelessWidget {
       // The start is handled above; listed for the switch to be complete.
       PassengerFlowStarting() || PassengerFlowHome() => [tabsPage],
       PassengerFlowDestinationSearch() => [tabsPage, destinationPage],
-      PassengerFlowTaxiChoice(:final destination, :final scheduledPickup) => [
-        tabsPage,
-        destinationPage,
-        MaterialPage<void>(
-          key: const ValueKey('taxi-choice'),
-          child: TaxiChoicePage(
-            origin: homeState.home.position,
-            destination: destination,
-            loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
-            requestRideUseCase: requestRideUseCase,
-            bookRideUseCase: bookRideUseCase,
-            getPickupForArrivalUseCase: getPickupForArrivalUseCase,
-            scheduledPickup: scheduledPickup,
+      PassengerFlowTaxiChoice(
+        :final destination,
+        :final scheduledPickup,
+        :final pickupPlace,
+      ) =>
+        [
+          tabsPage,
+          destinationPage,
+          MaterialPage<void>(
+            key: const ValueKey('taxi-choice'),
+            child: TaxiChoicePage(
+              origin: homeState.home.pickupAt(pickupPlace),
+              destination: destination,
+              loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
+              findPlaceAtUseCase: findPlaceAtUseCase,
+              offerFromPickupUseCase: offerFromPickupUseCase,
+              requestRideUseCase: requestRideUseCase,
+              bookRideUseCase: bookRideUseCase,
+              getPickupForArrivalUseCase: getPickupForArrivalUseCase,
+              scheduledPickup: scheduledPickup,
+            ),
           ),
-        ),
-      ],
-      PassengerFlowRide(:final rideId) => [
+        ],
+      PassengerFlowRide(:final rideId, :final pickupPlace) => [
         tabsPage,
         MaterialPage<void>(
           key: ValueKey('ride-$rideId'),
           child: RidePage(
             rideId: rideId,
-            origin: homeState.home.position,
+            origin: homeState.home.pickupAt(pickupPlace),
             watchRideUseCase: watchRideUseCase,
             cancelRideUseCase: cancelRideUseCase,
             rateRideUseCase: rateRideUseCase,

@@ -5,8 +5,10 @@ import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_choice.dart';
+import 'package:mobile/features/passenger_home/domain/entities/taxi_offer.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/offer_from_pickup_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
 
 part 'taxi_choice_event.dart';
@@ -19,11 +21,13 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
     required LoadTaxiChoiceUseCase loadTaxiChoiceUseCase,
     required RequestRideUseCase requestRideUseCase,
     required BookRideUseCase bookRideUseCase,
+    required OfferFromPickupUseCase offerFromPickupUseCase,
   }) : _origin = origin,
        _destination = destination,
        _loadTaxiChoiceUseCase = loadTaxiChoiceUseCase,
        _requestRideUseCase = requestRideUseCase,
        _bookRideUseCase = bookRideUseCase,
+       _offerFromPickupUseCase = offerFromPickupUseCase,
        super(const TaxiChoiceLoading()) {
     on<TaxiChoiceStarted>(_onStarted);
     on<TaxiOfferSelected>(_onOfferSelected);
@@ -31,7 +35,9 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
     on<TaxiRideBooked>(_onRideBooked);
   }
 
-  final Coordinates _origin;
+  // Where the price shown was estimated from; the pickup confirmed before
+  // ordering, once it moved.
+  Coordinates _origin;
   final Place _destination;
 
   // Null for a taxi now; otherwise the ride is priced for it and booked.
@@ -40,6 +46,7 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
   final LoadTaxiChoiceUseCase _loadTaxiChoiceUseCase;
   final RequestRideUseCase _requestRideUseCase;
   final BookRideUseCase _bookRideUseCase;
+  final OfferFromPickupUseCase _offerFromPickupUseCase;
 
   Future<void> _onStarted(
     TaxiChoiceStarted event,
@@ -104,7 +111,11 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
         isOrdering: true,
       ),
     );
-    switch (await _requestRideUseCase(offer)) {
+    final ordered = switch (await _offerAt(offer, event.pickup)) {
+      Ok(:final value) => await _requestRideUseCase(value),
+      Error(:final error) => Result<String>.error(error),
+    };
+    switch (ordered) {
       case Ok(:final value):
         emit(
           TaxiChoiceReady(
@@ -143,7 +154,11 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
         isOrdering: true,
       ),
     );
-    switch (await _bookRideUseCase(offer)) {
+    final booked = switch (await _offerAt(offer, event.pickup)) {
+      Ok(:final value) => await _bookRideUseCase(value),
+      Error(:final error) => Result<String>.error(error),
+    };
+    switch (booked) {
       case Ok(:final value):
         emit(
           TaxiChoiceReady(
@@ -164,5 +179,22 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
           ),
         );
     }
+  }
+
+  // The offer at the pickup confirmed. Priced again from there when it
+  // moved, so the later estimates start from there too.
+  Future<Result<TaxiOffer>> _offerAt(
+    TaxiOffer shown,
+    Coordinates pickup,
+  ) async {
+    final result = await _offerFromPickupUseCase(
+      shown: shown,
+      pricedFrom: _origin,
+      pickup: pickup,
+      destination: _destination,
+      scheduledPickup: _scheduledPickup,
+    );
+    if (result case Ok(:final value) when value != shown) _origin = pickup;
+    return result;
   }
 }

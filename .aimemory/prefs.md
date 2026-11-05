@@ -21,5 +21,6 @@ noTrivialPrivate|No private method that only wraps a map, a where or a Set: inli
 helpersOnModel|Domain helpers live on the entity, not in free functions or utils files; core/utils is for formatting only
 booleanRule|A complex boolean rule goes in a named private getter or method, with early returns or named values, never a nested ternary
 namedTypes|Public object shapes are named classes or typedefs, not inline records
-commitStyle|Commit only when the user asks, in Conventional Commits
-noCompetitorNames|HARD: the app may follow the market's usual ways of working, but no competitor or other app is ever named in the repo (code, comments, specs, memory): state the rule and its business reason instead. User, 2026-11-04
+commitStyle|HARD: commit only when the user asks, in Conventional Commits, with a simple and complete English message and never a Co-Authored-By line. One request is one single commit per repo with everything uncommitted, even mixed topics: never split it into several commits nor stage parts of files. The user pushes. User, 2026-11-05
+noCompetitorNames|HARD: the app may follow the market's usual ways of working, but no competitor is ever named in the repo (code, comments, specs, memory): state the rule and its business reason instead. A third-party app the app integrates with, like Google Maps or Waze, may be named. User, 2026-11-04, clarified 2026-11-05
+shadcnOnly|HARD: every UI component comes from shadcn_flutter, or from a lib/core/widgets component built on it (showMessageToast, BottomPanel, MapPill…); Material only through a show import for what shadcn lacks, and only after checking shadcn has nothing. User, 2026-11-05

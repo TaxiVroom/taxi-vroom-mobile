@@ -4,6 +4,46 @@ import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
+/// The same banner while the position and the route come: the driver sees
+/// the guidance is on its way, not an empty screen.
+class NavigationLoadingBanner extends StatelessWidget {
+  const NavigationLoadingBanner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.ink,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: const Row(
+        children: [
+          SizedBox(
+            width: 34,
+            height: 34,
+            child: Padding(
+              padding: EdgeInsets.all(6),
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          ),
+          SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              'Calcul de l’itinéraire…',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Guidance at the top of the screen, readable at a glance while driving:
 /// "Dans 200 m, à droite", the road, and the time left.
 class NavigationBanner extends StatelessWidget {

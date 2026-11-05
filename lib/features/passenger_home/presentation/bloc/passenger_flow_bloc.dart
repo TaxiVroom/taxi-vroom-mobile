@@ -11,7 +11,7 @@ part 'passenger_flow_event.dart';
 part 'passenger_flow_state.dart';
 
 /// Drives the passenger screens stack (home → destination → taxi choice) and
-/// remembers the pickup time chosen along the way.
+/// remembers the pickup time and place chosen along the way.
 class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
   PassengerFlowBloc({
     required GetPickupDaysUseCase getPickupDaysUseCase,
@@ -32,6 +32,7 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
     on<PassengerRideBooked>(_onRideBooked);
     on<PassengerPickupTimeSheetOpened>(_onPickupTimeSheetOpened);
     on<PassengerPickupTimeChanged>(_onPickupTimeChanged);
+    on<PassengerPickupPlaceChanged>(_onPickupPlaceChanged);
     on<PassengerFlowBackPressed>(_onBackPressed);
   }
 
@@ -100,7 +101,10 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
     Emitter<PassengerFlowState> emit,
   ) {
     emit(
-      PassengerFlowDestinationSearch(scheduledPickup: state.scheduledPickup),
+      PassengerFlowDestinationSearch(
+        scheduledPickup: state.scheduledPickup,
+        pickupPlace: state.pickupPlace,
+      ),
     );
   }
 
@@ -112,15 +116,20 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
       PassengerFlowTaxiChoice(
         destination: event.destination,
         scheduledPickup: state.scheduledPickup,
+        pickupPlace: state.pickupPlace,
       ),
     );
   }
 
+  // The ride page shows where the taxi comes; a ride opened at start or by a
+  // notification falls back to where the phone is.
   void _onRideOrdered(
     PassengerRideOrdered event,
     Emitter<PassengerFlowState> emit,
   ) {
-    emit(PassengerFlowRide(rideId: event.rideId));
+    emit(
+      PassengerFlowRide(rideId: event.rideId, pickupPlace: state.pickupPlace),
+    );
   }
 
   void _onRideEnded(
@@ -144,6 +153,7 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
     emit(
       _withPickup(
         scheduledPickup: state.scheduledPickup,
+        pickupPlace: state.pickupPlace,
         pickupDays: _getPickupDaysUseCase(now: DateTime.now()),
       ),
     );
@@ -153,7 +163,24 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
     PassengerPickupTimeChanged event,
     Emitter<PassengerFlowState> emit,
   ) {
-    emit(_withPickup(scheduledPickup: event.scheduledPickup));
+    emit(
+      _withPickup(
+        scheduledPickup: event.scheduledPickup,
+        pickupPlace: state.pickupPlace,
+      ),
+    );
+  }
+
+  void _onPickupPlaceChanged(
+    PassengerPickupPlaceChanged event,
+    Emitter<PassengerFlowState> emit,
+  ) {
+    emit(
+      _withPickup(
+        scheduledPickup: state.scheduledPickup,
+        pickupPlace: event.pickupPlace,
+      ),
+    );
   }
 
   void _onBackPressed(
@@ -164,35 +191,43 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
       switch (state) {
         PassengerFlowTaxiChoice() => PassengerFlowDestinationSearch(
           scheduledPickup: state.scheduledPickup,
+          pickupPlace: state.pickupPlace,
         ),
         // Leaving an ordered ride goes through "Annuler la course" only; the
         // start ends on its own.
         PassengerFlowRide() || PassengerFlowStarting() => state,
-        _ => PassengerFlowHome(scheduledPickup: state.scheduledPickup),
+        _ => PassengerFlowHome(
+          scheduledPickup: state.scheduledPickup,
+          pickupPlace: state.pickupPlace,
+        ),
       },
     );
   }
 
-  // The same screen, with another pickup time or pickup days.
+  // The same screen, with another pickup time, pickup days or pickup place.
   PassengerFlowState _withPickup({
     required DateTime? scheduledPickup,
+    required Place? pickupPlace,
     List<PickupDay> pickupDays = const [],
   }) => switch (state) {
     PassengerFlowHome() => PassengerFlowHome(
       scheduledPickup: scheduledPickup,
       pickupDays: pickupDays,
+      pickupPlace: pickupPlace,
     ),
     PassengerFlowDestinationSearch() => PassengerFlowDestinationSearch(
       scheduledPickup: scheduledPickup,
       pickupDays: pickupDays,
+      pickupPlace: pickupPlace,
     ),
     PassengerFlowTaxiChoice(:final destination) => PassengerFlowTaxiChoice(
       destination: destination,
       scheduledPickup: scheduledPickup,
       pickupDays: pickupDays,
+      pickupPlace: pickupPlace,
     ),
-    // The pickup time of an ordered ride can't change anymore; nothing to
-    // change while starting.
+    // The pickup of an ordered ride can't change anymore; nothing to change
+    // while starting.
     PassengerFlowRide() || PassengerFlowStarting() => state,
   };
 }

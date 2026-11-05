@@ -7,6 +7,17 @@ sealed class DestinationSearchEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+// The passenger moved to another field: its own suggestions come next.
+final class DestinationSearchFieldFocused extends DestinationSearchEvent {
+  const DestinationSearchFieldFocused({required this.field});
+
+  final SearchField field;
+
+  @override
+  List<Object?> get props => [field];
+}
+
+// What the passenger typed in the active field.
 final class DestinationQueryChanged extends DestinationSearchEvent {
   const DestinationQueryChanged({required this.query});
 

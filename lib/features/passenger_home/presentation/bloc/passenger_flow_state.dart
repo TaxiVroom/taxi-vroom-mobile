@@ -4,6 +4,7 @@ sealed class PassengerFlowState extends Equatable {
   const PassengerFlowState({
     this.scheduledPickup,
     this.pickupDays = const [],
+    this.pickupPlace,
   });
 
   // Null means "as soon as possible", otherwise a booked pickup time.
@@ -12,8 +13,12 @@ sealed class PassengerFlowState extends Equatable {
   // Days and slots offered by the pickup time sheet, computed when it opens.
   final List<PickupDay> pickupDays;
 
+  // Where the taxi picks the passenger up; null means "Position actuelle",
+  // where the phone is (PassengerHome.pickupAt).
+  final Place? pickupPlace;
+
   @override
-  List<Object?> get props => [scheduledPickup, pickupDays];
+  List<Object?> get props => [scheduledPickup, pickupDays, pickupPlace];
 }
 
 // The app just started: it does not know yet whether a ride must be opened,
@@ -23,24 +28,33 @@ final class PassengerFlowStarting extends PassengerFlowState {
 }
 
 final class PassengerFlowHome extends PassengerFlowState {
-  const PassengerFlowHome({super.scheduledPickup, super.pickupDays});
+  const PassengerFlowHome({
+    super.scheduledPickup,
+    super.pickupDays,
+    super.pickupPlace,
+  });
 }
 
 final class PassengerFlowDestinationSearch extends PassengerFlowState {
   const PassengerFlowDestinationSearch({
     super.scheduledPickup,
     super.pickupDays,
+    super.pickupPlace,
   });
 }
 
 // A ride was ordered: the passenger follows it until it ends or is cancelled.
 final class PassengerFlowRide extends PassengerFlowState {
-  const PassengerFlowRide({required this.rideId, super.scheduledPickup});
+  const PassengerFlowRide({
+    required this.rideId,
+    super.scheduledPickup,
+    super.pickupPlace,
+  });
 
   final String rideId;
 
   @override
-  List<Object?> get props => [rideId, scheduledPickup, pickupDays];
+  List<Object?> get props => [rideId, scheduledPickup, pickupDays, pickupPlace];
 }
 
 final class PassengerFlowTaxiChoice extends PassengerFlowState {
@@ -48,10 +62,16 @@ final class PassengerFlowTaxiChoice extends PassengerFlowState {
     required this.destination,
     super.scheduledPickup,
     super.pickupDays,
+    super.pickupPlace,
   });
 
   final Place destination;
 
   @override
-  List<Object?> get props => [destination, scheduledPickup, pickupDays];
+  List<Object?> get props => [
+    destination,
+    scheduledPickup,
+    pickupDays,
+    pickupPlace,
+  ];
 }

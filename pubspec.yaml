@@ -35,7 +35,7 @@ dependencies:
   firebase_database: ^12.6.0
   flutter_geo_hash: ^0.0.7
   firebase_messaging: ^16.7.1
-
+  url_launcher: ^6.3.3
 dev_dependencies:
   flutter_native_splash: ^2.4.6
   bloc_lint: ">=0.3.3 <0.3.6"

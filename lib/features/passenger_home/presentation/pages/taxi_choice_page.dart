@@ -15,14 +15,17 @@ import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_choice.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_offer.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/find_place_at_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/offer_from_pickup_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/arrival_pickup_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/ride_history_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/taxi_choice_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/pickup_time_chip.dart';
+import 'package:mobile/features/passenger_home/presentation/widgets/place_picker_sheet.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/price_explanation_sheet.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/route_map.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/taxi_offer_tile.dart';
@@ -38,16 +41,21 @@ class TaxiChoicePage extends StatelessWidget {
     required this.requestRideUseCase,
     required this.bookRideUseCase,
     required this.getPickupForArrivalUseCase,
+    required this.findPlaceAtUseCase,
+    required this.offerFromPickupUseCase,
     this.scheduledPickup,
     super.key,
   });
 
+  // The pickup: the place chosen, otherwise where the phone is.
   final Coordinates origin;
   final Place destination;
   final LoadTaxiChoiceUseCase loadTaxiChoiceUseCase;
   final RequestRideUseCase requestRideUseCase;
   final BookRideUseCase bookRideUseCase;
   final GetPickupForArrivalUseCase getPickupForArrivalUseCase;
+  final FindPlaceAtUseCase findPlaceAtUseCase;
+  final OfferFromPickupUseCase offerFromPickupUseCase;
 
   // Null means "as soon as possible".
   final DateTime? scheduledPickup;
@@ -66,6 +74,7 @@ class TaxiChoicePage extends StatelessWidget {
             loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
             requestRideUseCase: requestRideUseCase,
             bookRideUseCase: bookRideUseCase,
+            offerFromPickupUseCase: offerFromPickupUseCase,
           )..add(TaxiChoiceStarted(scheduledPickup: scheduledPickup)),
         ),
         BlocProvider(
@@ -228,7 +237,7 @@ class TaxiChoicePage extends StatelessWidget {
         PrimaryButton(
           onPressed: selectedOfferId == null || state.isOrdering
               ? null
-              : () => _onOrderPressed(context),
+              : () => unawaited(_onOrderPressed(context)),
           alignment: Alignment.center,
           trailing: state.isOrdering
               ? const AspectRatio(
@@ -263,11 +272,24 @@ class TaxiChoicePage extends StatelessWidget {
     );
   }
 
-  void _onOrderPressed(BuildContext context) {
-    context.read<TaxiChoiceBloc>().add(
+  // The passenger first sees on the map where the taxi will come, and may
+  // move it a few streets; the flow keeps the place confirmed.
+  Future<void> _onOrderPressed(BuildContext context) async {
+    final taxiChoiceBloc = context.read<TaxiChoiceBloc>();
+    final flowBloc = context.read<PassengerFlowBloc>();
+    final pickup = await openPlacePickerSheet(
+      context,
+      initial: origin,
+      title: 'Confirmer le point de prise en charge',
+      confirmLabel: 'Confirmer',
+      findPlaceAtUseCase: findPlaceAtUseCase,
+    );
+    if (pickup == null) return;
+    flowBloc.add(PassengerPickupPlaceChanged(pickupPlace: pickup));
+    taxiChoiceBloc.add(
       scheduledPickup == null
-          ? const TaxiRideOrdered()
-          : const TaxiRideBooked(),
+          ? TaxiRideOrdered(pickup: pickup.coordinates)
+          : TaxiRideBooked(pickup: pickup.coordinates),
     );
   }
 

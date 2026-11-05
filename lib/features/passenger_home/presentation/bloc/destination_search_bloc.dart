@@ -11,6 +11,8 @@ import 'package:stream_transform/stream_transform.dart';
 part 'destination_search_event.dart';
 part 'destination_search_state.dart';
 
+// "Votre trajet": the same search for the pickup and the destination, for
+// the field being typed in.
 class DestinationSearchBloc
     extends Bloc<DestinationSearchEvent, DestinationSearchState> {
   DestinationSearchBloc({
@@ -21,6 +23,7 @@ class DestinationSearchBloc
        _suggestDestinationsUseCase = suggestDestinationsUseCase,
        _selectDestinationUseCase = selectDestinationUseCase,
        super(const DestinationSearchState()) {
+    on<DestinationSearchFieldFocused>(_onFieldFocused);
     on<DestinationQueryChanged>(
       _onQueryChanged,
       transformer: _debounceLatest(const Duration(milliseconds: 300)),
@@ -37,12 +40,23 @@ class DestinationSearchBloc
   static EventTransformer<E> _debounceLatest<E>(Duration duration) =>
       (events, mapper) => events.debounce(duration).switchMap(mapper);
 
+  // The other field's suggestions are gone; its own text is searched next.
+  void _onFieldFocused(
+    DestinationSearchFieldFocused event,
+    Emitter<DestinationSearchState> emit,
+  ) {
+    if (event.field == state.activeField) return;
+    emit(DestinationSearchState(activeField: event.field));
+  }
+
   Future<void> _onQueryChanged(
     DestinationQueryChanged event,
     Emitter<DestinationSearchState> emit,
   ) async {
+    final field = state.activeField;
     emit(
       DestinationSearchState(
+        activeField: field,
         query: event.query,
         suggestions: state.suggestions,
         isLoading: true,
@@ -53,10 +67,17 @@ class DestinationSearchBloc
       near: _origin,
     )) {
       case Ok(:final value):
-        emit(DestinationSearchState(query: event.query, suggestions: value));
+        emit(
+          DestinationSearchState(
+            activeField: field,
+            query: event.query,
+            suggestions: value,
+          ),
+        );
       case Error(:final error):
         emit(
           DestinationSearchState(
+            activeField: field,
             query: event.query,
             failureMessage: error.message,
           ),
@@ -68,8 +89,10 @@ class DestinationSearchBloc
     DestinationSuggestionSelected event,
     Emitter<DestinationSearchState> emit,
   ) async {
+    final field = state.activeField;
     emit(
       DestinationSearchState(
+        activeField: field,
         query: state.query,
         suggestions: state.suggestions,
         isLoading: true,
@@ -79,14 +102,19 @@ class DestinationSearchBloc
       case Ok(:final value):
         emit(
           DestinationSearchState(
+            activeField: field,
             query: state.query,
             suggestions: state.suggestions,
-            selectedDestination: value,
+            selectedPickup: field == SearchField.pickup ? value : null,
+            selectedDestination: field == SearchField.destination
+                ? value
+                : null,
           ),
         );
       case Error(:final error):
         emit(
           DestinationSearchState(
+            activeField: field,
             query: state.query,
             suggestions: state.suggestions,
             failureMessage: error.message,

@@ -3,6 +3,7 @@ import 'package:mobile/core/domain/entities/guidance.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/widgets/bottom_panel.dart';
+import 'package:mobile/core/widgets/itinerary_button.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/core/widgets/swipe_button.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
@@ -77,7 +78,7 @@ class DriverRidePage extends StatelessWidget {
 
   Widget _buildTop(BuildContext context, GuidanceState state) {
     return switch (state) {
-      GuidanceLoading() => const SizedBox.shrink(),
+      GuidanceLoading() => const NavigationLoadingBanner(),
       GuidanceReady(:final guidance) => NavigationBanner(guidance: guidance),
       GuidanceFailure(:final message) => Container(
         decoration: BoxDecoration(
@@ -143,21 +144,33 @@ class DriverRidePage extends StatelessWidget {
     );
   }
 
-  // Where to, and what is left once the road is known.
+  // Where to, and what is left once the road is known; "Itinéraire" leaves
+  // for the driver's navigation app, as on the pickup screen.
   Widget _buildTrip(Guidance? guidance) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Text(
-          ride.destinationName,
-          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
-        ),
-        if (guidance != null)
-          Text(
-            '${formatDistanceMeters(guidance.metersLeft)} · '
-            '${guidance.minutesLeft} min restantes',
-            style: const TextStyle(color: AppColors.muted),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                ride.destinationName,
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (guidance != null)
+                Text(
+                  '${formatDistanceMeters(guidance.metersLeft)} · '
+                  '${guidance.minutesLeft} min restantes',
+                  style: const TextStyle(color: AppColors.muted),
+                ),
+            ],
           ),
+        ),
+        const SizedBox(width: 8),
+        ItineraryButton(target: ride.destination),
       ],
     );
   }

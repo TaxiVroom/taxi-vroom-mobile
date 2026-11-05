@@ -3,6 +3,7 @@ import 'package:mobile/core/domain/entities/guidance.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/widgets/bottom_panel.dart';
+import 'package:mobile/core/widgets/itinerary_button.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
@@ -82,7 +83,7 @@ class DriverPickupPage extends StatelessWidget {
 
   Widget _buildTop(BuildContext context, GuidanceState state) {
     return switch (state) {
-      GuidanceLoading() => const SizedBox.shrink(),
+      GuidanceLoading() => const NavigationLoadingBanner(),
       GuidanceReady(:final guidance) => NavigationBanner(guidance: guidance),
       GuidanceFailure(:final message) => Container(
         decoration: BoxDecoration(
@@ -202,6 +203,8 @@ class DriverPickupPage extends StatelessWidget {
           onPressed: () {},
           child: const Icon(Icons.phone_outlined),
         ),
+        const SizedBox(width: 8),
+        ItineraryButton(target: ride.pickup),
       ],
     );
   }

@@ -15,21 +15,24 @@ import 'package:mobile/core/data/datasources/route_remote_datasource.dart';
 import 'package:mobile/core/data/repositories/connection_repository_impl.dart';
 import 'package:mobile/core/data/repositories/email_availability_repository_impl.dart';
 import 'package:mobile/core/data/repositories/location_repository_impl.dart';
+import 'package:mobile/core/data/repositories/navigation_repository_impl.dart';
 import 'package:mobile/core/data/repositories/notification_permission_repository_impl.dart';
 import 'package:mobile/core/data/repositories/push_registration_repository_impl.dart';
 import 'package:mobile/core/data/repositories/route_repository_impl.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
-import 'package:mobile/core/domain/usecases/ensure_notification_permission_usecase.dart';
 import 'package:mobile/core/domain/usecases/enable_notifications_usecase.dart';
+import 'package:mobile/core/domain/usecases/ensure_notification_permission_usecase.dart';
 import 'package:mobile/core/domain/usecases/load_notification_permission_usecase.dart';
+import 'package:mobile/core/domain/usecases/open_navigation_usecase.dart';
 import 'package:mobile/core/domain/usecases/open_notification_settings_usecase.dart';
-import 'package:mobile/core/presentation/bloc/notification_permission_bloc.dart';
 import 'package:mobile/core/domain/usecases/register_push_token_usecase.dart';
 import 'package:mobile/core/domain/usecases/unregister_push_token_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_push_token_refresh_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
 import 'package:mobile/core/network/auth_interceptor.dart';
+import 'package:mobile/core/presentation/bloc/navigation_bloc.dart';
+import 'package:mobile/core/presentation/bloc/notification_permission_bloc.dart';
 import 'package:mobile/env/app_config.dart';
 import 'package:mobile/features/authentication/data/datasources/auth_remote_datasource.dart';
 import 'package:mobile/features/authentication/data/repositories/auth_repository_impl.dart';
@@ -85,6 +88,7 @@ import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_
 import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/data/datasources/account_remote_datasource_fake.dart';
+import 'package:mobile/features/passenger_home/data/datasources/address_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/nearby_taxi_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/place_search_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/recent_destination_remote_datasource_fake.dart';
@@ -92,6 +96,7 @@ import 'package:mobile/features/passenger_home/data/datasources/ride_booking_rem
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/taxi_offer_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/repositories/account_repository_impl.dart';
+import 'package:mobile/features/passenger_home/data/repositories/address_repository_impl.dart';
 import 'package:mobile/features/passenger_home/data/repositories/nearby_taxi_repository_impl.dart';
 import 'package:mobile/features/passenger_home/data/repositories/place_search_repository_impl.dart';
 import 'package:mobile/features/passenger_home/data/repositories/recent_destination_repository_impl.dart';
@@ -100,6 +105,7 @@ import 'package:mobile/features/passenger_home/data/repositories/taxi_offer_repo
 import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_booking_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/find_place_at_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_account_usecase.dart';
@@ -107,6 +113,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/load_current_ride
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/offer_from_pickup_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
@@ -178,6 +185,14 @@ class App extends StatelessWidget {
       ),
     );
 
+    // The address under the pin of "Choisir sur la carte": the State's
+    // Géoplateforme, without the Firebase interceptor either.
+    final addressRepo = AddressRepositoryImpl(
+      AddressRemoteDataSourceImpl(
+        Dio(BaseOptions(baseUrl: 'https://data.geopf.fr')),
+      ),
+    );
+
     // Itinéraires réels via Mapbox : choix du taxi et suivi de la course.
     final routeRepo = RouteRepositoryImpl(
       RouteRemoteDataSourceImpl(
@@ -191,11 +206,12 @@ class App extends StatelessWidget {
     // l'estimation pour la commande, passée au choix du taxi et à la course.
 
     // Choix du taxi : prix estimé par le backend, qui crée la course.
+    final taxiOfferRepo = TaxiOfferRepositoryImpl(
+      TaxiOfferRemoteDataSourceImpl(dio),
+    );
     final loadTaxiChoiceUseCase = LoadTaxiChoiceUseCase(
       routeRepository: routeRepo,
-      taxiOfferRepository: TaxiOfferRepositoryImpl(
-        TaxiOfferRemoteDataSourceImpl(dio),
-      ),
+      taxiOfferRepository: taxiOfferRepo,
     );
 
     // Compte passager : pas encore d'endpoint backend, profil fake.
@@ -320,6 +336,15 @@ class App extends StatelessWidget {
       minTextAdapt: true,
       child: MultiBlocProvider(
         providers: [
+          // "Itinéraire" on the driver's pickup and ride screens. Spec
+          // navigation-externe.md.
+          BlocProvider(
+            create: (_) => NavigationBloc(
+              openNavigationUseCase: const OpenNavigationUseCase(
+                NavigationRepositoryImpl(),
+              ),
+            ),
+          ),
           // Above the app: the pages of both roles tell it after an action,
           // and its dialogs open over any screen.
           BlocProvider(
@@ -330,6 +355,9 @@ class App extends StatelessWidget {
                   const LoadNotificationPermissionUseCase(
                     notificationPermissionRepo,
                   ),
+              enableNotificationsUseCase: const EnableNotificationsUseCase(
+                notificationPermissionRepo,
+              ),
               openNotificationSettingsUseCase:
                   const OpenNotificationSettingsUseCase(
                     notificationPermissionRepo,
@@ -342,9 +370,6 @@ class App extends StatelessWidget {
               verifyOtpUseCase: VerifyOtpUseCase(authRepo),
               getOrCreateRegistrationFlowUseCase:
                   GetOrCreateRegistrationFlowUseCase(authRepo),
-              enableNotificationsUseCase: const EnableNotificationsUseCase(
-                notificationPermissionRepo,
-              ),
               signOutUseCase: SignOutUseCase(authRepo),
               registerPushTokenUseCase: RegisterPushTokenUseCase(
                 pushRegistrationRepo,
@@ -383,6 +408,8 @@ class App extends StatelessWidget {
               placeSearchRepo,
             ),
             selectDestinationUseCase: SelectDestinationUseCase(placeSearchRepo),
+            findPlaceAtUseCase: FindPlaceAtUseCase(addressRepo),
+            offerFromPickupUseCase: OfferFromPickupUseCase(taxiOfferRepo),
             loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
             getPickupDaysUseCase: const GetPickupDaysUseCase(),
             requestRideUseCase: RequestRideUseCase(rideRepo),

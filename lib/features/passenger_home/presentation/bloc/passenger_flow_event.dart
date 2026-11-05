@@ -82,6 +82,16 @@ final class PassengerPickupTimeChanged extends PassengerFlowEvent {
   List<Object?> get props => [scheduledPickup];
 }
 
+final class PassengerPickupPlaceChanged extends PassengerFlowEvent {
+  const PassengerPickupPlaceChanged({this.pickupPlace});
+
+  // Null means "Position actuelle".
+  final Place? pickupPlace;
+
+  @override
+  List<Object?> get props => [pickupPlace];
+}
+
 // The back arrow or the hardware back button.
 final class PassengerFlowBackPressed extends PassengerFlowEvent {
   const PassengerFlowBackPressed();

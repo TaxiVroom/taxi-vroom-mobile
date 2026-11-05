@@ -31,3 +31,8 @@ class LocationFailure extends Failure {
 class PermissionFailure extends Failure {
   const PermissionFailure(super.message);
 }
+
+// The phone could not do it, such as opening another app.
+class DeviceFailure extends Failure {
+  const DeviceFailure(super.message);
+}
