@@ -1,6 +1,6 @@
 #H id|status|claim|evidence
 pushDelayOnLock|open|An offer push can arrive after the 15 s of the offer on a locked phone|18 s once on a locked emulator, 2026-11-02, two later tries instant; retry on a real phone locked for minutes
-notificationPermissionOnce|likely|Whoever skips the step, logs in on a new phone or reinstalls the app never gets asked again for notifications|only asked at registration, spec Limites connues; hit again 2026-11-04 after a reinstall: pushes received, none shown (POST_NOTIFICATIONS false), granted back with adb pm grant; fix before production
+notificationPermissionOnce|likely|Fixed in code, untested: the permission is asked again after "Commander", "Réserver", "En ligne" and "Accepter", and from the account tab|spec docs/specs/permission-notifications.md, 2026-11-05; untested on a device by user choice; drivers were never asked before (no notifications step in their registration)
 googleSignInFake|open|The Google button of registration saves nothing, so the last step fails with a 422|_onGoogleSignInRequested waits 1 s and skips the email and name steps; POST /v1/passengers needs them; seen in the database 2026-11-02, the click itself not confirmed
 restartWithoutNetwork|open|A network failure at restart sends the user to Welcome|findSessionRole returns null on any DioException
 arrivalClockOnClient|open|The 5 min no-show wait is counted from the phone's clock, the API counts from its own|DriverFlowBoarding gets DateTime.now() after the arrive call; the API may answer too early by a moment
