@@ -9,6 +9,8 @@ enum NotificationNeed {
   rideRequests,
   // The driver accepted a booking.
   bookingReminder,
+  // The driver sent their documents and waits for the admin.
+  registrationReview,
 }
 
 sealed class NotificationPermissionEvent extends Equatable {

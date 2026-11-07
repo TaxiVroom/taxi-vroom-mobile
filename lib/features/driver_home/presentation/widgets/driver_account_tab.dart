@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/core/domain/entities/vehicle.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/widgets/license_plate.dart';
 import 'package:mobile/core/widgets/notifications_row.dart';
@@ -63,20 +64,7 @@ class DriverAccountTab extends StatelessWidget {
           _buildProfile(account),
           const SizedBox(height: 24),
           const SectionLabel('Véhicule'),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  account.vehicleModel,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-              LicensePlate(
-                plate: account.plate,
-                department: account.plateDepartment,
-              ),
-            ],
-          ),
+          _buildVehicle(account.vehicle),
           const SizedBox(height: 16),
           const SectionLabel('Documents'),
           PlaceListTile(
@@ -114,6 +102,37 @@ class DriverAccountTab extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // What the passengers see, read only: changing it needs a new carte grise
+  // checked by the admin, not built yet.
+  Widget _buildVehicle(Vehicle? vehicle) {
+    if (vehicle == null) {
+      return const Text(
+        'Aucun véhicule enregistré.',
+        style: TextStyle(color: AppColors.muted),
+      );
+    }
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                vehicle.description,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              Text(
+                vehicle.licence,
+                style: const TextStyle(fontSize: 13, color: AppColors.muted),
+              ),
+            ],
+          ),
+        ),
+        LicensePlate(plate: vehicle.plate),
+      ],
     );
   }
 

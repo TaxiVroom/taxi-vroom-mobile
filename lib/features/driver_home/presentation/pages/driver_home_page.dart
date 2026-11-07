@@ -28,7 +28,6 @@ import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings
 import 'package:mobile/features/driver_home/domain/usecases/refuse_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/set_receives_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
@@ -66,7 +65,6 @@ class DriverHomePage extends StatelessWidget {
     required this.loadDriverDocumentsUseCase,
     required this.loadDriverHomeUseCase,
     required this.setOnlineUseCase,
-    required this.setReceivesBookingsUseCase,
     required this.shareDriverPositionUseCase,
     required this.watchConnectionUseCase,
     required this.watchRideRequestsUseCase,
@@ -96,7 +94,6 @@ class DriverHomePage extends StatelessWidget {
   final LoadDriverDocumentsUseCase loadDriverDocumentsUseCase;
   final LoadDriverHomeUseCase loadDriverHomeUseCase;
   final SetOnlineUseCase setOnlineUseCase;
-  final SetReceivesBookingsUseCase setReceivesBookingsUseCase;
   final ShareDriverPositionUseCase shareDriverPositionUseCase;
   final WatchConnectionUseCase watchConnectionUseCase;
   final WatchRideRequestsUseCase watchRideRequestsUseCase;
@@ -141,7 +138,6 @@ class DriverHomePage extends StatelessWidget {
           create: (_) => DriverHomeBloc(
             loadDriverHomeUseCase: loadDriverHomeUseCase,
             setOnlineUseCase: setOnlineUseCase,
-            setReceivesBookingsUseCase: setReceivesBookingsUseCase,
             shareDriverPositionUseCase: shareDriverPositionUseCase,
             watchConnectionUseCase: watchConnectionUseCase,
           )..add(const DriverHomeStarted()),
@@ -629,7 +625,6 @@ class _DriveTab extends StatelessWidget {
             builder: (context, requestState) => DriverHomeMap(
               position: home.position,
               isOnline: home.activity.isOnline,
-              demandZones: home.demand.zones,
               bottomPadding: _requestCardHeight,
               panelHeight: _panelHeight,
               offer: _offer(requestState),
@@ -711,17 +706,12 @@ class _DriveTab extends StatelessWidget {
 
   Widget _buildOnlinePanel(BuildContext context, DriverHomeReady state) {
     return OnlinePanel(
-      demand: state.home.demand,
-      receivesBookings: state.home.activity.receivesBookings,
       isConnected: state.isConnected,
       isSwitching: state.isSwitchingOnline,
       failureMessage: state.switchFailureMessage,
       onGoOfflinePressed: () => context.read<DriverHomeBloc>().add(
         const DriverOnlineToggled(isOnline: false),
       ),
-      onReceivesBookingsChanged: (receivesBookings) => context
-          .read<DriverHomeBloc>()
-          .add(DriverBookingsToggled(receivesBookings: receivesBookings)),
     );
   }
 }

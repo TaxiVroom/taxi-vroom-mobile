@@ -27,7 +27,6 @@ import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings
 import 'package:mobile/features/driver_home/domain/usecases/refuse_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/set_receives_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
@@ -55,9 +54,13 @@ import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinati
 import 'package:mobile/features/passenger_home/domain/usecases/watch_nearby_taxis_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/presentation/pages/passenger_home_page.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/check_registration_validated_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_types_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_uploaded_documents_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/search_communes_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/send_registration_push_token_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/submit_registration_vehicle_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/upload_registration_document_usecase.dart';
 import 'package:mobile/features/registration/driver/presentation/navigator/driver_registration_navigator.dart';
 import 'package:mobile/features/registration/passenger/domain/usecases/complete_passenger_registration_usecase.dart';
@@ -80,6 +83,10 @@ class AuthNavigator extends StatelessWidget {
     required this.uploadRegistrationDocumentUseCase,
     required this.getUploadedDocumentsUseCase,
     required this.getDocumentSignedUrlUseCase,
+    required this.submitRegistrationVehicleUseCase,
+    required this.searchCommunesUseCase,
+    required this.checkRegistrationValidatedUseCase,
+    required this.sendRegistrationPushTokenUseCase,
     required this.loadPassengerHomeUseCase,
     required this.watchNearbyTaxisUseCase,
     required this.suggestDestinationsUseCase,
@@ -103,7 +110,6 @@ class AuthNavigator extends StatelessWidget {
     required this.loadDriverDocumentsUseCase,
     required this.loadDriverHomeUseCase,
     required this.setOnlineUseCase,
-    required this.setReceivesBookingsUseCase,
     required this.shareDriverPositionUseCase,
     required this.watchConnectionUseCase,
     required this.watchRideRequestsUseCase,
@@ -147,6 +153,10 @@ class AuthNavigator extends StatelessWidget {
   final UploadRegistrationDocumentUseCase uploadRegistrationDocumentUseCase;
   final GetUploadedDocumentsUseCase getUploadedDocumentsUseCase;
   final GetDocumentSignedUrlUseCase getDocumentSignedUrlUseCase;
+  final SubmitRegistrationVehicleUseCase submitRegistrationVehicleUseCase;
+  final SearchCommunesUseCase searchCommunesUseCase;
+  final CheckRegistrationValidatedUseCase checkRegistrationValidatedUseCase;
+  final SendRegistrationPushTokenUseCase sendRegistrationPushTokenUseCase;
 
   // Use cases de l'accueil passager, transmis à PassengerHomePage.
   final LoadPassengerHomeUseCase loadPassengerHomeUseCase;
@@ -174,7 +184,6 @@ class AuthNavigator extends StatelessWidget {
   final LoadDriverDocumentsUseCase loadDriverDocumentsUseCase;
   final LoadDriverHomeUseCase loadDriverHomeUseCase;
   final SetOnlineUseCase setOnlineUseCase;
-  final SetReceivesBookingsUseCase setReceivesBookingsUseCase;
   final ShareDriverPositionUseCase shareDriverPositionUseCase;
 
   // Partagé entre passager et chauffeur : prévient quand la connexion est
@@ -290,6 +299,14 @@ class AuthNavigator extends StatelessWidget {
                   uploadRegistrationDocumentUseCase,
               getUploadedDocumentsUseCase: getUploadedDocumentsUseCase,
               getDocumentSignedUrlUseCase: getDocumentSignedUrlUseCase,
+              submitRegistrationVehicleUseCase:
+                  submitRegistrationVehicleUseCase,
+              searchCommunesUseCase: searchCommunesUseCase,
+              checkRegistrationValidatedUseCase:
+                  checkRegistrationValidatedUseCase,
+              sendRegistrationPushTokenUseCase:
+                  sendRegistrationPushTokenUseCase,
+              watchPushedRidesUseCase: watchPushedRidesUseCase,
               onAuthenticated: () => _onRegistrationCompleted(context),
             ),
           ),
@@ -332,7 +349,6 @@ class AuthNavigator extends StatelessWidget {
             loadDriverDocumentsUseCase: loadDriverDocumentsUseCase,
             loadDriverHomeUseCase: loadDriverHomeUseCase,
             setOnlineUseCase: setOnlineUseCase,
-            setReceivesBookingsUseCase: setReceivesBookingsUseCase,
             shareDriverPositionUseCase: shareDriverPositionUseCase,
             watchConnectionUseCase: watchConnectionUseCase,
             watchRideRequestsUseCase: watchRideRequestsUseCase,

@@ -3,6 +3,7 @@ import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/widgets/place_list_tile.dart';
+import 'package:mobile/core/widgets/search_text_field.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place_suggestion.dart';
 import 'package:mobile/features/passenger_home/domain/entities/recent_destination.dart';
@@ -197,32 +198,45 @@ class _DestinationSearchViewState extends State<_DestinationSearchView> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(
-            children: [
-              TextField(
-                controller: _pickupController,
-                focusNode: _pickupFocus,
-                // A value, not a hint: the pickup is chosen.
-                style: showsCurrentPosition
-                    ? const TextStyle(
-                        color: AppColors.plateBlue,
-                        fontWeight: FontWeight.w600,
-                      )
-                    : null,
-                onChanged: (query) {
-                  setState(() {});
-                  _onQueryChanged(query);
-                },
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _destinationController,
-                focusNode: _destinationFocus,
-                placeholder: const Text('Où allez-vous ?'),
-                autofocus: true,
-                onChanged: _onQueryChanged,
-              ),
-            ],
+          // The spinner of the field being searched only.
+          child: BlocBuilder<DestinationSearchBloc, DestinationSearchState>(
+            buildWhen: (previous, current) =>
+                previous.isLoading != current.isLoading ||
+                previous.activeField != current.activeField,
+            builder: (context, state) => Column(
+              children: [
+                SearchTextField(
+                  controller: _pickupController,
+                  focusNode: _pickupFocus,
+                  placeholder: 'Adresse de départ',
+                  isLoading:
+                      state.isLoading &&
+                      state.activeField == SearchField.pickup,
+                  // A value, not a hint: the pickup is chosen.
+                  style: showsCurrentPosition
+                      ? const TextStyle(
+                          color: AppColors.plateBlue,
+                          fontWeight: FontWeight.w600,
+                        )
+                      : null,
+                  onChanged: (query) {
+                    setState(() {});
+                    _onQueryChanged(query);
+                  },
+                ),
+                const SizedBox(height: 8),
+                SearchTextField(
+                  controller: _destinationController,
+                  focusNode: _destinationFocus,
+                  placeholder: 'Où allez-vous ?',
+                  isLoading:
+                      state.isLoading &&
+                      state.activeField == SearchField.destination,
+                  autofocus: true,
+                  onChanged: _onQueryChanged,
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -305,26 +319,28 @@ class _DestinationSearchViewState extends State<_DestinationSearchView> {
 
     final failureMessage = state.failureMessage;
     if (failureMessage != null) return _buildMessage(failureMessage);
+    // Nothing yet: the spinner is in the field.
     if (state.suggestions.isEmpty) {
       return state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SizedBox.shrink()
           : _buildMessage('Aucune adresse trouvée');
     }
 
-    return ListView(
-      children: [
-        for (final suggestion in state.suggestions)
-          PlaceListTile(
-            icon: Icons.place_outlined,
-            title: suggestion.name,
-            subtitle: _suggestionDetail(suggestion),
-            onPressed: state.isLoading
-                ? null
-                : () => context.read<DestinationSearchBloc>().add(
-                    DestinationSuggestionSelected(suggestion: suggestion),
-                  ),
-          ),
-      ],
+    return SearchResults(
+      isLoading: state.isLoading,
+      child: ListView(
+        children: [
+          for (final suggestion in state.suggestions)
+            PlaceListTile(
+              icon: Icons.place_outlined,
+              title: suggestion.name,
+              subtitle: _suggestionDetail(suggestion),
+              onPressed: () => context.read<DestinationSearchBloc>().add(
+                DestinationSuggestionSelected(suggestion: suggestion),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

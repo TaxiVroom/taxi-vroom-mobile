@@ -1,11 +1,9 @@
 import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/domain/repositories/location_repository.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/features/driver_home/domain/entities/demand_overview.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_activity.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_booking.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_home.dart';
-import 'package:mobile/features/driver_home/domain/repositories/demand_repository.dart';
 import 'package:mobile/features/driver_home/domain/repositories/driver_activity_repository.dart';
 import 'package:mobile/features/driver_home/domain/repositories/driver_booking_repository.dart';
 
@@ -14,16 +12,13 @@ class LoadDriverHomeUseCase {
   const LoadDriverHomeUseCase({
     required LocationRepository locationRepository,
     required DriverActivityRepository driverActivityRepository,
-    required DemandRepository demandRepository,
     required DriverBookingRepository driverBookingRepository,
   }) : _locationRepository = locationRepository,
        _driverActivityRepository = driverActivityRepository,
-       _demandRepository = demandRepository,
        _driverBookingRepository = driverBookingRepository;
 
   final LocationRepository _locationRepository;
   final DriverActivityRepository _driverActivityRepository;
-  final DemandRepository _demandRepository;
   final DriverBookingRepository _driverBookingRepository;
 
   Future<Result<DriverHome>> call() async {
@@ -43,14 +38,6 @@ class LoadDriverHomeUseCase {
         return Result.error(error);
     }
 
-    final DemandOverview demand;
-    switch (await _demandRepository.getDemand(around: position)) {
-      case Ok(:final value):
-        demand = value;
-      case Error(:final error):
-        return Result.error(error);
-    }
-
     final List<DriverBooking> bookings;
     switch (await _driverBookingRepository.getAcceptedBookings()) {
       case Ok(:final value):
@@ -63,7 +50,6 @@ class LoadDriverHomeUseCase {
       DriverHome(
         position: position,
         activity: activity,
-        demand: demand,
         nextBooking: bookings.firstOrNull,
       ),
     );

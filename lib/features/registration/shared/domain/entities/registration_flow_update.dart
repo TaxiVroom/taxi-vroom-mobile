@@ -27,6 +27,12 @@ final class NameUpdate extends RegistrationFlowUpdate {
   final String lastName;
 }
 
+// The vehicle was saved by PUT /v1/registration-flows/me/vehicle: the
+// documents come next.
+final class VehicleConfirmedUpdate extends RegistrationFlowUpdate {
+  const VehicleConfirmedUpdate({required super.fromStep});
+}
+
 // Notifie le backend que le chauffeur a fini d'uploader ses documents
 // et que son dossier est prêt à être reviewé par un admin.
 // Pas de champs supplémentaires — fromStep suffit pour que le backend

@@ -22,6 +22,18 @@ class EstimateExpiredFailure extends ValidationFailure {
   const EstimateExpiredFailure(super.message);
 }
 
+// Another driver or registration already has this plate. Spec
+// taxi-vroom-api/docs/specs/vehicule-du-chauffeur.md, point 7.
+class VehiclePlateTakenFailure extends ValidationFailure {
+  const VehiclePlateTakenFailure(super.message);
+}
+
+// Another driver or registration already has this taxi number in this
+// commune.
+class VehicleLicenceTakenFailure extends ValidationFailure {
+  const VehicleLicenceTakenFailure(super.message);
+}
+
 // Location unavailable: permission denied or location services turned off.
 class LocationFailure extends Failure {
   const LocationFailure(super.message);

@@ -43,7 +43,6 @@ import 'package:mobile/features/authentication/domain/usecases/sign_out_usecase.
 import 'package:mobile/features/authentication/domain/usecases/verify_otp_usecase.dart';
 import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:mobile/features/authentication/presentation/navigator/auth_navigator.dart';
-import 'package:mobile/features/driver_home/data/datasources/demand_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_account_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_activity_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_booking_remote_datasource.dart';
@@ -51,9 +50,9 @@ import 'package:mobile/features/driver_home/data/datasources/driver_document_rem
 import 'package:mobile/features/driver_home/data/datasources/driver_presence_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource_fake.dart';
+import 'package:mobile/features/driver_home/data/datasources/driver_vehicle_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/earnings_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/ride_request_remote_datasource.dart';
-import 'package:mobile/features/driver_home/data/repositories/demand_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/device_driving_position_repository.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_account_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_activity_repository_impl.dart';
@@ -61,6 +60,7 @@ import 'package:mobile/features/driver_home/data/repositories/driver_booking_rep
 import 'package:mobile/features/driver_home/data/repositories/driver_document_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_presence_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_ride_repository_impl.dart';
+import 'package:mobile/features/driver_home/data/repositories/driver_vehicle_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/earnings_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/ride_request_repository_impl.dart';
 import 'package:mobile/features/driver_home/domain/usecases/accept_booking_usecase.dart';
@@ -79,7 +79,6 @@ import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings
 import 'package:mobile/features/driver_home/domain/usecases/refuse_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/set_receives_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
@@ -120,13 +119,19 @@ import 'package:mobile/features/passenger_home/domain/usecases/select_destinatio
 import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_nearby_taxis_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
+import 'package:mobile/features/registration/driver/data/datasources/commune_remote_datasource.dart';
 import 'package:mobile/features/registration/driver/data/datasources/driver_registration_remote_datasource.dart';
 import 'package:mobile/features/registration/driver/data/datasources/registration_document_remote_datasource.dart';
+import 'package:mobile/features/registration/driver/data/repositories/commune_repository_impl.dart';
 import 'package:mobile/features/registration/driver/data/repositories/driver_registration_repository_impl.dart';
 import 'package:mobile/features/registration/driver/data/repositories/registration_document_repository_impl.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/check_registration_validated_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_types_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_uploaded_documents_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/search_communes_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/send_registration_push_token_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/submit_registration_vehicle_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/upload_registration_document_usecase.dart';
 import 'package:mobile/features/registration/passenger/data/datasources/registration_remote_datasource.dart';
 import 'package:mobile/features/registration/passenger/data/repositories/registration_repository_impl.dart';
@@ -261,8 +266,8 @@ class App extends StatelessWidget {
       locationRepository: locationRepo,
     );
 
-    // Accueil chauffeur. Pas encore d'endpoint backend : disponibilité, demande
-    // et réservations sont fake. Une seule instance de disponibilité, partagée
+    // Accueil chauffeur. Pas encore d'endpoint backend : la disponibilité est
+    // fake. Une seule instance de disponibilité, partagée
     // par le chargement et les changements d'état.
     final driverActivityRepo = DriverActivityRepositoryImpl(
       DriverActivityRemoteDataSourceFake(),
@@ -313,13 +318,13 @@ class App extends StatelessWidget {
     final loadDriverHomeUseCase = LoadDriverHomeUseCase(
       locationRepository: locationRepo,
       driverActivityRepository: driverActivityRepo,
-      demandRepository: DemandRepositoryImpl(DemandRemoteDataSourceFake()),
       driverBookingRepository: driverBookingRepo,
     );
 
     // Chauffeur.
     final driverRegistrationDataSource = DriverRegistrationRemoteDataSourceImpl(
       dio,
+      FirebaseAuth.instance,
     );
     final driverRegistrationRepo = DriverRegistrationRepositoryImpl(
       driverRegistrationDataSource,
@@ -447,9 +452,6 @@ class App extends StatelessWidget {
               locationRepository: locationRepo,
               driverPresenceRepository: driverPresenceRepo,
             ),
-            setReceivesBookingsUseCase: SetReceivesBookingsUseCase(
-              driverActivityRepo,
-            ),
             watchRideRequestsUseCase: WatchRideRequestsUseCase(
               rideRequestRepository: rideRequestRepo,
               routeRepository: routeRepo,
@@ -498,6 +500,10 @@ class App extends StatelessWidget {
             ),
             loadDriverAccountUseCase: LoadDriverAccountUseCase(
               driverAccountRepository: driverAccountRepo,
+              // The vehicle is real: GET /v1/drivers/me/vehicle.
+              driverVehicleRepository: DriverVehicleRepositoryImpl(
+                DriverVehicleRemoteDataSourceImpl(dio),
+              ),
               driverDocumentRepository: driverDocumentRepo,
             ),
             driverUpdateRegistrationFlowUseCase: UpdateRegistrationFlowUseCase(
@@ -516,6 +522,27 @@ class App extends StatelessWidget {
             ),
             getDocumentSignedUrlUseCase: GetDocumentSignedUrlUseCase(
               registrationDocumentRepo,
+            ),
+            submitRegistrationVehicleUseCase: SubmitRegistrationVehicleUseCase(
+              driverRegistrationRepo,
+            ),
+            // "Dossier en cours de vérification": told when it is validated.
+            checkRegistrationValidatedUseCase:
+                CheckRegistrationValidatedUseCase(
+                  driverRegistrationRepo,
+                ),
+            sendRegistrationPushTokenUseCase: SendRegistrationPushTokenUseCase(
+              pushRegistrationRepository: pushRegistrationRepo,
+              driverRegistrationRepository: driverRegistrationRepo,
+            ),
+            // "Votre taxi": the State's communes, without the Firebase
+            // interceptor.
+            searchCommunesUseCase: SearchCommunesUseCase(
+              CommuneRepositoryImpl(
+                CommuneRemoteDataSourceImpl(
+                  Dio(BaseOptions(baseUrl: 'https://geo.api.gouv.fr')),
+                ),
+              ),
             ),
           ),
         ),

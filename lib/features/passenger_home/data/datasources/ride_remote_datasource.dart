@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:mobile/features/passenger_home/data/models/past_ride_model.dart';
 import 'package:mobile/features/passenger_home/data/models/ride_model.dart';
-import 'package:mobile/features/passenger_home/data/models/simulated_driver_and_vehicle_json.dart';
 import 'package:stream_transform/stream_transform.dart';
 
 abstract class RideRemoteDataSource {
@@ -178,12 +177,24 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
       'id': rideId,
       ...json,
       'driver': {
-        ...simulatedDriverAndVehicleJson['driver']!,
         'name': '${driver.child('firstName').value} ${lastName[0]}.',
         'rating': driver.child('rating').value,
         'completedRides': driver.child('completedRides').value,
       },
-      'vehicle': simulatedDriverAndVehicleJson['vehicle'],
+      'vehicle': _vehicleJson(driver.child('vehicle')),
+    };
+  }
+
+  // Written by the backend with the driver; absent for a driver registered
+  // before the "Votre taxi" step existed.
+  Map<String, dynamic>? _vehicleJson(DataSnapshot vehicle) {
+    if (!vehicle.exists) return null;
+    return {
+      'model': vehicle.child('model').value,
+      'color': vehicle.child('color').value,
+      'plate': vehicle.child('plate').value,
+      'adsNumber': vehicle.child('adsNumber').value,
+      'communeName': vehicle.child('communeName').value,
     };
   }
 

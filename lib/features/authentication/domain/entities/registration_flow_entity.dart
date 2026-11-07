@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:mobile/features/registration/driver/domain/entities/registration_vehicle.dart';
 
 // Dart equivalent of TypeScript's:
 //   type RegistrationStep = PassengerRegistrationStep | DriverRegistrationStep
@@ -56,6 +57,7 @@ enum DriverRegistrationStep implements RegistrationStep {
   socialLink,
   email,
   name,
+  vehicle, // "Votre taxi": the vehicle the passengers will look for
   documents, // étape spécifique chauffeur (upload des documents)
   pendingReview, // documents soumis — en attente de validation admin
   documentsCorrection, // admin a rejeté au moins un document — le chauffeur doit corriger
@@ -65,7 +67,8 @@ enum DriverRegistrationStep implements RegistrationStep {
   DriverRegistrationStep? get next => switch (this) {
     socialLink => email,
     email => name,
-    name => documents,
+    name => vehicle,
+    vehicle => documents,
     documents => pendingReview,
     pendingReview => null,
     documentsCorrection => pendingReview,
@@ -76,7 +79,8 @@ enum DriverRegistrationStep implements RegistrationStep {
     socialLink => null,
     email => socialLink,
     name => email,
-    documents => name,
+    vehicle => name,
+    documents => vehicle,
     pendingReview => null,
     documentsCorrection => name,
     complete => pendingReview,
@@ -87,6 +91,7 @@ enum DriverRegistrationStep implements RegistrationStep {
     socialLink => 'SOCIAL_LINK',
     email => 'EMAIL',
     name => 'NAME',
+    vehicle => 'VEHICLE',
     documents => 'DOCUMENTS',
     pendingReview => 'PENDING_REVIEW',
     documentsCorrection => 'DOCUMENTS_CORRECTION',
@@ -115,10 +120,9 @@ sealed class RegistrationFlowEntity extends Equatable {
   bool get isComplete;
 }
 
-// Direct subtypes of a sealed class must live in the same file.
-// PassengerRegistrationFlowModel (data layer) can remain in its own file —
-// only direct subtypes of the sealed class are constrained.
-base class PassengerRegistrationFlowEntity extends RegistrationFlowEntity {
+// Direct subtypes of a sealed class must live in the same file. The data
+// models are mapped to them with toDomain(), they do not extend them.
+final class PassengerRegistrationFlowEntity extends RegistrationFlowEntity {
   const PassengerRegistrationFlowEntity({
     required super.userId,
     required this.currentStep,
@@ -136,20 +140,31 @@ base class PassengerRegistrationFlowEntity extends RegistrationFlowEntity {
   List<Object?> get props => [userId, currentStep, email, firstName, lastName];
 }
 
-base class DriverRegistrationFlowEntity extends RegistrationFlowEntity {
+final class DriverRegistrationFlowEntity extends RegistrationFlowEntity {
   const DriverRegistrationFlowEntity({
     required super.userId,
     required this.currentStep,
     super.email,
     super.firstName,
     super.lastName,
+    this.vehicle,
   });
 
   final DriverRegistrationStep currentStep;
+
+  // Given at the "Votre taxi" step; null before.
+  final RegistrationVehicle? vehicle;
 
   @override
   bool get isComplete => currentStep == DriverRegistrationStep.complete;
 
   @override
-  List<Object?> get props => [userId, currentStep, email, firstName, lastName];
+  List<Object?> get props => [
+    userId,
+    currentStep,
+    email,
+    firstName,
+    lastName,
+    vehicle,
+  ];
 }

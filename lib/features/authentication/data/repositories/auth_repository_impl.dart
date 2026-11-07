@@ -31,11 +31,11 @@ class AuthRepositoryImpl implements AuthRepository {
     required String userId,
     required UserRole role,
     required String phone,
-  }) => _dataSource.getOrCreateRegistrationFlow(
+  }) async => (await _dataSource.getOrCreateRegistrationFlow(
     userId: userId,
     role: role,
     phone: phone,
-  );
+  )).toDomain();
 
   // Refused by the API while the registration is not finished, or no network:
   // the user goes through the sign-in screens.

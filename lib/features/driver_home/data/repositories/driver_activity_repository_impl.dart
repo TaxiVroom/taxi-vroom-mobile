@@ -29,16 +29,4 @@ class DriverActivityRepositoryImpl implements DriverActivityRepository {
       return Result.error(e.toFailure());
     }
   }
-
-  @override
-  Future<Result<void>> setReceivesBookings({
-    required bool receivesBookings,
-  }) async {
-    try {
-      await _dataSource.setReceivesBookings(receivesBookings: receivesBookings);
-      return const Result.ok(null);
-    } on DioException catch (e) {
-      return Result.error(e.toFailure());
-    }
-  }
 }

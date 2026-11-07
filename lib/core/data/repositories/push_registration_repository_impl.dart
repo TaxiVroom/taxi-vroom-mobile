@@ -24,6 +24,17 @@ class PushRegistrationRepositoryImpl implements PushRegistrationRepository {
   });
 
   @override
+  Future<Result<String?>> getDeviceToken() async {
+    try {
+      return Result.ok(await _dataSource.getDeviceToken());
+    } on FirebaseException catch (e) {
+      return Result.error(
+        ServerFailure(e.message ?? 'Notifications indisponibles.'),
+      );
+    }
+  }
+
+  @override
   Stream<Result<void>> watchTokenRefresh() => _dataSource.tokenRefreshes
       .asyncMap((token) => _send(() => _dataSource.saveToken(token)));
 

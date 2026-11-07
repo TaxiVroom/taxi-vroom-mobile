@@ -1,4 +1,5 @@
 import 'package:mobile/features/authentication/data/datasources/auth_remote_datasource.dart';
+import 'package:mobile/features/authentication/data/models/registration_flow_model.dart';
 import 'package:mobile/features/authentication/data/models/user_model.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/authentication/domain/entities/user_role.dart';
@@ -34,7 +35,7 @@ class AuthRemoteDataSourceFake implements AuthRemoteDataSource {
 
   @override
   // ignore: avoid_unused_constructor_parameters
-  Future<RegistrationFlowEntity> getOrCreateRegistrationFlow({
+  Future<RegistrationFlowModel> getOrCreateRegistrationFlow({
     required String userId,
     required UserRole role,
     required String phone,

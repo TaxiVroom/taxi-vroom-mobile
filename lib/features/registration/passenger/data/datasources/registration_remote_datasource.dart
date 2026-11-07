@@ -49,17 +49,18 @@ class RegistrationRemoteDataSourceImpl implements RegistrationRemoteDataSource {
     // to NEXT_STEP[fromStep], making PATCH idempotent on back-navigation.
     final body = switch (update) {
       EmailUpdate(:final email, :final fromStep) => {
-          'email': email,
-          'fromStep': fromStep.serialize(),
-        },
+        'email': email,
+        'fromStep': fromStep.serialize(),
+      },
       NameUpdate(:final firstName, :final lastName, :final fromStep) => {
-          'firstName': firstName,
-          'lastName': lastName,
-          'fromStep': fromStep.serialize(),
-        },
+        'firstName': firstName,
+        'lastName': lastName,
+        'fromStep': fromStep.serialize(),
+      },
+      VehicleConfirmedUpdate(:final fromStep) ||
       DocumentsReadyForReviewUpdate(:final fromStep) => {
-          'fromStep': fromStep.serialize(),
-        },
+        'fromStep': fromStep.serialize(),
+      },
     };
     await _dio.patch<void>('/v1/registration-flows/me', data: body);
   }

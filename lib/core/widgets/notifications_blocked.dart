@@ -13,6 +13,8 @@ String _consequence(NotificationNeed need) => switch (need) {
     'Vous ne recevrez pas les courses quand l’app n’est pas à l’écran.',
   NotificationNeed.bookingReminder =>
     'Vous ne recevrez pas le rappel de cette réservation.',
+  NotificationNeed.registrationReview =>
+    'Vous ne serez pas prévenu de la validation de votre dossier.',
 };
 
 /// The driver stays on the same screen: a message at the bottom.

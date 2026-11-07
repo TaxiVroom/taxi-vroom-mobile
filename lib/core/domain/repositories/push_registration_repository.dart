@@ -4,6 +4,10 @@ abstract class PushRegistrationRepository {
   // Tells the backend this phone is the user's.
   Future<Result<void>> register();
 
+  // The phone's notification token, null when Firebase gives none; for a
+  // registration still waiting for its account.
+  Future<Result<String?>> getDeviceToken();
+
   // Sends the new token each time Firebase replaces it, while listened to.
   Stream<Result<void>> watchTokenRefresh();
 

@@ -2,6 +2,48 @@ part of 'driver_registration_bloc.dart';
 
 enum DocumentUploadStatus { uploading, succeeded, failed }
 
+// "Votre taxi": the vehicle the passengers will look for.
+final class DriverRegVehicleReady extends RegistrationState {
+  const DriverRegVehicleReady({
+    required super.currentStep,
+    super.email,
+    super.firstName,
+    super.lastName,
+    this.vehicle,
+    this.isSubmitting = false,
+    this.failure,
+  });
+
+  // Given before: the screen is filled with it. After a failure, the vehicle
+  // refused.
+  final RegistrationVehicle? vehicle;
+  final bool isSubmitting;
+  // The plate or the taxi number already taken is told under its field.
+  final Failure? failure;
+
+  DriverRegVehicleReady copyWith({
+    RegistrationVehicle? vehicle,
+    bool isSubmitting = false,
+    Failure? failure,
+  }) => DriverRegVehicleReady(
+    currentStep: currentStep,
+    email: email,
+    firstName: firstName,
+    lastName: lastName,
+    vehicle: vehicle ?? this.vehicle,
+    isSubmitting: isSubmitting,
+    failure: failure,
+  );
+
+  @override
+  List<Object?> get props => [
+    ...super.props,
+    vehicle,
+    isSubmitting,
+    failure,
+  ];
+}
+
 final class DriverRegDocumentsReady extends RegistrationState {
   const DriverRegDocumentsReady({
     required super.currentStep,
@@ -54,27 +96,26 @@ final class DriverRegDocumentsReady extends RegistrationState {
     Map<String, DocumentUploadStatus>? uploadStatuses,
     Map<String, DocumentSignedUrls>? signedUrls,
     bool? isLoadingDocumentTypes,
-  }) =>
-      DriverRegDocumentsReady(
-        currentStep: currentStep,
-        email: email,
-        firstName: firstName,
-        lastName: lastName,
-        documentTypes: documentTypes ?? this.documentTypes,
-        uploadStatuses: uploadStatuses ?? this.uploadStatuses,
-        signedUrls: signedUrls ?? this.signedUrls,
-        isLoadingDocumentTypes:
-            isLoadingDocumentTypes ?? this.isLoadingDocumentTypes,
-      );
+  }) => DriverRegDocumentsReady(
+    currentStep: currentStep,
+    email: email,
+    firstName: firstName,
+    lastName: lastName,
+    documentTypes: documentTypes ?? this.documentTypes,
+    uploadStatuses: uploadStatuses ?? this.uploadStatuses,
+    signedUrls: signedUrls ?? this.signedUrls,
+    isLoadingDocumentTypes:
+        isLoadingDocumentTypes ?? this.isLoadingDocumentTypes,
+  );
 
   @override
   List<Object?> get props => [
-        ...super.props,
-        documentTypes,
-        uploadStatuses,
-        signedUrls,
-        isLoadingDocumentTypes,
-      ];
+    ...super.props,
+    documentTypes,
+    uploadStatuses,
+    signedUrls,
+    isLoadingDocumentTypes,
+  ];
 }
 
 final class DriverRegDocumentsCorrectionReady extends RegistrationState {
@@ -143,31 +184,30 @@ final class DriverRegDocumentsCorrectionReady extends RegistrationState {
     Map<String, DocumentSignedUrls>? signedUrls,
     Set<String>? correctedDocumentIds,
     bool? isLoadingDocumentTypes,
-  }) =>
-      DriverRegDocumentsCorrectionReady(
-        currentStep: currentStep,
-        email: email,
-        firstName: firstName,
-        lastName: lastName,
-        uploadedDocuments: uploadedDocuments ?? this.uploadedDocuments,
-        documentTypes: documentTypes ?? this.documentTypes,
-        uploadStatuses: uploadStatuses ?? this.uploadStatuses,
-        signedUrls: signedUrls ?? this.signedUrls,
-        correctedDocumentIds: correctedDocumentIds ?? this.correctedDocumentIds,
-        isLoadingDocumentTypes:
-            isLoadingDocumentTypes ?? this.isLoadingDocumentTypes,
-      );
+  }) => DriverRegDocumentsCorrectionReady(
+    currentStep: currentStep,
+    email: email,
+    firstName: firstName,
+    lastName: lastName,
+    uploadedDocuments: uploadedDocuments ?? this.uploadedDocuments,
+    documentTypes: documentTypes ?? this.documentTypes,
+    uploadStatuses: uploadStatuses ?? this.uploadStatuses,
+    signedUrls: signedUrls ?? this.signedUrls,
+    correctedDocumentIds: correctedDocumentIds ?? this.correctedDocumentIds,
+    isLoadingDocumentTypes:
+        isLoadingDocumentTypes ?? this.isLoadingDocumentTypes,
+  );
 
   @override
   List<Object?> get props => [
-        ...super.props,
-        uploadedDocuments,
-        documentTypes,
-        uploadStatuses,
-        signedUrls,
-        correctedDocumentIds,
-        isLoadingDocumentTypes,
-      ];
+    ...super.props,
+    uploadedDocuments,
+    documentTypes,
+    uploadStatuses,
+    signedUrls,
+    correctedDocumentIds,
+    isLoadingDocumentTypes,
+  ];
 }
 
 final class DriverRegDocumentsSubmitting extends RegistrationState {

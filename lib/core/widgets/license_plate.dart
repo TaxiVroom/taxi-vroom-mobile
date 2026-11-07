@@ -2,19 +2,13 @@ import 'package:mobile/core/theme/app_colors.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// French plate, shown big so the passenger spots the right taxi, and in the
-/// driver's account.
+/// driver's account. Without the département of the right band: the owner
+/// chooses it, nothing links it to the plate.
 class LicensePlate extends StatelessWidget {
-  const LicensePlate({
-    required this.plate,
-    required this.department,
-    super.key,
-  });
+  const LicensePlate({required this.plate, super.key});
 
-  // E.g. "GH-482-KZ".
+  // E.g. "AB-123-CD".
   final String plate;
-
-  // E.g. "67", on the right band.
-  final String department;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +22,7 @@ class LicensePlate extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildBand('F'),
+          _buildBand(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
@@ -40,20 +34,20 @@ class LicensePlate extends StatelessWidget {
               ),
             ),
           ),
-          _buildBand(department),
         ],
       ),
     );
   }
 
-  Widget _buildBand(String text) {
+  // The blue band of the left, with the country.
+  Widget _buildBand() {
     return Container(
       width: 22,
       color: AppColors.plateBlue,
       alignment: Alignment.center,
-      child: Text(
-        text,
-        style: const TextStyle(
+      child: const Text(
+        'F',
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
           color: Colors.white,

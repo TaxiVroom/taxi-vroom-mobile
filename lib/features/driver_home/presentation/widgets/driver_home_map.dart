@@ -11,7 +11,6 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
         MapWidget,
         MapboxMap,
         PointAnnotationManager,
-        PointAnnotationOptions,
         PolylineAnnotationManager,
         ViewportState;
 import 'package:mobile/core/domain/entities/coordinates.dart';
@@ -20,18 +19,15 @@ import 'package:mobile/core/widgets/coordinates_mapbox.dart';
 import 'package:mobile/core/widgets/destination_marker.dart';
 import 'package:mobile/core/widgets/map_route.dart';
 import 'package:mobile/core/widgets/recenter_button.dart';
-import 'package:mobile/features/driver_home/domain/entities/demand_zone.dart';
 import 'package:mobile/features/driver_home/domain/entities/routed_ride_request.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-/// Full-screen map centered on the driver. Online, it shows where passengers
-/// are asking for taxis, or the roads of an incoming ride request; offline,
-/// it is dimmed.
+/// Full-screen map centered on the driver. Online, it shows the roads of an
+/// incoming ride request; offline, it is dimmed.
 class DriverHomeMap extends StatefulWidget {
   const DriverHomeMap({
     required this.position,
     required this.isOnline,
-    required this.demandZones,
     required this.bottomPadding,
     required this.panelHeight,
     this.offer,
@@ -40,7 +36,6 @@ class DriverHomeMap extends StatefulWidget {
 
   final Coordinates position;
   final bool isOnline;
-  final List<DemandZone> demandZones;
 
   // Keeps the request's roads visible above the request card.
   final double bottomPadding;
@@ -56,7 +51,6 @@ class DriverHomeMap extends StatefulWidget {
 }
 
 class _DriverHomeMapState extends State<DriverHomeMap> {
-  static const _zoneRadius = 55.0;
   static const _zoom = 14.0;
   static const _cameraAnimation = Duration(milliseconds: 800);
   static const _topBarHeight = 56.0;
@@ -70,8 +64,6 @@ class _DriverHomeMapState extends State<DriverHomeMap> {
   );
 
   MapboxMap? _map;
-  CircleAnnotationManager? _zones;
-  PointAnnotationManager? _zoneNames;
   PolylineAnnotationManager? _approachLine;
   PolylineAnnotationManager? _tripLine;
   CircleAnnotationManager? _pickupMarker;
@@ -80,11 +72,6 @@ class _DriverHomeMapState extends State<DriverHomeMap> {
   @override
   void didUpdateWidget(DriverHomeMap oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.isOnline != widget.isOnline ||
-        oldWidget.demandZones != widget.demandZones ||
-        oldWidget.offer != widget.offer) {
-      unawaited(_showDemand());
-    }
     if (oldWidget.offer != widget.offer) unawaited(_showOffer());
   }
 
@@ -128,49 +115,13 @@ class _DriverHomeMapState extends State<DriverHomeMap> {
     await map.location.updateSettings(
       LocationComponentSettings(enabled: true, pulsingEnabled: true),
     );
-    // Created bottom to top: zones, roads, then the markers above them.
-    _zones = await map.annotations.createCircleAnnotationManager();
-    _zoneNames = await map.annotations.createPointAnnotationManager();
+    // Created bottom to top: roads, then the markers above them.
     _approachLine = await map.annotations.createPolylineAnnotationManager();
     await _approachLine?.setLineDasharray([0.5, 2]);
     _tripLine = await map.annotations.createPolylineAnnotationManager();
     _pickupMarker = await map.annotations.createCircleAnnotationManager();
     _destinationMarker = await map.annotations.createPointAnnotationManager();
-    await _showDemand();
     await _showOffer();
-  }
-
-  // Hidden while a request is on screen, to keep the map readable.
-  Future<void> _showDemand() async {
-    final zones = _zones;
-    final zoneNames = _zoneNames;
-    if (zones == null || zoneNames == null) return;
-    await zones.deleteAll();
-    await zoneNames.deleteAll();
-    if (!widget.isOnline || widget.offer != null) return;
-
-    await zones.createMulti([
-      for (final zone in widget.demandZones)
-        CircleAnnotationOptions(
-          geometry: zone.center.toPoint(),
-          circleRadius: _zoneRadius,
-          circleColor: (zone.isHigh ? AppColors.star : AppColors.freeTaxi)
-              .toARGB32(),
-          circleOpacity: zone.isHigh ? 0.25 : 0.18,
-        ),
-    ]);
-    await zoneNames.createMulti([
-      for (final zone in widget.demandZones)
-        if (zone.name case final name?)
-          PointAnnotationOptions(
-            geometry: zone.center.toPoint(),
-            textField: zone.isHigh ? '$name\nForte demande' : name,
-            textSize: 13,
-            textColor: AppColors.ink.toARGB32(),
-            textHaloColor: Colors.white.toARGB32(),
-            textHaloWidth: 2,
-          ),
-    ]);
   }
 
   Future<void> _showOffer() async {

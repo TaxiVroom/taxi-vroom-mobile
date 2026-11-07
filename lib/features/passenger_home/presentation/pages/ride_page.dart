@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/domain/entities/ride_route.dart';
+import 'package:mobile/core/domain/entities/vehicle.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/utils/price_formatter.dart';
@@ -13,7 +14,6 @@ import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/core/widgets/ride_map.dart';
 import 'package:mobile/features/passenger_home/domain/entities/driver.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
-import 'package:mobile/features/passenger_home/domain/entities/vehicle.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
@@ -292,11 +292,12 @@ class RidePage extends StatelessWidget {
     );
   }
 
-  // The taxi to look for, and the code to give its driver.
+  // The taxi to look for, and the code to give its driver. Without a vehicle
+  // (a driver registered before "Votre taxi"), nothing made up is shown.
   Widget _buildDriverComing({
     required String title,
     required Driver driver,
-    required Vehicle vehicle,
+    required Vehicle? vehicle,
     required String boardingCode,
   }) {
     return Column(
@@ -306,14 +307,16 @@ class RidePage extends StatelessWidget {
           title,
           style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
         ),
-        Text(
-          '${vehicle.model} ${vehicle.color}',
-          style: const TextStyle(color: AppColors.muted),
-        ),
+        if (vehicle != null) ...[
+          Text(
+            vehicle.description,
+            style: const TextStyle(color: AppColors.muted),
+          ),
+          const SizedBox(height: 12),
+          LicensePlate(plate: vehicle.plate),
+        ],
         const SizedBox(height: 12),
-        LicensePlate(plate: vehicle.plate, department: vehicle.department),
-        const SizedBox(height: 12),
-        DriverSummary(driver: driver),
+        DriverSummary(driver: driver, vehicle: vehicle),
         const SizedBox(height: 12),
         _buildBoardingCode(boardingCode),
         const SizedBox(height: 12),
@@ -346,7 +349,7 @@ class RidePage extends StatelessWidget {
           style: const TextStyle(color: AppColors.muted),
         ),
         const SizedBox(height: 12),
-        DriverSummary(driver: ride.driver),
+        DriverSummary(driver: ride.driver, vehicle: ride.vehicle),
         const SizedBox(height: 12),
         // Sharing the trip and the safety tools are not built yet.
         _buildActions(const [

@@ -12,11 +12,6 @@ class DriverAccountRemoteDataSourceFake
       'lastName': 'Benali',
       'phone': '+33 6 98 76 54 32',
       'email': 'karim.taxi@exemple.fr',
-      'vehicle': {
-        'model': 'Toyota Corolla Touring',
-        'plate': 'GH-482-KZ',
-        'department': '67',
-      },
     });
   }
 }

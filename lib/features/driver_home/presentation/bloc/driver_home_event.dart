@@ -31,13 +31,3 @@ final class DriverConnectionChanged extends DriverHomeEvent {
   @override
   List<Object?> get props => [isConnected];
 }
-
-// "Recevoir les réservations" switch.
-final class DriverBookingsToggled extends DriverHomeEvent {
-  const DriverBookingsToggled({required this.receivesBookings});
-
-  final bool receivesBookings;
-
-  @override
-  List<Object?> get props => [receivesBookings];
-}

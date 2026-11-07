@@ -13,7 +13,7 @@ DioFailure|mod|lib/core/errors/dio_exception_failure.dart|toFailure: no response
 
 #F durable facts
 formatters in lib/core/utils: price (formatEuro, formatEuroRange, parseEuroCents), distance (formatDistanceKm), time (formatClockTime, formatPickupTime), rating, email_validator
-widgets in lib/core/widgets: BottomPanel, ChoiceButton, ConnectionLostBanner, DestinationMarker, LicensePlate, MapPill, MapRoute, MessageToast, PlaceListTile, RecenterButton, RetryMessage, RideMap, SectionLabel, SwipeButton, TaxiMeter
+widgets in lib/core/widgets: BottomPanel, ChoiceButton, ConnectionLostBanner, DestinationMarker, LicensePlate, MapPill, MapRoute, MessageToast, PlaceListTile, RecenterButton, RetryMessage, RideMap, SearchTextField and SearchResults (a search field with its spinner in the field, previous results dimmed and out of reach while loading: use them for any search), SectionLabel, SwipeButton, TaxiMeter
 colors in lib/core/theme/app_colors.dart; constants in lib/core/constants/app_constants.dart
 repositories that wrap a stream use StreamTransformer.fromHandlers, not async*: cancelling an await for would wait for the next event, which may never come
 stream_transform gives switchMap, combineLatest, throttle, whereType

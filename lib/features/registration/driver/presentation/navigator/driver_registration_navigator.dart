@@ -3,13 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/core/domain/usecases/ensure_notification_permission_usecase.dart';
+import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/check_registration_validated_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_types_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_uploaded_documents_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/search_communes_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/send_registration_push_token_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/submit_registration_vehicle_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/upload_registration_document_usecase.dart';
 import 'package:mobile/features/registration/driver/presentation/bloc/driver_registration_bloc.dart';
 import 'package:mobile/features/registration/driver/presentation/pages/driver_documents_page.dart';
+import 'package:mobile/features/registration/driver/presentation/pages/driver_vehicle_page.dart';
 import 'package:mobile/features/registration/driver/presentation/pages/registration_success_page.dart';
 import 'package:mobile/features/registration/shared/bloc/registration_bloc.dart';
 import 'package:mobile/features/registration/shared/bloc/registration_state.dart';
@@ -33,6 +39,11 @@ class DriverRegistrationNavigator extends StatefulWidget {
     required this.uploadRegistrationDocumentUseCase,
     required this.getUploadedDocumentsUseCase,
     required this.getDocumentSignedUrlUseCase,
+    required this.submitRegistrationVehicleUseCase,
+    required this.searchCommunesUseCase,
+    required this.checkRegistrationValidatedUseCase,
+    required this.sendRegistrationPushTokenUseCase,
+    required this.watchPushedRidesUseCase,
     required this.onAuthenticated,
   });
 
@@ -44,6 +55,11 @@ class DriverRegistrationNavigator extends StatefulWidget {
   final UploadRegistrationDocumentUseCase uploadRegistrationDocumentUseCase;
   final GetUploadedDocumentsUseCase getUploadedDocumentsUseCase;
   final GetDocumentSignedUrlUseCase getDocumentSignedUrlUseCase;
+  final SubmitRegistrationVehicleUseCase submitRegistrationVehicleUseCase;
+  final SearchCommunesUseCase searchCommunesUseCase;
+  final CheckRegistrationValidatedUseCase checkRegistrationValidatedUseCase;
+  final SendRegistrationPushTokenUseCase sendRegistrationPushTokenUseCase;
+  final WatchPushedRidesUseCase watchPushedRidesUseCase;
 
   /// Permet au parent ([AuthNavigator]) de naviguer vers l'écran principal
   /// sans que ce widget ait besoin de connaître la navigation extérieure.
@@ -72,6 +88,11 @@ class _DriverRegistrationNavigatorState
           widget.uploadRegistrationDocumentUseCase,
       getUploadedDocumentsUseCase: widget.getUploadedDocumentsUseCase,
       getDocumentSignedUrlUseCase: widget.getDocumentSignedUrlUseCase,
+      submitRegistrationVehicleUseCase: widget.submitRegistrationVehicleUseCase,
+      checkRegistrationValidatedUseCase:
+          widget.checkRegistrationValidatedUseCase,
+      sendRegistrationPushTokenUseCase: widget.sendRegistrationPushTokenUseCase,
+      watchPushedRidesUseCase: widget.watchPushedRidesUseCase,
     );
   }
 
@@ -158,6 +179,12 @@ class _DriverRegistrationNavigatorState
       key: ValueKey('driver-name'),
       child: NamePage(),
     );
+    final vehiclePage = MaterialPage<void>(
+      key: const ValueKey('driver-vehicle'),
+      child: DriverVehiclePage(
+        searchCommunesUseCase: widget.searchCommunesUseCase,
+      ),
+    );
     const documentsPage = MaterialPage<void>(
       key: ValueKey('driver-documents'),
       child: DriverDocumentsPage(),
@@ -180,16 +207,19 @@ class _DriverRegistrationNavigatorState
       RegistrationEmailTaken() => [socialPage, emailPage],
       RegistrationNameInputReady() ||
       RegistrationRegistering() => [socialPage, emailPage, namePage],
+      DriverRegVehicleReady() => [socialPage, emailPage, namePage, vehiclePage],
       DriverRegDocumentsReady() => [
         socialPage,
         emailPage,
         namePage,
+        vehiclePage,
         documentsPage,
       ],
       DriverRegSuccessReady() || RegistrationAuthenticated() => [
         socialPage,
         emailPage,
         namePage,
+        vehiclePage,
         documentsPage,
         successPage,
       ],

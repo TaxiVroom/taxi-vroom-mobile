@@ -5,6 +5,4 @@ abstract class DriverActivityRemoteDataSource {
   Future<DriverActivityModel> getActivity();
 
   Future<void> setOnline({required bool isOnline});
-
-  Future<void> setReceivesBookings({required bool receivesBookings});
 }

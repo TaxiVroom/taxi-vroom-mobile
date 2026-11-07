@@ -5,6 +5,4 @@ abstract class DriverActivityRepository {
   Future<Result<DriverActivity>> getActivity();
 
   Future<Result<void>> setOnline({required bool isOnline});
-
-  Future<Result<void>> setReceivesBookings({required bool receivesBookings});
 }

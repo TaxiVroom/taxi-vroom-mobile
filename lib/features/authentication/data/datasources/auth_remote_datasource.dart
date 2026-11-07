@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mobile/features/authentication/data/models/registration_flow_model.dart';
 import 'package:mobile/features/authentication/data/models/user_model.dart';
-import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/authentication/domain/entities/user_role.dart';
 import 'package:mobile/features/registration/driver/data/models/driver_registration_flow_model.dart';
 import 'package:mobile/features/registration/passenger/data/models/passenger_registration_flow_model.dart';
@@ -19,7 +19,7 @@ abstract class AuthRemoteDataSource {
     required String otp,
   });
   Future<UserModel> linkGoogleAccount();
-  Future<RegistrationFlowEntity> getOrCreateRegistrationFlow({
+  Future<RegistrationFlowModel> getOrCreateRegistrationFlow({
     required String userId,
     required UserRole role,
     required String phone,
@@ -117,7 +117,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<RegistrationFlowEntity> getOrCreateRegistrationFlow({
+  Future<RegistrationFlowModel> getOrCreateRegistrationFlow({
     required String userId,
     required UserRole role,
     required String phone,

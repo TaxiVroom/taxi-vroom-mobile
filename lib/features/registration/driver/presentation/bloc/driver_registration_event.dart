@@ -1,5 +1,32 @@
 part of 'driver_registration_bloc.dart';
 
+// "Continuer" on "Votre taxi".
+final class DriverRegistrationVehicleSubmitted extends RegistrationEvent {
+  const DriverRegistrationVehicleSubmitted({required this.vehicle});
+
+  final RegistrationVehicle vehicle;
+
+  @override
+  List<Object?> get props => [vehicle];
+}
+
+// "Dossier en cours de vérification" is shown: the registration is read
+// again on each notification received and every 30 s, until it is complete.
+final class DriverRegistrationReviewWatched extends RegistrationEvent {
+  const DriverRegistrationReviewWatched();
+}
+
+// The app came back on screen, or a sign came: is the registration complete?
+final class DriverRegistrationReviewChecked extends RegistrationEvent {
+  const DriverRegistrationReviewChecked();
+}
+
+// The notifications are allowed on the waiting screen: the phone's token
+// goes to the registration.
+final class DriverRegistrationPushTokenSent extends RegistrationEvent {
+  const DriverRegistrationPushTokenSent();
+}
+
 // L'utilisateur valide l'étape documents et soumet son dossier.
 final class DriverRegistrationDocumentsContinued extends RegistrationEvent {
   const DriverRegistrationDocumentsContinued();

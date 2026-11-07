@@ -1,8 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:mobile/core/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/entities/vehicle.dart';
 import 'package:mobile/features/passenger_home/domain/entities/driver.dart';
 import 'package:mobile/features/passenger_home/domain/entities/fare_line.dart';
-import 'package:mobile/features/passenger_home/domain/entities/vehicle.dart';
 
 // An ordered ride, one subtype per status: the compiler forces every screen
 // to handle each of them.
@@ -56,7 +56,9 @@ final class RideDriverApproaching extends Ride {
   });
 
   final Driver driver;
-  final Vehicle vehicle;
+
+  // Null for a driver registered before the "Votre taxi" step existed.
+  final Vehicle? vehicle;
 
   // Where the driver picks the passenger up.
   final Coordinates pickup;
@@ -101,7 +103,9 @@ final class RideDriverArrived extends Ride {
   });
 
   final Driver driver;
-  final Vehicle vehicle;
+
+  // Null for a driver registered before the "Votre taxi" step existed.
+  final Vehicle? vehicle;
   final Coordinates driverPosition;
   final String boardingCode;
 
@@ -130,7 +134,9 @@ final class RideInProgress extends Ride {
   });
 
   final Driver driver;
-  final Vehicle vehicle;
+
+  // Null for a driver registered before the "Votre taxi" step existed.
+  final Vehicle? vehicle;
   final Coordinates taxiPosition;
   final Coordinates destination;
   final int minPriceCents;

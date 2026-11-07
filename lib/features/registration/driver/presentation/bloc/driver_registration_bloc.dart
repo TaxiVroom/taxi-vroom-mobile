@@ -4,20 +4,27 @@ import 'dart:developer';
 import 'package:bloc/bloc.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/core/domain/usecases/ensure_notification_permission_usecase.dart';
+import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
+import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/email_validator.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
-import 'package:mobile/features/registration/driver/domain/entities/document_type.dart';
 import 'package:mobile/features/registration/driver/domain/entities/document_signed_urls.dart';
+import 'package:mobile/features/registration/driver/domain/entities/document_type.dart';
+import 'package:mobile/features/registration/driver/domain/entities/registration_document.dart';
+import 'package:mobile/features/registration/driver/domain/entities/registration_vehicle.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/check_registration_validated_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_types_usecase.dart';
-import 'package:mobile/features/registration/driver/domain/entities/registration_document.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_uploaded_documents_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/send_registration_push_token_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/submit_registration_vehicle_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/upload_registration_document_usecase.dart';
 import 'package:mobile/features/registration/shared/bloc/registration_bloc.dart';
 import 'package:mobile/features/registration/shared/bloc/registration_event.dart';
 import 'package:mobile/features/registration/shared/bloc/registration_state.dart';
 import 'package:mobile/features/registration/shared/domain/usecases/update_registration_flow_usecase.dart';
+import 'package:stream_transform/stream_transform.dart';
 
 part 'driver_registration_event.dart';
 part 'driver_registration_state.dart';
@@ -34,8 +41,19 @@ class DriverRegistrationBloc extends RegistrationBloc {
     uploadRegistrationDocumentUseCase,
     required GetUploadedDocumentsUseCase getUploadedDocumentsUseCase,
     required GetDocumentSignedUrlUseCase getDocumentSignedUrlUseCase,
+    required SubmitRegistrationVehicleUseCase submitRegistrationVehicleUseCase,
+    required CheckRegistrationValidatedUseCase
+    checkRegistrationValidatedUseCase,
+    required SendRegistrationPushTokenUseCase sendRegistrationPushTokenUseCase,
+    required WatchPushedRidesUseCase watchPushedRidesUseCase,
   }) : _ensureNotificationPermissionUseCase =
            ensureNotificationPermissionUseCase,
+       _submitRegistrationVehicleUseCase = submitRegistrationVehicleUseCase,
+       _checkRegistrationValidatedUseCase = checkRegistrationValidatedUseCase,
+       _sendRegistrationPushTokenUseCase = sendRegistrationPushTokenUseCase,
+       _watchPushedRidesUseCase = watchPushedRidesUseCase,
+       _vehicle = registrationFlow.vehicle,
+       _driverId = registrationFlow.userId,
        _getDocumentTypesUseCase = getDocumentTypesUseCase,
        _uploadRegistrationDocumentUseCase = uploadRegistrationDocumentUseCase,
        _getUploadedDocumentsUseCase = getUploadedDocumentsUseCase,
@@ -53,6 +71,10 @@ class DriverRegistrationBloc extends RegistrationBloc {
          // To be refactored to comply with Clean Architecture (10 years maintenance).
          initialState: _initialState(registrationFlow),
        ) {
+    on<DriverRegistrationVehicleSubmitted>(_onVehicleSubmitted);
+    on<DriverRegistrationReviewWatched>(_onReviewWatched);
+    on<DriverRegistrationReviewChecked>(_onReviewChecked);
+    on<DriverRegistrationPushTokenSent>(_onPushTokenSent);
     on<DriverRegistrationDocumentsContinued>(_onDocumentsContinued);
     on<DocumentTypesFetchRequested>(_onDocumentTypesFetchRequested);
     on<DocumentUploadRequested>(_onDocumentUploadRequested);
@@ -63,6 +85,25 @@ class DriverRegistrationBloc extends RegistrationBloc {
 
   final EnsureNotificationPermissionUseCase
   _ensureNotificationPermissionUseCase;
+  final SubmitRegistrationVehicleUseCase _submitRegistrationVehicleUseCase;
+  final CheckRegistrationValidatedUseCase _checkRegistrationValidatedUseCase;
+  final SendRegistrationPushTokenUseCase _sendRegistrationPushTokenUseCase;
+  final WatchPushedRidesUseCase _watchPushedRidesUseCase;
+  final String _driverId;
+
+  // The waiting screen reads the registration again this often, when no
+  // notification can tell it sooner.
+  static const _reviewCheckInterval = Duration(seconds: 30);
+
+  // Watched once, however often the waiting screen is built.
+  bool _watchesReview = false;
+
+  // One reading at a time: the others would only ask the same.
+  bool _checksReview = false;
+
+  // The vehicle given at "Votre taxi": shown again when the driver comes
+  // back to that step.
+  RegistrationVehicle? _vehicle;
   final GetDocumentTypesUseCase _getDocumentTypesUseCase;
   final UploadRegistrationDocumentUseCase _uploadRegistrationDocumentUseCase;
   final GetUploadedDocumentsUseCase _getUploadedDocumentsUseCase;
@@ -92,6 +133,13 @@ class DriverRegistrationBloc extends RegistrationBloc {
         email: flow.email ?? '',
         firstName: flow.firstName ?? '',
         lastName: flow.lastName ?? '',
+      ),
+      DriverRegistrationStep.vehicle => DriverRegVehicleReady(
+        currentStep: flow.currentStep,
+        email: flow.email ?? '',
+        firstName: flow.firstName ?? '',
+        lastName: flow.lastName ?? '',
+        vehicle: flow.vehicle,
       ),
       DriverRegistrationStep.documents => DriverRegDocumentsReady(
         currentStep: flow.currentStep,
@@ -145,6 +193,13 @@ class DriverRegistrationBloc extends RegistrationBloc {
       lastName: state.lastName,
       isFormValid: state.firstName.isNotEmpty && state.lastName.isNotEmpty,
     ),
+    DriverRegistrationStep.vehicle => DriverRegVehicleReady(
+      currentStep: step,
+      email: state.email,
+      firstName: state.firstName,
+      lastName: state.lastName,
+      vehicle: _vehicle,
+    ),
     DriverRegistrationStep.documents => DriverRegDocumentsReady(
       currentStep: step,
       email: state.email,
@@ -179,6 +234,78 @@ class DriverRegistrationBloc extends RegistrationBloc {
       'Unexpected step for driver registration: $step',
     ),
   };
+
+  // "Continuer" on "Votre taxi": the vehicle is kept, then the documents.
+  Future<void> _onVehicleSubmitted(
+    DriverRegistrationVehicleSubmitted event,
+    Emitter<RegistrationState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! DriverRegVehicleReady || currentState.isSubmitting) {
+      return;
+    }
+    emit(currentState.copyWith(isSubmitting: true, vehicle: event.vehicle));
+    switch (await _submitRegistrationVehicleUseCase(
+      userId: _driverId,
+      vehicle: event.vehicle,
+    )) {
+      case Ok():
+        _vehicle = event.vehicle;
+        emit(stateForStep(DriverRegistrationStep.documents));
+      case Error(:final error):
+        emit(
+          currentState.copyWith(
+            vehicle: event.vehicle,
+            failure: error,
+          ),
+        );
+    }
+  }
+
+  // A notification received with the app on screen, or the time passed:
+  // read the registration again. Spec
+  // taxi-vroom-api/docs/specs/validation-du-dossier.md.
+  Future<void> _onReviewWatched(
+    DriverRegistrationReviewWatched event,
+    Emitter<RegistrationState> emit,
+  ) async {
+    if (_watchesReview) return;
+    _watchesReview = true;
+    final Stream<void> signs = _watchPushedRidesUseCase().map<void>((_) {});
+    final everyInterval = Stream<void>.periodic(_reviewCheckInterval);
+    await emit.onEach<void>(
+      signs.merge(everyInterval),
+      onData: (_) => add(const DriverRegistrationReviewChecked()),
+    );
+  }
+
+  // Validated: the driver goes to the home, as after "Accéder".
+  Future<void> _onReviewChecked(
+    DriverRegistrationReviewChecked event,
+    Emitter<RegistrationState> emit,
+  ) async {
+    if (state is! DriverRegSuccessReady || _checksReview) return;
+    _checksReview = true;
+    final isValidated = await _checkRegistrationValidatedUseCase();
+    _checksReview = false;
+    if (!isValidated || state is! DriverRegSuccessReady) return;
+    emit(
+      RegistrationAuthenticated(
+        currentStep: DriverRegistrationStep.complete,
+        email: state.email,
+        firstName: state.firstName,
+        lastName: state.lastName,
+      ),
+    );
+  }
+
+  // Not sent: the driver is not told, the waiting screen still finds out.
+  Future<void> _onPushTokenSent(
+    DriverRegistrationPushTokenSent event,
+    Emitter<RegistrationState> emit,
+  ) async {
+    await _sendRegistrationPushTokenUseCase();
+  }
 
   Future<void> _onDocumentsContinued(
     DriverRegistrationDocumentsContinued event,
@@ -440,8 +567,8 @@ class DriverRegistrationBloc extends RegistrationBloc {
     DocumentsStepBackRequested event,
     Emitter<RegistrationState> emit,
   ) {
-    log('[DriverRegistrationBloc] ← NamePage');
-    emit(stateForStep(DriverRegistrationStep.name));
+    log('[DriverRegistrationBloc] ← VehiclePage');
+    emit(stateForStep(DriverRegistrationStep.vehicle));
   }
 
   void _onSuccessAcknowledged(

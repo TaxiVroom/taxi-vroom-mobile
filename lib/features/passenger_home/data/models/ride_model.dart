@@ -1,8 +1,9 @@
 import 'package:mobile/core/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/entities/vehicle.dart';
+import 'package:mobile/core/domain/entities/vehicle_color.dart';
 import 'package:mobile/features/passenger_home/domain/entities/driver.dart';
 import 'package:mobile/features/passenger_home/domain/entities/fare_line.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
-import 'package:mobile/features/passenger_home/domain/entities/vehicle.dart';
 
 sealed class RideModel {
   const RideModel({required this.id});
@@ -136,18 +137,19 @@ Driver _driverFromJson(Object? json) {
     name: driver['name'] as String,
     rating: (driver['rating'] as num?)?.toDouble(),
     completedRides: driver['completedRides'] as int,
-    taxiNumber: driver['taxiNumber'] as String,
-    city: driver['city'] as String,
   );
 }
 
-Vehicle _vehicleFromJson(Object? json) {
-  final vehicle = json! as Map<String, dynamic>;
+// Absent for a driver registered before the "Votre taxi" step existed.
+Vehicle? _vehicleFromJson(Object? json) {
+  if (json == null) return null;
+  final vehicle = json as Map<String, dynamic>;
   return Vehicle(
     model: vehicle['model'] as String,
-    color: vehicle['color'] as String,
+    color: VehicleColor.fromApi(vehicle['color'] as String),
     plate: vehicle['plate'] as String,
-    department: vehicle['department'] as String,
+    adsNumber: vehicle['adsNumber'] as String,
+    communeName: vehicle['communeName'] as String,
   );
 }
 
