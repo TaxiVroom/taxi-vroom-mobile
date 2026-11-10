@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:mobile/core/domain/usecases/open_location_settings_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
+import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_home.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_online_allowed_usecase.dart';
 
 part 'driver_home_event.dart';
 part 'driver_home_state.dart';
@@ -18,25 +21,36 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     required SetOnlineUseCase setOnlineUseCase,
     required ShareDriverPositionUseCase shareDriverPositionUseCase,
     required WatchConnectionUseCase watchConnectionUseCase,
+    required WatchOnlineAllowedUseCase watchOnlineAllowedUseCase,
+    required OpenLocationSettingsUseCase openLocationSettingsUseCase,
   }) : _loadDriverHomeUseCase = loadDriverHomeUseCase,
+       _openLocationSettingsUseCase = openLocationSettingsUseCase,
+       _watchOnlineAllowedUseCase = watchOnlineAllowedUseCase,
        _setOnlineUseCase = setOnlineUseCase,
        _shareDriverPositionUseCase = shareDriverPositionUseCase,
        _watchConnectionUseCase = watchConnectionUseCase,
        super(const DriverHomeLoading()) {
     on<DriverHomeStarted>(_onStarted);
+    on<DriverLocationSettingsOpened>(
+      (_, _) => _openLocationSettingsUseCase(),
+    );
     on<DriverOnlineToggled>(_onOnlineToggled);
     on<DriverConnectionChanged>(_onConnectionChanged);
+    on<_DriverTakenOfflineForDocuments>(_onTakenOfflineForDocuments);
   }
 
   final LoadDriverHomeUseCase _loadDriverHomeUseCase;
   final SetOnlineUseCase _setOnlineUseCase;
   final ShareDriverPositionUseCase _shareDriverPositionUseCase;
   final WatchConnectionUseCase _watchConnectionUseCase;
+  final WatchOnlineAllowedUseCase _watchOnlineAllowedUseCase;
+  final OpenLocationSettingsUseCase _openLocationSettingsUseCase;
 
   // While the driver is online: sends their position, and follows the
   // connection to warn them when passengers no longer see them.
   StreamSubscription<Result<void>>? _positionSharing;
   StreamSubscription<bool>? _connection;
+  StreamSubscription<void>? _permission;
 
   Future<void> _onStarted(
     DriverHomeStarted event,
@@ -47,7 +61,12 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
       case Ok(:final value):
         emit(DriverHomeReady(home: value));
       case Error(:final error):
-        emit(DriverHomeFailure(message: error.message));
+        emit(
+          DriverHomeFailure(
+            message: error.message,
+            needsSettings: error is LocationSettingsFailure,
+          ),
+        );
     }
   }
 
@@ -81,6 +100,11 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
             home.activity.withOnline(isOnline: event.isOnline),
           ),
         ),
+        Error(:final DocumentsBlockingFailure error) => DriverHomeReady(
+          home: home,
+          isConnected: currentState.isConnected,
+          isBlockedByDocuments: true,
+        ),
         Error(:final error) => DriverHomeReady(
           home: home,
           switchFailureMessage: error.message,
@@ -113,6 +137,28 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     _connection ??= _watchConnectionUseCase().listen(
       (isConnected) => add(DriverConnectionChanged(isConnected: isConnected)),
     );
+    _permission ??= _watchOnlineAllowedUseCase().listen(
+      (_) => add(const _DriverTakenOfflineForDocuments()),
+    );
+  }
+
+  // The server removed the presence: the app goes offline too, and the
+  // documents screen says why.
+  Future<void> _onTakenOfflineForDocuments(
+    _DriverTakenOfflineForDocuments event,
+    Emitter<DriverHomeState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! DriverHomeReady) return;
+    await _stopBeingOnline();
+    await _setOnlineUseCase(isOnline: false);
+    final home = currentState.home;
+    emit(
+      DriverHomeReady(
+        home: home.withActivity(home.activity.withOnline(isOnline: false)),
+        isBlockedByDocuments: true,
+      ),
+    );
   }
 
   Future<void> _stopBeingOnline() async {
@@ -120,6 +166,8 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     _positionSharing = null;
     await _connection?.cancel();
     _connection = null;
+    await _permission?.cancel();
+    _permission = null;
   }
 
   @override

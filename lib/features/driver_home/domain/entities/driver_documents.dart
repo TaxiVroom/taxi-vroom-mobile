@@ -1,7 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_document.dart';
 
-// All the documents of the driver, checked when they log in.
+// All the documents of the driver. Spec
+// taxi-vroom-api/docs/specs/documents-du-chauffeur.md.
 class DriverDocuments extends Equatable {
   const DriverDocuments(this.documents);
 
@@ -16,10 +17,27 @@ class DriverDocuments extends Equatable {
   // True: no "Plus tard", the driver must send the document before driving.
   bool get blocksDriving => documents.any((document) => document.blocksDriving);
 
-  // The document to send first: a blocking one before one expiring soon.
-  DriverDocument? get nextToProvide =>
-      documents.where((document) => document.blocksDriving).firstOrNull ??
-      documents.where((document) => document.needsAction).firstOrNull;
+  // The document to send first: a blocking one before one expiring soon,
+  // never one already waiting for the admin.
+  DriverDocument? get nextToProvide {
+    final toSend = documents.where((document) => !document.inReview);
+    return toSend.where((document) => document.blocksDriving).firstOrNull ??
+        toSend.where((document) => document.needsAction).firstOrNull;
+  }
+
+  // The document that ends first: the bookings after its date are not
+  // offered, even while a new one waits for the admin. Spec
+  // taxi-vroom-api/docs/specs/documents-du-chauffeur.md.
+  DriverDocument? get soonestEnd {
+    DriverDocument? soonest;
+    for (final document in documents) {
+      final end = document.endsAt;
+      if (end == null) continue;
+      final soonestAt = soonest?.endsAt;
+      if (soonestAt == null || end.isBefore(soonestAt)) soonest = document;
+    }
+    return soonest;
+  }
 
   @override
   List<Object?> get props => [documents];

@@ -18,6 +18,14 @@ class LocationRepositoryImpl implements LocationRepository {
   static const _permissionDenied = LocationFailure(
     'Autorisez l’accès à votre position.',
   );
+  static const _permanentlyDenied = LocationSettingsFailure(
+    'La localisation est refusée : autorisez-la dans les réglages pour '
+    'continuer.',
+  );
+  static const _noPosition = LocationFailure(
+    'Position introuvable. Vérifiez que la localisation est activée, puis '
+    'réessayez.',
+  );
 
   @override
   Future<Result<Coordinates>> getCurrentPosition() async {
@@ -27,8 +35,15 @@ class LocationRepositoryImpl implements LocationRepository {
       return const Result.error(_serviceDisabled);
     } on PermissionDeniedException {
       return const Result.error(_permissionDenied);
+    } on LocationPermanentlyDeniedException {
+      return const Result.error(_permanentlyDenied);
+    } on TimeoutException {
+      return const Result.error(_noPosition);
     }
   }
+
+  @override
+  Future<void> openSettings() => _dataSource.openAppSettings();
 
   // Not an async* with await for: its cancel would wait for the next
   // position, which never comes while the device does not move.
@@ -46,6 +61,9 @@ class LocationRepositoryImpl implements LocationRepository {
                 ),
                 PermissionDeniedException() => sink.add(
                   const Result.error(_permissionDenied),
+                ),
+                LocationPermanentlyDeniedException() => sink.add(
+                  const Result.error(_permanentlyDenied),
                 ),
                 _ => sink.addError(error, stackTrace),
               },

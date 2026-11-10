@@ -14,6 +14,7 @@ import 'package:mobile/features/registration/driver/domain/entities/document_typ
 import 'package:mobile/features/registration/driver/domain/entities/registration_document.dart';
 import 'package:mobile/features/registration/driver/domain/entities/registration_vehicle.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/check_registration_validated_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/watch_validation_notification_opened_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_types_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_uploaded_documents_usecase.dart';
@@ -46,12 +47,16 @@ class DriverRegistrationBloc extends RegistrationBloc {
     checkRegistrationValidatedUseCase,
     required SendRegistrationPushTokenUseCase sendRegistrationPushTokenUseCase,
     required WatchPushedRidesUseCase watchPushedRidesUseCase,
+    required WatchValidationNotificationOpenedUseCase
+    watchValidationNotificationOpenedUseCase,
   }) : _ensureNotificationPermissionUseCase =
            ensureNotificationPermissionUseCase,
        _submitRegistrationVehicleUseCase = submitRegistrationVehicleUseCase,
        _checkRegistrationValidatedUseCase = checkRegistrationValidatedUseCase,
        _sendRegistrationPushTokenUseCase = sendRegistrationPushTokenUseCase,
        _watchPushedRidesUseCase = watchPushedRidesUseCase,
+       _watchValidationNotificationOpenedUseCase =
+           watchValidationNotificationOpenedUseCase,
        _vehicle = registrationFlow.vehicle,
        _driverId = registrationFlow.userId,
        _getDocumentTypesUseCase = getDocumentTypesUseCase,
@@ -75,6 +80,7 @@ class DriverRegistrationBloc extends RegistrationBloc {
     on<DriverRegistrationReviewWatched>(_onReviewWatched);
     on<DriverRegistrationReviewChecked>(_onReviewChecked);
     on<DriverRegistrationPushTokenSent>(_onPushTokenSent);
+    on<_DriverRegistrationValidationOpened>(_onValidationOpened);
     on<DriverRegistrationDocumentsContinued>(_onDocumentsContinued);
     on<DocumentTypesFetchRequested>(_onDocumentTypesFetchRequested);
     on<DocumentUploadRequested>(_onDocumentUploadRequested);
@@ -89,6 +95,8 @@ class DriverRegistrationBloc extends RegistrationBloc {
   final CheckRegistrationValidatedUseCase _checkRegistrationValidatedUseCase;
   final SendRegistrationPushTokenUseCase _sendRegistrationPushTokenUseCase;
   final WatchPushedRidesUseCase _watchPushedRidesUseCase;
+  final WatchValidationNotificationOpenedUseCase
+  _watchValidationNotificationOpenedUseCase;
   final String _driverId;
 
   // The waiting screen reads the registration again this often, when no
@@ -273,9 +281,33 @@ class DriverRegistrationBloc extends RegistrationBloc {
     _watchesReview = true;
     final Stream<void> signs = _watchPushedRidesUseCase().map<void>((_) {});
     final everyInterval = Stream<void>.periodic(_reviewCheckInterval);
-    await emit.onEach<void>(
-      signs.merge(everyInterval),
-      onData: (_) => add(const DriverRegistrationReviewChecked()),
+    await Future.wait([
+      emit.onEach<void>(
+        signs.merge(everyInterval),
+        onData: (_) => add(const DriverRegistrationReviewChecked()),
+      ),
+      // "Dossier validé" tapped: the home at once, no reading to wait for.
+      // Spec taxi-vroom-api/docs/specs/validation-du-dossier.md, step 3 ter.
+      emit.onEach<void>(
+        _watchValidationNotificationOpenedUseCase(),
+        onData: (_) => add(const _DriverRegistrationValidationOpened()),
+      ),
+    ]);
+  }
+
+  void _onValidationOpened(
+    _DriverRegistrationValidationOpened event,
+    Emitter<RegistrationState> emit,
+  ) {
+    final current = state;
+    if (current is! DriverRegSuccessReady) return;
+    emit(
+      RegistrationAuthenticated(
+        currentStep: DriverRegistrationStep.complete,
+        email: current.email,
+        firstName: current.firstName,
+        lastName: current.lastName,
+      ),
     );
   }
 
@@ -286,9 +318,22 @@ class DriverRegistrationBloc extends RegistrationBloc {
   ) async {
     if (state is! DriverRegSuccessReady || _checksReview) return;
     _checksReview = true;
-    final isValidated = await _checkRegistrationValidatedUseCase();
+    final review = await _checkRegistrationValidatedUseCase();
     _checksReview = false;
-    if (!isValidated || state is! DriverRegSuccessReady) return;
+    if (state is! DriverRegSuccessReady) return;
+    if (review == RegistrationReview.newDocumentAsked) {
+      emit(
+        DriverRegDocumentsReady(
+          currentStep: DriverRegistrationStep.documents,
+          email: state.email,
+          firstName: state.firstName,
+          lastName: state.lastName,
+          isNewDocumentAsked: true,
+        ),
+      );
+      return;
+    }
+    if (review != RegistrationReview.validated) return;
     emit(
       RegistrationAuthenticated(
         currentStep: DriverRegistrationStep.complete,
@@ -399,6 +444,11 @@ class DriverRegistrationBloc extends RegistrationBloc {
               documentTypes: documentTypes,
               uploadStatuses: initialStatuses,
               signedUrls: signedUrls,
+              lastValidDays: {
+                for (final document in uploadedDocuments)
+                  if (document.lastValidDay case final day?)
+                    document.documentTypeId: day,
+              },
             ),
           );
         case DriverRegDocumentsCorrectionReady():
@@ -496,6 +546,7 @@ class DriverRegistrationBloc extends RegistrationBloc {
         documentTypeId: event.documentTypeId,
         frontFilePath: event.frontFilePath,
         backFilePath: event.backFilePath,
+        expiresAt: event.expiresAt,
       );
       log(
         '[DriverRegistrationBloc] Upload réussi — documentTypeId=${event.documentTypeId}',
@@ -511,6 +562,10 @@ class DriverRegistrationBloc extends RegistrationBloc {
               signedUrls: Map<String, DocumentSignedUrls>.from(
                 currentState.signedUrls,
               )..remove(event.documentTypeId),
+              lastValidDays: {
+                ...currentState.lastValidDays,
+                if (event.expiresAt case final day?) event.documentTypeId: day,
+              },
             ),
           );
         case DriverRegDocumentsCorrectionReady():

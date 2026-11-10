@@ -101,3 +101,43 @@ final class DriverDocumentsOpened extends DriverFlowEvent {
 final class DriverDocumentsClosed extends DriverFlowEvent {
   const DriverDocumentsClosed();
 }
+
+// "Passer en ligne" refused by the API: a document blocks. Spec
+// taxi-vroom-api/docs/specs/documents-du-chauffeur.md, point 8.
+final class DriverDocumentsBlocked extends DriverFlowEvent {
+  const DriverDocumentsBlocked();
+}
+
+// Back in the app, or a notification about the documents: read them again
+// for the banner.
+final class DriverDocumentsRefreshed extends DriverFlowEvent {
+  const DriverDocumentsRefreshed();
+}
+
+// Listened to from the start: a notification about the documents.
+final class DriverDocumentNotificationsWatched extends DriverFlowEvent {
+  const DriverDocumentNotificationsWatched();
+}
+
+// A renewed or new document sent, waiting for the admin.
+final class DriverDocumentSubmitted extends DriverFlowEvent {
+  const DriverDocumentSubmitted({
+    required this.documentTypeId,
+    required this.frontFilePath,
+    this.backFilePath,
+    this.expiresAt,
+  });
+
+  final String documentTypeId;
+  final String frontFilePath;
+  final String? backFilePath;
+  final DateTime? expiresAt;
+
+  @override
+  List<Object?> get props => [
+    documentTypeId,
+    frontFilePath,
+    backFilePath,
+    expiresAt,
+  ];
+}

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/errors/failures.dart';
@@ -28,6 +30,16 @@ class DriverPresenceRepositoryImpl implements DriverPresenceRepository {
 
   @override
   Future<Result<void>> goOffline() => _run(_dataSource.goOffline);
+
+  // A read refused or failed counts as "still allowed": the dispatch keeps
+  // a blocked driver out anyway.
+  @override
+  Stream<bool> watchOnlineAllowed() =>
+      _dataSource.watchOnlineAllowed().transform(
+        StreamTransformer.fromHandlers(
+          handleError: (_, _, sink) => sink.add(true),
+        ),
+      );
 
   Future<Result<void>> _run(Future<void> Function() operation) async {
     try {

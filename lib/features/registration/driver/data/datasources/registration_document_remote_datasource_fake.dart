@@ -18,16 +18,19 @@ class RegistrationDocumentRemoteDataSourceFake
         id: _fakeDocumentTypeIdIdentity,
         name: "Carte d'identité",
         backRequired: true,
+        expires: true,
       ),
       DocumentTypeModel(
         id: _fakeDocumentTypeIdProTaxi,
         name: 'Carte Pro Taxi',
         backRequired: true,
+        expires: true,
       ),
       DocumentTypeModel(
         id: _fakeDocumentTypeIdGrise,
         name: 'Carte grise',
         backRequired: false,
+        expires: false,
       ),
     ];
   }
@@ -37,8 +40,8 @@ class RegistrationDocumentRemoteDataSourceFake
     required String documentTypeId,
     String? frontFilePath,
     String? backFilePath,
-  }) =>
-      Future<void>.delayed(const Duration(milliseconds: 600));
+    DateTime? expiresAt,
+  }) => Future<void>.delayed(const Duration(milliseconds: 600));
 
   @override
   Future<List<RegistrationDocumentModel>> getUploadedDocuments() async {
@@ -49,7 +52,8 @@ class RegistrationDocumentRemoteDataSourceFake
       ),
       RejectedRegistrationDocumentModel(
         documentTypeId: _fakeDocumentTypeIdProTaxi,
-        reason: 'La photo du verso est trop floue. '
+        reason:
+            'La photo du verso est trop floue. '
             'On ne parvient pas à lire la date de fin de validité.',
       ),
       ValidatedRegistrationDocumentModel(

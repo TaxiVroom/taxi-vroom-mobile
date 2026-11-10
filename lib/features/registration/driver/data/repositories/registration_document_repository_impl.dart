@@ -20,12 +20,13 @@ class RegistrationDocumentRepositoryImpl
     required String documentTypeId,
     String? frontFilePath,
     String? backFilePath,
-  }) =>
-      _dataSource.uploadDocument(
-        documentTypeId: documentTypeId,
-        frontFilePath: frontFilePath,
-        backFilePath: backFilePath,
-      );
+    DateTime? expiresAt,
+  }) => _dataSource.uploadDocument(
+    documentTypeId: documentTypeId,
+    frontFilePath: frontFilePath,
+    backFilePath: backFilePath,
+    expiresAt: expiresAt,
+  );
 
   @override
   Future<List<RegistrationDocument>> getUploadedDocuments() async {
@@ -37,9 +38,8 @@ class RegistrationDocumentRepositoryImpl
   Future<String> getDocumentSignedUrl({
     required String documentTypeId,
     required String side,
-  }) =>
-      _dataSource.getDocumentSignedUrl(
-        documentTypeId: documentTypeId,
-        side: side,
-      );
+  }) => _dataSource.getDocumentSignedUrl(
+    documentTypeId: documentTypeId,
+    side: side,
+  );
 }

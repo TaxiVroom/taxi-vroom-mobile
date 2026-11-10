@@ -1,11 +1,10 @@
 import 'package:mobile/features/driver_home/data/datasources/driver_document_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/models/driver_document_model.dart';
 
-/// Implémentation de développement avec données de test.
+/// Development implementation with test data.
 ///
-/// [hasDocumentToRenew] : à true, le taximètre est à renouveler et l'écran
-/// « Vos documents » s'affiche à la connexion ; à false, tout est validé et
-/// le chauffeur arrive directement sur l'accueil.
+/// [hasDocumentToRenew]: true, the professional card is to renew and the
+/// home shows its banner; false, everything is valid.
 class DriverDocumentRemoteDataSourceFake
     implements DriverDocumentRemoteDataSource {
   DriverDocumentRemoteDataSourceFake({required this.hasDocumentToRenew});
@@ -17,58 +16,46 @@ class DriverDocumentRemoteDataSourceFake
     await Future<void>.delayed(const Duration(milliseconds: 400));
     return [
       _document(
-        kind: 'professionalCard',
-        name: 'Carte professionnelle',
-        detail: 'Conducteur de taxi, Bas-Rhin',
-        proofName: 'la carte professionnelle',
+        'Carte professionnelle de taxi',
+        hasDocumentToRenew ? 'TO_RENEW' : 'VALID',
+        expiresAt: DateTime.now().add(const Duration(days: 20)),
       ),
       _document(
-        kind: 'parkingPermit',
-        name: 'Autorisation de stationnement',
-        detail: 'ADS n° 118, Strasbourg',
-        proofName: "l'autorisation de stationnement",
+        'Permis de conduire',
+        'VALID',
+        expiresAt: DateTime.now().add(const Duration(days: 900)),
       ),
-      _document(
-        kind: 'drivingLicence',
-        name: 'Permis de conduire',
-        detail: 'Catégorie B',
-        proofName: 'le permis de conduire',
-      ),
-      _document(
-        kind: 'vehicle',
-        name: 'Carte grise et assurance',
-        detail: 'GH-482-KZ, Corolla Touring',
-        proofName: "la carte grise et l'assurance",
-      ),
-      _document(
-        kind: 'taximeter',
-        name: 'Taximètre',
-        detail: hasDocumentToRenew
-            ? 'Vérification annuelle avant le 12 oct.'
-            : 'Vérifié le 12 oct. 2025',
-        proofName: 'le certificat du taximètre',
-        status: hasDocumentToRenew ? 'expiringSoon' : 'validated',
-      ),
-      _document(
-        kind: 'paymentTerminal',
-        name: 'Terminal CB et imprimante',
-        detail: 'Obligatoires à bord',
-        proofName: 'la preuve du terminal CB',
-      ),
+      _document('Carte grise', 'VALID', expires: false),
     ];
   }
 
-  DriverDocumentModel _document({
-    required String kind,
-    required String name,
-    required String detail,
-    required String proofName,
-    String status = 'validated',
-  }) => DriverDocumentModel.fromJson({
-    'kind': kind,
-    'name': name,
-    'detail': detail,
-    'status': status,
-    'proofName': proofName,
-  });
+  @override
+  Future<void> allowOnline() async {}
+
+  @override
+  Future<void> submitDocument({
+    required String documentTypeId,
+    required String frontFilePath,
+    String? backFilePath,
+    DateTime? expiresAt,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+  }
+
+  DriverDocumentModel _document(
+    String name,
+    String state, {
+    bool expires = true,
+    DateTime? expiresAt,
+  }) => DriverDocumentModel(
+    documentTypeId: name,
+    name: name,
+    backRequired: true,
+    expires: expires,
+    state: state,
+    expiresAt: expiresAt?.toIso8601String(),
+    lastValidDay: expiresAt?.toIso8601String().substring(0, 10),
+    requiredFrom: null,
+    inReview: false,
+  );
 }

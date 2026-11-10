@@ -9,10 +9,11 @@ class UploadRegistrationDocumentUseCase {
     required String documentTypeId,
     String? frontFilePath,
     String? backFilePath,
-  }) =>
-      _repository.uploadDocument(
-        documentTypeId: documentTypeId,
-        frontFilePath: frontFilePath,
-        backFilePath: backFilePath,
-      );
+    DateTime? expiresAt,
+  }) => _repository.uploadDocument(
+    documentTypeId: documentTypeId,
+    frontFilePath: frontFilePath,
+    backFilePath: backFilePath,
+    expiresAt: expiresAt,
+  );
 }

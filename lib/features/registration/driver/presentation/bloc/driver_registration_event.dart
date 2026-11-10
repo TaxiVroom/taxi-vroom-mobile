@@ -23,6 +23,11 @@ final class DriverRegistrationReviewChecked extends RegistrationEvent {
 
 // The notifications are allowed on the waiting screen: the phone's token
 // goes to the registration.
+// "Dossier validé" tapped while the waiting screen was open.
+final class _DriverRegistrationValidationOpened extends RegistrationEvent {
+  const _DriverRegistrationValidationOpened();
+}
+
 final class DriverRegistrationPushTokenSent extends RegistrationEvent {
   const DriverRegistrationPushTokenSent();
 }
@@ -43,11 +48,15 @@ final class DocumentUploadRequested extends RegistrationEvent {
     required this.documentTypeId,
     this.frontFilePath,
     this.backFilePath,
+    this.expiresAt,
   });
 
   final String documentTypeId;
   final String? frontFilePath;
   final String? backFilePath;
+  // Its end of validity, for a type that expires. Spec
+  // taxi-vroom-api/docs/specs/documents-du-chauffeur.md, point 2.
+  final DateTime? expiresAt;
 }
 
 // L'utilisateur appuie sur le bouton retour depuis l'étape documents.

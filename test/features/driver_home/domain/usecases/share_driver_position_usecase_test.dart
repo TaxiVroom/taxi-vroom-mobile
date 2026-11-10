@@ -19,6 +19,9 @@ class _FakeLocationRepository implements LocationRepository {
   @override
   Stream<Result<Coordinates>> watchPosition({bool inBackground = false}) =>
       positions.stream;
+
+  @override
+  Future<void> openSettings() => throw UnimplementedError();
 }
 
 // The database: keeps the positions written.
@@ -37,6 +40,9 @@ class _FakeDriverPresenceRepository implements DriverPresenceRepository {
 
   @override
   Future<Result<void>> goOffline() => throw UnimplementedError();
+
+  @override
+  Stream<bool> watchOnlineAllowed() => throw UnimplementedError();
 }
 
 void main() {

@@ -6,6 +6,7 @@ import 'package:mobile/core/domain/usecases/ensure_notification_permission_useca
 import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/check_registration_validated_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/watch_validation_notification_opened_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_types_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_uploaded_documents_usecase.dart';
@@ -42,6 +43,7 @@ class DriverRegistrationNavigator extends StatefulWidget {
     required this.submitRegistrationVehicleUseCase,
     required this.searchCommunesUseCase,
     required this.checkRegistrationValidatedUseCase,
+    required this.watchValidationNotificationOpenedUseCase,
     required this.sendRegistrationPushTokenUseCase,
     required this.watchPushedRidesUseCase,
     required this.onAuthenticated,
@@ -58,6 +60,8 @@ class DriverRegistrationNavigator extends StatefulWidget {
   final SubmitRegistrationVehicleUseCase submitRegistrationVehicleUseCase;
   final SearchCommunesUseCase searchCommunesUseCase;
   final CheckRegistrationValidatedUseCase checkRegistrationValidatedUseCase;
+  final WatchValidationNotificationOpenedUseCase
+  watchValidationNotificationOpenedUseCase;
   final SendRegistrationPushTokenUseCase sendRegistrationPushTokenUseCase;
   final WatchPushedRidesUseCase watchPushedRidesUseCase;
 
@@ -91,6 +95,8 @@ class _DriverRegistrationNavigatorState
       submitRegistrationVehicleUseCase: widget.submitRegistrationVehicleUseCase,
       checkRegistrationValidatedUseCase:
           widget.checkRegistrationValidatedUseCase,
+      watchValidationNotificationOpenedUseCase:
+          widget.watchValidationNotificationOpenedUseCase,
       sendRegistrationPushTokenUseCase: widget.sendRegistrationPushTokenUseCase,
       watchPushedRidesUseCase: widget.watchPushedRidesUseCase,
     );

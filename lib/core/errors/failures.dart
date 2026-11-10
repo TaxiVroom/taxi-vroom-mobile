@@ -34,9 +34,21 @@ class VehicleLicenceTakenFailure extends ValidationFailure {
   const VehicleLicenceTakenFailure(super.message);
 }
 
+// A document expired or missing: no going online. Spec
+// taxi-vroom-api/docs/specs/documents-du-chauffeur.md, point 8.
+class DocumentsBlockingFailure extends ValidationFailure {
+  const DocumentsBlockingFailure(super.message);
+}
+
 // Location unavailable: permission denied or location services turned off.
 class LocationFailure extends Failure {
   const LocationFailure(super.message);
+}
+
+// The location was refused for good: only the phone's settings can allow
+// it now.
+class LocationSettingsFailure extends LocationFailure {
+  const LocationSettingsFailure(super.message);
 }
 
 // The phone could not tell or change a permission.

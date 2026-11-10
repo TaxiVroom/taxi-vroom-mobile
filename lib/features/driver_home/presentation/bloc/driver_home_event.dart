@@ -12,6 +12,11 @@ final class DriverHomeStarted extends DriverHomeEvent {
   const DriverHomeStarted();
 }
 
+// "Ouvrir les réglages", after the location was refused for good.
+final class DriverLocationSettingsOpened extends DriverHomeEvent {
+  const DriverLocationSettingsOpened();
+}
+
 // "Passer en ligne" / "Passer hors ligne".
 final class DriverOnlineToggled extends DriverHomeEvent {
   const DriverOnlineToggled({required this.isOnline});
@@ -20,6 +25,11 @@ final class DriverOnlineToggled extends DriverHomeEvent {
 
   @override
   List<Object?> get props => [isOnline];
+}
+
+// While online, the server took the driver offline for a document.
+final class _DriverTakenOfflineForDocuments extends DriverHomeEvent {
+  const _DriverTakenOfflineForDocuments();
 }
 
 // While online, the device lost or got back its connection.

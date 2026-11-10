@@ -47,10 +47,10 @@ void main() {
       );
 
       // Act
-      final isValidated = await useCase();
+      final review = await useCase();
 
       // Assert
-      expect(isValidated, isTrue);
+      expect(review, RegistrationReview.validated);
     });
 
     test('still under review: not yet', () async {
@@ -62,10 +62,25 @@ void main() {
       );
 
       // Act
-      final isValidated = await useCase();
+      final review = await useCase();
 
       // Assert
-      expect(isValidated, isFalse);
+      expect(review, RegistrationReview.pending);
+    });
+
+    test('back to the documents: a new document is asked', () async {
+      // Arrange
+      final useCase = CheckRegistrationValidatedUseCase(
+        _FakeDriverRegistrationRepository(
+          const Result.ok(DriverRegistrationStep.documents),
+        ),
+      );
+
+      // Act
+      final review = await useCase();
+
+      // Assert
+      expect(review, RegistrationReview.newDocumentAsked);
     });
 
     test('the API cannot be reached: not yet, asked again later', () async {
@@ -77,10 +92,10 @@ void main() {
       );
 
       // Act
-      final isValidated = await useCase();
+      final review = await useCase();
 
       // Assert
-      expect(isValidated, isFalse);
+      expect(review, RegistrationReview.pending);
     });
   });
 }

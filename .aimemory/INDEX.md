@@ -16,4 +16,5 @@ push: shipped on Android, iOS waits for hardware, spec docs/specs/notifications-
 bookings: advance bookings shipped, spec taxi-vroom-api/docs/specs/reservations-a-l-avance.md
 pickupPlace: the passenger chooses and confirms the pickup, shipped, spec taxi-vroom-api/docs/specs/point-de-prise-en-charge.md
 navigation: "Itinéraire" opens Google Maps or Waze, shipped, spec taxi-vroom-api/docs/specs/navigation-externe.md
+documents: "Vos documents" real, opens on arrival when a document needs action, spec taxi-vroom-api/docs/specs/documents-du-chauffeur.md
 next: to choose with the user; ideas noted for later in taxi-vroom-api/docs/a-faire.md

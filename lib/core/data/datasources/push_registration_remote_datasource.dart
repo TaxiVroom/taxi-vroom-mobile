@@ -14,6 +14,13 @@ abstract class PushRegistrationRemoteDataSource {
   // The ride of each notification touched while the app was in background.
   Stream<String?> get openedRideIds;
 
+  // The "type" of each notification tapped while the app was in the
+  // background, e.g. "registration-validated".
+  Stream<String?> get openedTypes;
+
+  // The "type" of each notification received while the app is on screen.
+  Stream<String?> get foregroundTypes;
+
   // The ride of the notification that launched the app, once.
   Future<String?> getLaunchRideId();
 
@@ -51,6 +58,16 @@ class PushRegistrationRemoteDataSourceImpl
   @override
   Stream<String?> get openedRideIds =>
       FirebaseMessaging.onMessageOpenedApp.map(_rideId);
+
+  @override
+  Stream<String?> get openedTypes => FirebaseMessaging.onMessageOpenedApp.map(
+    (message) => message.data['type'] as String?,
+  );
+
+  @override
+  Stream<String?> get foregroundTypes => FirebaseMessaging.onMessage.map(
+    (message) => message.data['type'] as String?,
+  );
 
   // Removed once read, says the doc: later calls give null.
   @override

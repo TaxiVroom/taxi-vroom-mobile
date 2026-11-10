@@ -54,9 +54,19 @@ final class DriverRegDocumentsReady extends RegistrationState {
     this.uploadStatuses = const {},
     this.signedUrls = const {},
     this.isLoadingDocumentTypes = false,
+    this.isNewDocumentAsked = false,
+    this.lastValidDays = const {},
   });
 
+  // Key = documentTypeId: the last valid day already sent, shown again in
+  // the sheet. Spec taxi-vroom-api/docs/specs/documents-du-chauffeur.md.
+  final Map<String, DateTime> lastValidDays;
+
   final List<DocumentType> documentTypes;
+
+  // Back from the waiting screen: a document type was added. Spec
+  // taxi-vroom-api/docs/specs/documents-du-chauffeur.md, point 6.
+  final bool isNewDocumentAsked;
 
   // Key = documentTypeId. Absent from the map means the upload has not started yet.
   final Map<String, DocumentUploadStatus> uploadStatuses;
@@ -80,7 +90,14 @@ final class DriverRegDocumentsReady extends RegistrationState {
     required String documentTypeId,
     required bool hasFront,
     required bool hasBack,
+    required bool hasExpiry,
   }) {
+    // Its end of validity is asked again with each sending. Spec
+    // taxi-vroom-api/docs/specs/documents-du-chauffeur.md, point 2.
+    final expires = documentTypes
+        .firstWhere((dt) => dt.id == documentTypeId)
+        .expires;
+    if (expires && !hasExpiry) return false;
     final isReplacement =
         uploadStatuses[documentTypeId] == DocumentUploadStatus.succeeded;
     final backRequired = documentTypes
@@ -96,6 +113,7 @@ final class DriverRegDocumentsReady extends RegistrationState {
     Map<String, DocumentUploadStatus>? uploadStatuses,
     Map<String, DocumentSignedUrls>? signedUrls,
     bool? isLoadingDocumentTypes,
+    Map<String, DateTime>? lastValidDays,
   }) => DriverRegDocumentsReady(
     currentStep: currentStep,
     email: email,
@@ -106,6 +124,8 @@ final class DriverRegDocumentsReady extends RegistrationState {
     signedUrls: signedUrls ?? this.signedUrls,
     isLoadingDocumentTypes:
         isLoadingDocumentTypes ?? this.isLoadingDocumentTypes,
+    isNewDocumentAsked: isNewDocumentAsked,
+    lastValidDays: lastValidDays ?? this.lastValidDays,
   );
 
   @override
@@ -115,6 +135,8 @@ final class DriverRegDocumentsReady extends RegistrationState {
     uploadStatuses,
     signedUrls,
     isLoadingDocumentTypes,
+    isNewDocumentAsked,
+    lastValidDays,
   ];
 }
 
@@ -166,7 +188,14 @@ final class DriverRegDocumentsCorrectionReady extends RegistrationState {
     required String documentTypeId,
     required bool hasFront,
     required bool hasBack,
+    required bool hasExpiry,
   }) {
+    // Its end of validity is asked again with each sending. Spec
+    // taxi-vroom-api/docs/specs/documents-du-chauffeur.md, point 2.
+    final expires = documentTypes
+        .firstWhere((dt) => dt.id == documentTypeId)
+        .expires;
+    if (expires && !hasExpiry) return false;
     final backRequired = documentTypes
         .firstWhere((dt) => dt.id == documentTypeId)
         .backRequired;

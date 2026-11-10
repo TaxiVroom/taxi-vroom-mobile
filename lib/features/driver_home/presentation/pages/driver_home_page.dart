@@ -22,6 +22,10 @@ import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_documents_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/submit_driver_document_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_document_notifications_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_online_allowed_usecase.dart';
+import 'package:mobile/core/domain/usecases/open_location_settings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings_usecase.dart';
@@ -52,6 +56,7 @@ import 'package:mobile/features/driver_home/presentation/widgets/driver_home_map
 import 'package:mobile/features/driver_home/presentation/widgets/earnings_tab.dart';
 import 'package:mobile/features/driver_home/presentation/widgets/offline_panel.dart';
 import 'package:mobile/features/driver_home/presentation/widgets/online_panel.dart';
+import 'package:mobile/features/driver_home/presentation/widgets/documents_banner.dart';
 import 'package:mobile/features/driver_home/presentation/widgets/ride_request_sheet.dart';
 import 'package:mobile/features/driver_home/presentation/widgets/status_dot.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -63,6 +68,10 @@ class DriverHomePage extends StatelessWidget {
   const DriverHomePage({
     required this.loadCurrentDriverRideUseCase,
     required this.loadDriverDocumentsUseCase,
+    required this.submitDriverDocumentUseCase,
+    required this.watchDocumentNotificationsUseCase,
+    required this.watchOnlineAllowedUseCase,
+    required this.openLocationSettingsUseCase,
     required this.loadDriverHomeUseCase,
     required this.setOnlineUseCase,
     required this.shareDriverPositionUseCase,
@@ -92,6 +101,10 @@ class DriverHomePage extends StatelessWidget {
 
   final LoadCurrentDriverRideUseCase loadCurrentDriverRideUseCase;
   final LoadDriverDocumentsUseCase loadDriverDocumentsUseCase;
+  final SubmitDriverDocumentUseCase submitDriverDocumentUseCase;
+  final WatchDocumentNotificationsUseCase watchDocumentNotificationsUseCase;
+  final WatchOnlineAllowedUseCase watchOnlineAllowedUseCase;
+  final OpenLocationSettingsUseCase openLocationSettingsUseCase;
   final LoadDriverHomeUseCase loadDriverHomeUseCase;
   final SetOnlineUseCase setOnlineUseCase;
   final ShareDriverPositionUseCase shareDriverPositionUseCase;
@@ -125,14 +138,20 @@ class DriverHomePage extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => DriverFlowBloc(
-            loadCurrentDriverRideUseCase: loadCurrentDriverRideUseCase,
-            loadDriverDocumentsUseCase: loadDriverDocumentsUseCase,
-            arriveAtPickupUseCase: arriveAtPickupUseCase,
-            withdrawFromRideUseCase: withdrawFromRideUseCase,
-            watchPassengerCancellationUseCase:
-                watchPassengerCancellationUseCase,
-          )..add(const DriverFlowStarted()),
+          create: (_) =>
+              DriverFlowBloc(
+                  loadCurrentDriverRideUseCase: loadCurrentDriverRideUseCase,
+                  loadDriverDocumentsUseCase: loadDriverDocumentsUseCase,
+                  submitDriverDocumentUseCase: submitDriverDocumentUseCase,
+                  watchDocumentNotificationsUseCase:
+                      watchDocumentNotificationsUseCase,
+                  arriveAtPickupUseCase: arriveAtPickupUseCase,
+                  withdrawFromRideUseCase: withdrawFromRideUseCase,
+                  watchPassengerCancellationUseCase:
+                      watchPassengerCancellationUseCase,
+                )
+                ..add(const DriverFlowStarted())
+                ..add(const DriverDocumentNotificationsWatched()),
         ),
         BlocProvider(
           create: (_) => DriverHomeBloc(
@@ -140,6 +159,8 @@ class DriverHomePage extends StatelessWidget {
             setOnlineUseCase: setOnlineUseCase,
             shareDriverPositionUseCase: shareDriverPositionUseCase,
             watchConnectionUseCase: watchConnectionUseCase,
+            watchOnlineAllowedUseCase: watchOnlineAllowedUseCase,
+            openLocationSettingsUseCase: openLocationSettingsUseCase,
           )..add(const DriverHomeStarted()),
         ),
         BlocProvider(
@@ -162,7 +183,9 @@ class DriverHomePage extends StatelessWidget {
                   departForBookingUseCase: departForBookingUseCase,
                   watchPushedRidesUseCase: watchPushedRidesUseCase,
                 )
-                ..add(const DriverBookingsRequested())
+                // Loaded when the tab opens, not at the home's start: it reads
+                // the position too, and two permission requests at once left
+                // the home waiting forever (spec reservations-a-l-avance.md).
                 ..add(const DriverBookingsPushesWatched()),
         ),
         BlocProvider(
@@ -194,6 +217,16 @@ class DriverHomePage extends StatelessWidget {
                 _isOnline(previous) != _isOnline(current),
             listener: _onOnlineChanged,
           ),
+          // "Passer en ligne" refused by a document: the screen says why.
+          BlocListener<DriverHomeBloc, DriverHomeState>(
+            listenWhen: (previous, current) =>
+                current is DriverHomeReady &&
+                current.isBlockedByDocuments &&
+                !(previous is DriverHomeReady && previous.isBlockedByDocuments),
+            listener: (context, _) => context.read<DriverFlowBloc>().add(
+              const DriverDocumentsBlocked(),
+            ),
+          ),
           // Back from a ride: new requests can come in again.
           BlocListener<DriverFlowBloc, DriverFlowState>(
             listenWhen: (previous, current) =>
@@ -216,6 +249,16 @@ class DriverHomePage extends StatelessWidget {
 
   // The app started during a ride: the passenger must see the taxi move. The
   // ride and the home load in any order.
+  void _sendDocument(BuildContext context, DocumentSending sending) =>
+      context.read<DriverFlowBloc>().add(
+        DriverDocumentSubmitted(
+          documentTypeId: sending.documentTypeId,
+          frontFilePath: sending.frontFilePath,
+          backFilePath: sending.backFilePath,
+          expiresAt: sending.expiresAt,
+        ),
+      );
+
   void _goBackOnlineDuringRide(BuildContext context) {
     final isDuringRide = switch (context.read<DriverFlowBloc>().state) {
       DriverFlowPickup() || DriverFlowBoarding() || DriverFlowInRide() => true,
@@ -279,31 +322,54 @@ class DriverHomePage extends StatelessWidget {
           ),
         ),
       ],
-      DriverFlowDocuments(:final documents) => [
-        MaterialPage<void>(
-          key: const ValueKey('driver-documents'),
-          child: DriverDocumentsPage(
-            documents: documents,
-            onPostponed: () => context.read<DriverFlowBloc>().add(
-              const DriverDocumentsPostponed(),
+      DriverFlowDocuments(
+        :final documents,
+        :final isSubmitting,
+        :final failureMessage,
+        :final sendingTypeId,
+      ) =>
+        [
+          tabsPage,
+          MaterialPage<void>(
+            key: const ValueKey('driver-documents'),
+            child: DriverDocumentsPage(
+              documents: documents,
+              isSubmitting: isSubmitting,
+              sendingTypeId: sendingTypeId,
+              failureMessage: failureMessage,
+              // Blocked: no "Plus tard", driving is not allowed anyway.
+              canPostpone: !documents.blocksDriving,
+              onPostponed: () => context.read<DriverFlowBloc>().add(
+                const DriverDocumentsPostponed(),
+              ),
+              onSent: (sending) => _sendDocument(context, sending),
             ),
           ),
-        ),
-      ],
+        ],
       DriverFlowHome() => [tabsPage],
-      DriverFlowDocumentsReview(:final documents) => [
-        tabsPage,
-        MaterialPage<void>(
-          key: const ValueKey('driver-documents-review'),
-          child: DriverDocumentsPage(
-            documents: documents,
-            closeLabel: 'Retour',
-            onPostponed: () => context.read<DriverFlowBloc>().add(
-              const DriverDocumentsClosed(),
+      DriverFlowDocumentsReview(
+        :final documents,
+        :final isSubmitting,
+        :final failureMessage,
+        :final sendingTypeId,
+      ) =>
+        [
+          tabsPage,
+          MaterialPage<void>(
+            key: const ValueKey('driver-documents-review'),
+            child: DriverDocumentsPage(
+              documents: documents,
+              isSubmitting: isSubmitting,
+              sendingTypeId: sendingTypeId,
+              failureMessage: failureMessage,
+              closeLabel: 'Retour',
+              onPostponed: () => context.read<DriverFlowBloc>().add(
+                const DriverDocumentsClosed(),
+              ),
+              onSent: (sending) => _sendDocument(context, sending),
             ),
           ),
-        ),
-      ],
+        ],
       // The tabs stay below, so the home keeps its map and its state.
       DriverFlowPickup(
         :final ride,
@@ -412,6 +478,26 @@ class _DriverTabsState extends State<_DriverTabs> {
   ];
 
   Key _selectedTab = _driveTab;
+
+  // Back in the app: a document with a problem opens "Vos documents"
+  // (decision of the user, 2026-11-10).
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(
+      onResume: () => context.read<DriverFlowBloc>().add(
+        const DriverDocumentsRefreshed(),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -571,11 +657,16 @@ class _DriveTab extends StatelessWidget {
           DriverHomeLoading() => const Center(
             child: CircularProgressIndicator(),
           ),
-          DriverHomeFailure(:final message) => RetryMessage(
-            message: message,
-            onRetry: () =>
-                context.read<DriverHomeBloc>().add(const DriverHomeStarted()),
-          ),
+          DriverHomeFailure(:final message, :final needsSettings) =>
+            RetryMessage(
+              message: message,
+              onRetry: () =>
+                  context.read<DriverHomeBloc>().add(const DriverHomeStarted()),
+              secondaryLabel: needsSettings ? 'Ouvrir les réglages' : null,
+              onSecondary: () => context.read<DriverHomeBloc>().add(
+                const DriverLocationSettingsOpened(),
+              ),
+            ),
           DriverHomeReady() => _buildReady(context, state),
         },
       ),
@@ -693,14 +784,21 @@ class _DriveTab extends StatelessWidget {
   }
 
   Widget _buildOfflinePanel(BuildContext context, DriverHomeReady state) {
-    return OfflinePanel(
-      activity: state.home.activity,
-      nextBooking: state.home.nextBooking,
-      isSwitching: state.isSwitchingOnline,
-      failureMessage: state.switchFailureMessage,
-      onGoOnlinePressed: () => context.read<DriverHomeBloc>().add(
-        const DriverOnlineToggled(isOnline: true),
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const DocumentsBanner(),
+        OfflinePanel(
+          activity: state.home.activity,
+          nextBooking: state.home.nextBooking,
+          isSwitching: state.isSwitchingOnline,
+          failureMessage: state.switchFailureMessage,
+          onGoOnlinePressed: () => context.read<DriverHomeBloc>().add(
+            const DriverOnlineToggled(isOnline: true),
+          ),
+        ),
+      ],
     );
   }
 

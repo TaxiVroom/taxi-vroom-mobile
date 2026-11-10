@@ -42,6 +42,13 @@ class PushRegistrationRepositoryImpl implements PushRegistrationRepository {
   Stream<String?> watchPushedRides() =>
       _dataSource.foregroundRideIds.merge(_dataSource.openedRideIds);
 
+  @override
+  Stream<String?> watchOpenedTypes() => _dataSource.openedTypes;
+
+  @override
+  Stream<String?> watchNotificationTypes() =>
+      _dataSource.foregroundTypes.merge(_dataSource.openedTypes);
+
   // No ride to open when Firebase cannot tell: the app starts as usual.
   @override
   Future<String?> getLaunchRideId() async {

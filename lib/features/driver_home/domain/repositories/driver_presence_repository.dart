@@ -10,4 +10,7 @@ abstract class DriverPresenceRepository {
   Future<Result<void>> updatePosition(Coordinates position);
 
   Future<Result<void>> goOffline();
+
+  // False once the server takes the driver offline for a document.
+  Stream<bool> watchOnlineAllowed();
 }

@@ -13,6 +13,11 @@ abstract class DriverPresenceRemoteDataSource {
   });
 
   Future<void> goOffline();
+
+  // onlineAllowed/<uid>, written by the server only: false once it takes
+  // the driver offline for a document. Spec
+  // taxi-vroom-api/docs/specs/documents-du-chauffeur.md, point 8.
+  Stream<bool> watchOnlineAllowed();
 }
 
 // Firebase Realtime Database, one entry per online driver at
@@ -94,6 +99,12 @@ class DriverPresenceRemoteDataSourceImpl
     driverRef.onDisconnect().cancel().ignore();
     driverRef.remove().ignore();
   }
+
+  @override
+  Stream<bool> watchOnlineAllowed() => _database
+      .ref('onlineAllowed/${_firebaseAuth.currentUser?.uid}')
+      .onValue
+      .map((event) => event.snapshot.value == true);
 
   Map<String, Object> _entry(double latitude, double longitude) => {
     'latitude': latitude,

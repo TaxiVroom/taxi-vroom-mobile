@@ -37,7 +37,7 @@ DriverHome>uses>DriverRideSource
 stack=Flutter+Bloc+flow_builder+shadcn_flutter+Dio+Firebase(Auth,RTDB)+Mapbox(maps,Directions,SearchBox)+geolocator
 size=about 385 dart files in lib, 20 test files, 85 tests
 mapboxCalls=a second Dio pointed at api.mapbox.com, without the auth interceptor, so the Firebase token never leaves for Mapbox
-stillFake=passenger: account, recent destinations; driver: activity, account profile (its vehicle is real), earnings, documents check, checkout supplements, customer rating
+stillFake=passenger: account, recent destinations; driver: activity, account profile (its vehicle is real), earnings, checkout supplements, customer rating
 emulators=a wiped emulator starts in California and has about 5 GB free; run both with -d all, two flutter run at once fight over build/
 rtdbListBug=firebase_database 12.6.0: .children on a list read through .child() crashes, the plugin numbers it from -1; read .value instead. A top-level snapshot of keyed entries is fine
 blocLint=dart run bloc_tools:bloc lint . asks for an update: answer n on stdin; 6 pre-existing warnings in registration_bloc

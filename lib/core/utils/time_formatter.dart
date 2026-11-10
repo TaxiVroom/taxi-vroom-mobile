@@ -36,6 +36,10 @@ String formatShortWeekday(DateTime day) =>
 String formatLongDate(DateTime day) =>
     '${_weekdays[day.weekday - 1]} ${day.day} ${_shortMonths[day.month - 1]}';
 
+// "11 mars 2027", e.g. the end of validity of a document.
+String formatDateWithYear(DateTime day) =>
+    '${day.day} ${_shortMonths[day.month - 1]} ${day.year}';
+
 // 15:01 -> "15:01".
 String formatClockTime(DateTime time) =>
     '${time.hour.toString().padLeft(2, '0')}:'

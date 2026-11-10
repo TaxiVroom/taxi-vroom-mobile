@@ -46,6 +46,7 @@ import 'package:mobile/features/authentication/presentation/navigator/auth_navig
 import 'package:mobile/features/driver_home/data/datasources/driver_account_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_activity_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_booking_remote_datasource.dart';
+import 'package:mobile/features/driver_home/data/datasources/driver_document_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_document_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_presence_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource.dart';
@@ -73,6 +74,10 @@ import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_documents_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/submit_driver_document_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_document_notifications_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_online_allowed_usecase.dart';
+import 'package:mobile/core/domain/usecases/open_location_settings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings_usecase.dart';
@@ -126,6 +131,7 @@ import 'package:mobile/features/registration/driver/data/repositories/commune_re
 import 'package:mobile/features/registration/driver/data/repositories/driver_registration_repository_impl.dart';
 import 'package:mobile/features/registration/driver/data/repositories/registration_document_repository_impl.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/check_registration_validated_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/watch_validation_notification_opened_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_types_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_uploaded_documents_usecase.dart';
@@ -297,11 +303,11 @@ class App extends StatelessWidget {
     final driverBookingRepo = DriverBookingRepositoryImpl(
       DriverBookingRemoteDataSourceImpl(dio, realtimeDatabase),
     );
-    // Documents du chauffeur : une seule instance, pour le contrôle à la
-    // connexion et l'onglet Compte. Pour voir l'écran « Vos documents » à la
-    // connexion, avec un document à renouveler : hasDocumentToRenew: true.
+    // Documents du chauffeur, lus depuis l'API (spec
+    // taxi-vroom-api/docs/specs/documents-du-chauffeur.md). Pour simuler :
+    // DriverDocumentRemoteDataSourceFake(hasDocumentToRenew: true).
     final driverDocumentRepo = DriverDocumentRepositoryImpl(
-      DriverDocumentRemoteDataSourceFake(hasDocumentToRenew: true),
+      DriverDocumentRemoteDataSourceImpl(dio),
     );
 
     // Compte chauffeur : pas encore d'endpoint backend, profil fake.
@@ -442,11 +448,23 @@ class App extends StatelessWidget {
             loadDriverDocumentsUseCase: LoadDriverDocumentsUseCase(
               driverDocumentRepo,
             ),
+            submitDriverDocumentUseCase: SubmitDriverDocumentUseCase(
+              driverDocumentRepo,
+            ),
+            watchDocumentNotificationsUseCase:
+                WatchDocumentNotificationsUseCase(pushRegistrationRepo),
+            watchOnlineAllowedUseCase: WatchOnlineAllowedUseCase(
+              driverPresenceRepo,
+            ),
+            openLocationSettingsUseCase: OpenLocationSettingsUseCase(
+              locationRepo,
+            ),
             loadDriverHomeUseCase: loadDriverHomeUseCase,
             setOnlineUseCase: SetOnlineUseCase(
               locationRepository: locationRepo,
               driverPresenceRepository: driverPresenceRepo,
               driverActivityRepository: driverActivityRepo,
+              driverDocumentRepository: driverDocumentRepo,
             ),
             shareDriverPositionUseCase: ShareDriverPositionUseCase(
               locationRepository: locationRepo,
@@ -531,6 +549,8 @@ class App extends StatelessWidget {
                 CheckRegistrationValidatedUseCase(
                   driverRegistrationRepo,
                 ),
+            watchValidationNotificationOpenedUseCase:
+                WatchValidationNotificationOpenedUseCase(pushRegistrationRepo),
             sendRegistrationPushTokenUseCase: SendRegistrationPushTokenUseCase(
               pushRegistrationRepository: pushRegistrationRepo,
               driverRegistrationRepository: driverRegistrationRepo,

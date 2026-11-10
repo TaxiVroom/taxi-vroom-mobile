@@ -16,6 +16,12 @@ abstract class PushRegistrationRepository {
   // screen may not show yet. Null for a message about no ride.
   Stream<String?> watchPushedRides();
 
+  // The type of each notification tapped, e.g. "registration-validated".
+  Stream<String?> watchOpenedTypes();
+
+  // The type of each notification received on screen or tapped.
+  Stream<String?> watchNotificationTypes();
+
   // The ride of the notification that launched the app, if one did. Given
   // once.
   Future<String?> getLaunchRideId();

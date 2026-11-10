@@ -8,6 +8,7 @@ abstract class RegistrationDocumentRepository {
     required String documentTypeId,
     String? frontFilePath,
     String? backFilePath,
+    DateTime? expiresAt,
   });
 
   Future<List<RegistrationDocument>> getUploadedDocuments();

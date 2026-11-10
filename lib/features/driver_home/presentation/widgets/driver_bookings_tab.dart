@@ -7,7 +7,9 @@ import 'package:mobile/core/widgets/choice_button.dart';
 import 'package:mobile/core/widgets/message_toast.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_booking.dart';
+import 'package:mobile/features/driver_home/domain/entities/driver_document.dart';
 import 'package:mobile/features/driver_home/presentation/bloc/driver_bookings_bloc.dart';
+import 'package:mobile/features/driver_home/presentation/bloc/driver_flow_bloc.dart';
 import 'package:mobile/features/driver_home/presentation/widgets/trip_stops.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -52,6 +54,39 @@ class _DriverBookingsTabState extends State<DriverBookingsTab> {
     );
   }
 
+  // "Les réservations après le 11 mars 2027 ne vous sont pas proposées :
+  // Carte professionnelle de taxi expire le 11 mars 2027." Spec
+  // taxi-vroom-api/docs/specs/documents-du-chauffeur.md.
+  Widget _buildHiddenByDocuments(BuildContext context) {
+    final flow = context.watch<DriverFlowBloc>().state;
+    final documents = flow is DriverFlowHome ? flow.documents : null;
+    final soonest = documents?.soonestEnd;
+    if (soonest == null || !soonest.needsAction) {
+      return const SizedBox.shrink();
+    }
+    final when = _hiddenFrom(soonest);
+    if (when == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Alert(
+        leading: const Icon(Icons.info_outline),
+        title: Text('Réservations $when non proposées'),
+        content: Text('${soonest.name} : envoyez le nouveau pour les voir.'),
+      ),
+    );
+  }
+
+  // "après le 11 mars 2027", or "à partir du 1 mars 2027" for a new type.
+  String? _hiddenFrom(DriverDocument document) {
+    final lastValidDay = document.lastValidDay;
+    if (lastValidDay != null) {
+      return 'après le ${formatDateWithYear(lastValidDay)}';
+    }
+    final requiredFrom = document.requiredFrom;
+    if (requiredFrom == null) return null;
+    return 'à partir du ${formatDateWithYear(requiredFrom.toLocal())}';
+  }
+
   Widget _buildReady(BuildContext context, DriverBookingsReady state) {
     final bookings = state.bookings;
     final shown = _showsAccepted ? bookings.accepted : bookings.available;
@@ -83,6 +118,7 @@ class _DriverBookingsTabState extends State<DriverBookingsTab> {
           ],
         ),
         const SizedBox(height: 14),
+        if (!_showsAccepted) _buildHiddenByDocuments(context),
         if (shown.isEmpty)
           Text(
             _showsAccepted

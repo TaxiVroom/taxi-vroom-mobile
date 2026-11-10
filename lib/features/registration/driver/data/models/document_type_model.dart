@@ -5,19 +5,26 @@ class DocumentTypeModel {
     required this.id,
     required this.name,
     required this.backRequired,
+    required this.expires,
   });
 
   final String id;
   final String name;
   final bool backRequired;
+  final bool expires;
 
   factory DocumentTypeModel.fromJson(Map<String, dynamic> json) =>
       DocumentTypeModel(
         id: json['id'] as String,
         name: json['name'] as String,
         backRequired: json['backRequired'] as bool,
+        expires: json['expires'] as bool? ?? false,
       );
 
-  DocumentType toDomain() =>
-      DocumentType(id: id, name: name, backRequired: backRequired);
+  DocumentType toDomain() => DocumentType(
+    id: id,
+    name: name,
+    backRequired: backRequired,
+    expires: expires,
+  );
 }

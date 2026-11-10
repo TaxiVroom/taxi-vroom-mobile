@@ -50,6 +50,9 @@ class _FakeLocationRepository implements LocationRepository {
   @override
   Stream<Result<Coordinates>> watchPosition({bool inBackground = false}) =>
       throw UnimplementedError();
+
+  @override
+  Future<void> openSettings() => throw UnimplementedError();
 }
 
 // Mapbox: the turn-by-turn route.

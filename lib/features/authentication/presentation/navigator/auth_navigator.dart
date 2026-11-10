@@ -21,6 +21,10 @@ import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_documents_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/submit_driver_document_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_document_notifications_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/watch_online_allowed_usecase.dart';
+import 'package:mobile/core/domain/usecases/open_location_settings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings_usecase.dart';
@@ -55,6 +59,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/watch_nearby_taxi
 import 'package:mobile/features/passenger_home/domain/usecases/watch_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/presentation/pages/passenger_home_page.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/check_registration_validated_usecase.dart';
+import 'package:mobile/features/registration/driver/domain/usecases/watch_validation_notification_opened_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_signed_url_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_document_types_usecase.dart';
 import 'package:mobile/features/registration/driver/domain/usecases/get_uploaded_documents_usecase.dart';
@@ -86,6 +91,7 @@ class AuthNavigator extends StatelessWidget {
     required this.submitRegistrationVehicleUseCase,
     required this.searchCommunesUseCase,
     required this.checkRegistrationValidatedUseCase,
+    required this.watchValidationNotificationOpenedUseCase,
     required this.sendRegistrationPushTokenUseCase,
     required this.loadPassengerHomeUseCase,
     required this.watchNearbyTaxisUseCase,
@@ -108,6 +114,10 @@ class AuthNavigator extends StatelessWidget {
     required this.cancelBookingUseCase,
     required this.loadAccountUseCase,
     required this.loadDriverDocumentsUseCase,
+    required this.submitDriverDocumentUseCase,
+    required this.watchDocumentNotificationsUseCase,
+    required this.watchOnlineAllowedUseCase,
+    required this.openLocationSettingsUseCase,
     required this.loadDriverHomeUseCase,
     required this.setOnlineUseCase,
     required this.shareDriverPositionUseCase,
@@ -156,6 +166,8 @@ class AuthNavigator extends StatelessWidget {
   final SubmitRegistrationVehicleUseCase submitRegistrationVehicleUseCase;
   final SearchCommunesUseCase searchCommunesUseCase;
   final CheckRegistrationValidatedUseCase checkRegistrationValidatedUseCase;
+  final WatchValidationNotificationOpenedUseCase
+  watchValidationNotificationOpenedUseCase;
   final SendRegistrationPushTokenUseCase sendRegistrationPushTokenUseCase;
 
   // Use cases de l'accueil passager, transmis à PassengerHomePage.
@@ -182,6 +194,10 @@ class AuthNavigator extends StatelessWidget {
 
   // Use cases de l'accueil chauffeur, transmis à DriverHomePage.
   final LoadDriverDocumentsUseCase loadDriverDocumentsUseCase;
+  final SubmitDriverDocumentUseCase submitDriverDocumentUseCase;
+  final WatchDocumentNotificationsUseCase watchDocumentNotificationsUseCase;
+  final WatchOnlineAllowedUseCase watchOnlineAllowedUseCase;
+  final OpenLocationSettingsUseCase openLocationSettingsUseCase;
   final LoadDriverHomeUseCase loadDriverHomeUseCase;
   final SetOnlineUseCase setOnlineUseCase;
   final ShareDriverPositionUseCase shareDriverPositionUseCase;
@@ -304,6 +320,8 @@ class AuthNavigator extends StatelessWidget {
               searchCommunesUseCase: searchCommunesUseCase,
               checkRegistrationValidatedUseCase:
                   checkRegistrationValidatedUseCase,
+              watchValidationNotificationOpenedUseCase:
+                  watchValidationNotificationOpenedUseCase,
               sendRegistrationPushTokenUseCase:
                   sendRegistrationPushTokenUseCase,
               watchPushedRidesUseCase: watchPushedRidesUseCase,
@@ -347,6 +365,11 @@ class AuthNavigator extends StatelessWidget {
           child: DriverHomePage(
             loadCurrentDriverRideUseCase: loadCurrentDriverRideUseCase,
             loadDriverDocumentsUseCase: loadDriverDocumentsUseCase,
+            submitDriverDocumentUseCase: submitDriverDocumentUseCase,
+            watchDocumentNotificationsUseCase:
+                watchDocumentNotificationsUseCase,
+            watchOnlineAllowedUseCase: watchOnlineAllowedUseCase,
+            openLocationSettingsUseCase: openLocationSettingsUseCase,
             loadDriverHomeUseCase: loadDriverHomeUseCase,
             setOnlineUseCase: setOnlineUseCase,
             shareDriverPositionUseCase: shareDriverPositionUseCase,

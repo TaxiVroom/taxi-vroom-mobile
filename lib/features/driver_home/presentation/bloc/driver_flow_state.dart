@@ -20,34 +20,68 @@ final class DriverFlowDocumentsFailure extends DriverFlowState {
   List<Object?> get props => [message];
 }
 
-// A document must be sent: mockup screen 1.
+// A document blocks: opened when "Passer en ligne" is refused. Spec
+// taxi-vroom-api/docs/specs/documents-du-chauffeur.md.
 final class DriverFlowDocuments extends DriverFlowState {
-  const DriverFlowDocuments({required this.documents});
+  const DriverFlowDocuments({
+    required this.documents,
+    this.isSubmitting = false,
+    this.failureMessage,
+    this.sendingTypeId,
+  });
+
+  // The document being sent: its card shows a spinner.
+  final String? sendingTypeId;
 
   final DriverDocuments documents;
+  final bool isSubmitting;
+  final String? failureMessage;
 
   @override
-  List<Object?> get props => [documents];
+  List<Object?> get props => [
+    documents,
+    isSubmitting,
+    failureMessage,
+    sendingTypeId,
+  ];
 }
 
-// The documents, opened from the "Compte" tab.
+// The documents, opened from the "Compte" tab or the home's banner.
 final class DriverFlowDocumentsReview extends DriverFlowState {
-  const DriverFlowDocumentsReview({required this.documents});
+  const DriverFlowDocumentsReview({
+    required this.documents,
+    this.isSubmitting = false,
+    this.failureMessage,
+    this.sendingTypeId,
+  });
+
+  // The document being sent: its card shows a spinner.
+  final String? sendingTypeId;
 
   final DriverDocuments documents;
+  final bool isSubmitting;
+  final String? failureMessage;
 
   @override
-  List<Object?> get props => [documents];
+  List<Object?> get props => [
+    documents,
+    isSubmitting,
+    failureMessage,
+    sendingTypeId,
+  ];
 }
 
 final class DriverFlowHome extends DriverFlowState {
-  const DriverFlowHome({this.notice});
+  const DriverFlowHome({this.notice, this.documents});
 
   // Why the ride stopped, when the driver did not choose it.
   final String? notice;
 
+  // For the banner: a document to renew or to provide. Null until read.
+  final DriverDocuments? documents;
+
   @override
-  List<Object?> get props => [notice];
+  List<Object?> get props => [notice, documents];
 }
 
 // Mockup screen 8: the meter amount to type, then free again.
