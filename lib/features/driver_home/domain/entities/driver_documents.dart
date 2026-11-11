@@ -17,6 +17,11 @@ class DriverDocuments extends Equatable {
   // True: no "Plus tard", the driver must send the document before driving.
   bool get blocksDriving => documents.any((document) => document.blocksDriving);
 
+  // "Vos documents" opens on arrival when true: a document waiting for the
+  // admin leaves the driver nothing to do (decision of the user,
+  // 2026-11-11).
+  bool get hasDocumentToSend => nextToProvide != null;
+
   // The document to send first: a blocking one before one expiring soon,
   // never one already waiting for the admin.
   DriverDocument? get nextToProvide {

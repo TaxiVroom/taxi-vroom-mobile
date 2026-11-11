@@ -9,6 +9,7 @@ class PlaceListTile extends StatelessWidget {
     required this.subtitle,
     this.onPressed,
     this.trailing,
+    this.wrapsSubtitle = false,
     super.key,
   });
 
@@ -19,6 +20,10 @@ class PlaceListTile extends StatelessWidget {
 
   // Shown at the end of the row, e.g. a price.
   final Widget? trailing;
+
+  // The whole detail line on as many lines as it needs, instead of cut with
+  // "…" (an address stays on one line).
+  final bool wrapsSubtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +47,7 @@ class PlaceListTile extends StatelessWidget {
                   ),
                   Text(
                     subtitle,
-                    overflow: TextOverflow.ellipsis,
+                    overflow: wrapsSubtitle ? null : TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.muted,

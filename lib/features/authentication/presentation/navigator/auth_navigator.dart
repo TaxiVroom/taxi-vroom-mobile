@@ -25,9 +25,10 @@ import 'package:mobile/features/driver_home/domain/usecases/submit_driver_docume
 import 'package:mobile/features/driver_home/domain/usecases/watch_document_notifications_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_online_allowed_usecase.dart';
 import 'package:mobile/core/domain/usecases/open_location_settings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_driver_activity_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_earnings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/refuse_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
@@ -119,6 +120,7 @@ class AuthNavigator extends StatelessWidget {
     required this.watchOnlineAllowedUseCase,
     required this.openLocationSettingsUseCase,
     required this.loadDriverHomeUseCase,
+    required this.loadDriverActivityUseCase,
     required this.setOnlineUseCase,
     required this.shareDriverPositionUseCase,
     required this.watchConnectionUseCase,
@@ -138,7 +140,7 @@ class AuthNavigator extends StatelessWidget {
     required this.withdrawFromBookingUseCase,
     required this.refuseBookingUseCase,
     required this.departForBookingUseCase,
-    required this.loadWeeklyEarningsUseCase,
+    required this.loadEarningsUseCase,
     required this.loadDriverAccountUseCase,
     super.key,
   });
@@ -199,6 +201,7 @@ class AuthNavigator extends StatelessWidget {
   final WatchOnlineAllowedUseCase watchOnlineAllowedUseCase;
   final OpenLocationSettingsUseCase openLocationSettingsUseCase;
   final LoadDriverHomeUseCase loadDriverHomeUseCase;
+  final LoadDriverActivityUseCase loadDriverActivityUseCase;
   final SetOnlineUseCase setOnlineUseCase;
   final ShareDriverPositionUseCase shareDriverPositionUseCase;
 
@@ -221,7 +224,7 @@ class AuthNavigator extends StatelessWidget {
   final WithdrawFromBookingUseCase withdrawFromBookingUseCase;
   final RefuseBookingUseCase refuseBookingUseCase;
   final DepartForBookingUseCase departForBookingUseCase;
-  final LoadWeeklyEarningsUseCase loadWeeklyEarningsUseCase;
+  final LoadEarningsUseCase loadEarningsUseCase;
   final LoadDriverAccountUseCase loadDriverAccountUseCase;
 
   @override
@@ -371,6 +374,7 @@ class AuthNavigator extends StatelessWidget {
             watchOnlineAllowedUseCase: watchOnlineAllowedUseCase,
             openLocationSettingsUseCase: openLocationSettingsUseCase,
             loadDriverHomeUseCase: loadDriverHomeUseCase,
+            loadDriverActivityUseCase: loadDriverActivityUseCase,
             setOnlineUseCase: setOnlineUseCase,
             shareDriverPositionUseCase: shareDriverPositionUseCase,
             watchConnectionUseCase: watchConnectionUseCase,
@@ -392,7 +396,7 @@ class AuthNavigator extends StatelessWidget {
             refuseBookingUseCase: refuseBookingUseCase,
             departForBookingUseCase: departForBookingUseCase,
             watchPushedRidesUseCase: watchPushedRidesUseCase,
-            loadWeeklyEarningsUseCase: loadWeeklyEarningsUseCase,
+            loadEarningsUseCase: loadEarningsUseCase,
             loadDriverAccountUseCase: loadDriverAccountUseCase,
             onSignOutRequested: () =>
                 context.read<AuthBloc>().add(const AuthSignOutRequested()),

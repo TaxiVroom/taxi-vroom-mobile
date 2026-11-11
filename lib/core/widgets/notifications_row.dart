@@ -7,7 +7,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 /// The account tab's "Notifications" line, for both roles: what the phone
 /// really allows, read when shown and again when the app comes back, e.g.
 /// from the settings. The app cannot turn them on or off itself: "Activer"
-/// asks the phone.
+/// asks the phone, "Désactiver" opens its settings.
 class NotificationsRow extends StatefulWidget {
   const NotificationsRow({super.key});
 
@@ -63,8 +63,18 @@ class _NotificationsRowState extends State<NotificationsRow> {
     NotificationPermission? permission,
   ) => switch (permission) {
     null => const [],
-    NotificationPermission.granted => const [
-      Text('Activées', style: TextStyle(color: AppColors.muted)),
+    // The app cannot take the permission back: "Désactiver" opens the phone's
+    // settings (spec permission-notifications.md, point 8).
+    NotificationPermission.granted => [
+      const Text('Activées', style: TextStyle(color: AppColors.muted)),
+      const SizedBox(width: 8),
+      OutlineButton(
+        size: ButtonSize.small,
+        onPressed: () => context.read<NotificationPermissionBloc>().add(
+          const NotificationSettingsOpened(),
+        ),
+        child: const Text('Désactiver'),
+      ),
     ],
     NotificationPermission.denied ||
     NotificationPermission.permanentlyDenied => [

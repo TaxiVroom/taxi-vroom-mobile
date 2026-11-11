@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/entities/vehicle.dart';
 import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/core/utils/phone_formatter.dart';
+import 'package:mobile/core/widgets/contact_us_row.dart';
 import 'package:mobile/core/widgets/license_plate.dart';
 import 'package:mobile/core/widgets/notifications_row.dart';
 import 'package:mobile/core/widgets/place_list_tile.dart';
@@ -37,21 +39,17 @@ class DriverAccountTab extends StatelessWidget {
               const DriverAccountRequested(),
             ),
           ),
-          DriverAccountReady(:final account, :final documents) => _buildAccount(
+          DriverAccountReady(:final account) => _buildAccount(
             context,
             account,
-            documents,
           ),
         },
       ),
     );
   }
 
-  Widget _buildAccount(
-    BuildContext context,
-    DriverAccount account,
-    DriverDocuments documents,
-  ) {
+  Widget _buildAccount(BuildContext context, DriverAccount account) {
+    final documents = account.documents;
     final documentsSummary = documents.needsAction
         ? '${documents.validatedCount} sur ${documents.documents.length} '
               'validés, une action attendue'
@@ -79,21 +77,8 @@ class DriverAccountTab extends StatelessWidget {
           const NotificationsRow(),
           const SizedBox(height: 16),
           const SectionLabel('Assistance'),
-          // Help and terms pages are not built yet.
-          PlaceListTile(
-            icon: Icons.help_outline,
-            title: 'Aide',
-            subtitle: 'Questions fréquentes, nous contacter',
-            onPressed: () {},
-            trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
-          ),
-          PlaceListTile(
-            icon: Icons.description_outlined,
-            title: "Conditions d'utilisation",
-            subtitle: 'Vos droits et nos engagements',
-            onPressed: () {},
-            trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
-          ),
+          // The number came with the account: the phone app opens at once.
+          ContactUsRow(knownPhone: account.contactPhone),
           const SizedBox(height: 24),
           DestructiveButton(
             onPressed: onSignOutRequested,
@@ -153,7 +138,7 @@ class DriverAccountTab extends StatelessWidget {
                 ),
               ),
               Text(
-                account.phone,
+                formatPhone(account.phone),
                 style: const TextStyle(color: AppColors.muted),
               ),
               Text(

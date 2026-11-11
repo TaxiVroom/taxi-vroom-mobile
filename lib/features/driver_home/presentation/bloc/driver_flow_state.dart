@@ -7,8 +7,15 @@ sealed class DriverFlowState extends Equatable {
   List<Object?> get props => [];
 }
 
+// A full-screen loader while the documents are read: at start, or over the
+// home when "Passer en ligne" was refused for a document.
 final class DriverFlowCheckingDocuments extends DriverFlowState {
-  const DriverFlowCheckingDocuments();
+  const DriverFlowCheckingDocuments({this.isOverHome = false});
+
+  final bool isOverHome;
+
+  @override
+  List<Object?> get props => [isOverHome];
 }
 
 final class DriverFlowDocumentsFailure extends DriverFlowState {
@@ -28,6 +35,7 @@ final class DriverFlowDocuments extends DriverFlowState {
     this.isSubmitting = false,
     this.failureMessage,
     this.sendingTypeId,
+    this.isRefreshing = false,
   });
 
   // The document being sent: its card shows a spinner.
@@ -37,12 +45,17 @@ final class DriverFlowDocuments extends DriverFlowState {
   final bool isSubmitting;
   final String? failureMessage;
 
+  // Read again after a notification or a return to the app: a loader
+  // instead of the old states.
+  final bool isRefreshing;
+
   @override
   List<Object?> get props => [
     documents,
     isSubmitting,
     failureMessage,
     sendingTypeId,
+    isRefreshing,
   ];
 }
 
@@ -53,6 +66,7 @@ final class DriverFlowDocumentsReview extends DriverFlowState {
     this.isSubmitting = false,
     this.failureMessage,
     this.sendingTypeId,
+    this.isRefreshing = false,
   });
 
   // The document being sent: its card shows a spinner.
@@ -62,12 +76,17 @@ final class DriverFlowDocumentsReview extends DriverFlowState {
   final bool isSubmitting;
   final String? failureMessage;
 
+  // Read again after a notification or a return to the app: a loader
+  // instead of the old states.
+  final bool isRefreshing;
+
   @override
   List<Object?> get props => [
     documents,
     isSubmitting,
     failureMessage,
     sendingTypeId,
+    isRefreshing,
   ];
 }
 

@@ -125,6 +125,42 @@ void main() {
       expect(nextToProvide?.name, 'Carte professionnelle');
     });
 
+    test('every document to renew already sent: nothing to send', () {
+      // Arrange
+      final documents = DriverDocuments([
+        _document(
+          'Carte d’identité',
+          DriverDocumentStatus.expiringSoon,
+          inReview: true,
+        ),
+        _document('Permis', DriverDocumentStatus.validated),
+      ]);
+
+      // Act
+      final hasDocumentToSend = documents.hasDocumentToSend;
+
+      // Assert
+      expect(hasDocumentToSend, isFalse);
+    });
+
+    test('one sent, another still to renew: something to send', () {
+      // Arrange
+      final documents = DriverDocuments([
+        _document(
+          'Carte d’identité',
+          DriverDocumentStatus.expiringSoon,
+          inReview: true,
+        ),
+        _document('Permis', DriverDocumentStatus.expiringSoon),
+      ]);
+
+      // Act
+      final hasDocumentToSend = documents.hasDocumentToSend;
+
+      // Assert
+      expect(hasDocumentToSend, isTrue);
+    });
+
     test('the bookings stop at the soonest end of a document', () {
       // Arrange
       final documents = DriverDocuments([

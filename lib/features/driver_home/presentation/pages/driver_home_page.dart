@@ -26,9 +26,10 @@ import 'package:mobile/features/driver_home/domain/usecases/submit_driver_docume
 import 'package:mobile/features/driver_home/domain/usecases/watch_document_notifications_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_online_allowed_usecase.dart';
 import 'package:mobile/core/domain/usecases/open_location_settings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_driver_activity_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_earnings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/refuse_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
@@ -40,6 +41,7 @@ import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_
 import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_ride_usecase.dart';
 import 'package:mobile/features/driver_home/presentation/bloc/driver_account_bloc.dart';
+import 'package:mobile/features/driver_home/presentation/bloc/driver_activity_bloc.dart';
 import 'package:mobile/features/driver_home/presentation/bloc/driver_bookings_bloc.dart';
 import 'package:mobile/features/driver_home/presentation/bloc/driver_flow_bloc.dart';
 import 'package:mobile/features/driver_home/presentation/bloc/driver_home_bloc.dart';
@@ -73,6 +75,7 @@ class DriverHomePage extends StatelessWidget {
     required this.watchOnlineAllowedUseCase,
     required this.openLocationSettingsUseCase,
     required this.loadDriverHomeUseCase,
+    required this.loadDriverActivityUseCase,
     required this.setOnlineUseCase,
     required this.shareDriverPositionUseCase,
     required this.watchConnectionUseCase,
@@ -93,7 +96,7 @@ class DriverHomePage extends StatelessWidget {
     required this.refuseBookingUseCase,
     required this.departForBookingUseCase,
     required this.watchPushedRidesUseCase,
-    required this.loadWeeklyEarningsUseCase,
+    required this.loadEarningsUseCase,
     required this.loadDriverAccountUseCase,
     required this.onSignOutRequested,
     super.key,
@@ -106,6 +109,7 @@ class DriverHomePage extends StatelessWidget {
   final WatchOnlineAllowedUseCase watchOnlineAllowedUseCase;
   final OpenLocationSettingsUseCase openLocationSettingsUseCase;
   final LoadDriverHomeUseCase loadDriverHomeUseCase;
+  final LoadDriverActivityUseCase loadDriverActivityUseCase;
   final SetOnlineUseCase setOnlineUseCase;
   final ShareDriverPositionUseCase shareDriverPositionUseCase;
   final WatchConnectionUseCase watchConnectionUseCase;
@@ -126,7 +130,7 @@ class DriverHomePage extends StatelessWidget {
   final RefuseBookingUseCase refuseBookingUseCase;
   final DepartForBookingUseCase departForBookingUseCase;
   final WatchPushedRidesUseCase watchPushedRidesUseCase;
-  final LoadWeeklyEarningsUseCase loadWeeklyEarningsUseCase;
+  final LoadEarningsUseCase loadEarningsUseCase;
   final LoadDriverAccountUseCase loadDriverAccountUseCase;
 
   /// Lets the parent ([AuthNavigator]) sign the driver out, without this
@@ -164,13 +168,18 @@ class DriverHomePage extends StatelessWidget {
           )..add(const DriverHomeStarted()),
         ),
         BlocProvider(
+          create: (_) => DriverActivityBloc(
+            loadDriverActivityUseCase: loadDriverActivityUseCase,
+          )..add(const DriverActivityRequested()),
+        ),
+        BlocProvider(
           create: (_) => DriverAccountBloc(
             loadDriverAccountUseCase: loadDriverAccountUseCase,
           )..add(const DriverAccountRequested()),
         ),
         BlocProvider(
           create: (_) => EarningsBloc(
-            loadWeeklyEarningsUseCase: loadWeeklyEarningsUseCase,
+            loadEarningsUseCase: loadEarningsUseCase,
           )..add(const EarningsRequested()),
         ),
         BlocProvider(
@@ -236,6 +245,14 @@ class DriverHomePage extends StatelessWidget {
               context.read<DriverHomeBloc>().state,
             ),
           ),
+          // Back from a ride: the pill and the cards may have changed.
+          BlocListener<DriverFlowBloc, DriverFlowState>(
+            listenWhen: (previous, current) =>
+                _isOnRide(previous) && current is DriverFlowHome,
+            listener: (context, _) => context.read<DriverActivityBloc>().add(
+              const DriverActivityRequested(),
+            ),
+          ),
         ],
         child: BlocBuilder<DriverFlowBloc, DriverFlowState>(
           builder: (context, flowState) => FlowBuilder<DriverFlowState>(
@@ -267,7 +284,7 @@ class DriverHomePage extends StatelessWidget {
     final homeState = context.read<DriverHomeBloc>().state;
     if (isDuringRide &&
         homeState is DriverHomeReady &&
-        !homeState.home.activity.isOnline) {
+        !homeState.home.isOnline) {
       context.read<DriverHomeBloc>().add(
         const DriverOnlineToggled(isOnline: true),
       );
@@ -281,11 +298,11 @@ class DriverHomePage extends StatelessWidget {
       state is DriverFlowCheckout;
 
   static bool _isOnline(DriverHomeState state) =>
-      state is DriverHomeReady && state.home.activity.isOnline;
+      state is DriverHomeReady && state.home.isOnline;
 
   void _onOnlineChanged(BuildContext context, DriverHomeState state) {
     final rideRequests = context.read<RideRequestBloc>();
-    if (state is DriverHomeReady && state.home.activity.isOnline) {
+    if (state is DriverHomeReady && state.home.isOnline) {
       rideRequests.add(
         RideRequestsWatched(driverPosition: state.home.position),
       );
@@ -303,7 +320,9 @@ class DriverHomePage extends StatelessWidget {
       child: _DriverTabs(onSignOutRequested: onSignOutRequested),
     );
     return switch (flowState) {
-      DriverFlowCheckingDocuments() => [
+      // Over the home, the tabs stay below and keep their state.
+      DriverFlowCheckingDocuments(:final isOverHome) => [
+        if (isOverHome) tabsPage,
         const MaterialPage<void>(
           key: ValueKey('driver-documents-check'),
           child: Scaffold(child: Center(child: CircularProgressIndicator())),
@@ -327,6 +346,7 @@ class DriverHomePage extends StatelessWidget {
         :final isSubmitting,
         :final failureMessage,
         :final sendingTypeId,
+        :final isRefreshing,
       ) =>
         [
           tabsPage,
@@ -334,6 +354,7 @@ class DriverHomePage extends StatelessWidget {
             key: const ValueKey('driver-documents'),
             child: DriverDocumentsPage(
               documents: documents,
+              isRefreshing: isRefreshing,
               isSubmitting: isSubmitting,
               sendingTypeId: sendingTypeId,
               failureMessage: failureMessage,
@@ -352,6 +373,7 @@ class DriverHomePage extends StatelessWidget {
         :final isSubmitting,
         :final failureMessage,
         :final sendingTypeId,
+        :final isRefreshing,
       ) =>
         [
           tabsPage,
@@ -359,6 +381,7 @@ class DriverHomePage extends StatelessWidget {
             key: const ValueKey('driver-documents-review'),
             child: DriverDocumentsPage(
               documents: documents,
+              isRefreshing: isRefreshing,
               isSubmitting: isSubmitting,
               sendingTypeId: sendingTypeId,
               failureMessage: failureMessage,
@@ -524,6 +547,11 @@ class _DriverTabsState extends State<_DriverTabs> {
 
   void _onTabSelected(Key? key) {
     setState(() => _selectedTab = key ?? _driveTab);
+    // The pill and the cards: a ride may have ended, a rating come in. Spec
+    // taxi-vroom-api/docs/specs/gains-reels.md.
+    if (key == _driveTab) {
+      context.read<DriverActivityBloc>().add(const DriverActivityRequested());
+    }
     // Bookings may have changed since the tab was last shown.
     if (key == _bookingsTab) {
       context.read<DriverBookingsBloc>().add(const DriverBookingsRequested());
@@ -531,6 +559,11 @@ class _DriverTabsState extends State<_DriverTabs> {
     // A ride may have ended since the tab was last shown.
     if (key == _earningsTab) {
       context.read<EarningsBloc>().add(const EarningsRequested());
+    }
+    // The profile, vehicle or documents may have changed: spec
+    // taxi-vroom-api/docs/specs/compte-a-jour.md.
+    if (key == _accountTab) {
+      context.read<DriverAccountBloc>().add(const DriverAccountRequested());
     }
   }
 
@@ -715,7 +748,7 @@ class _DriveTab extends StatelessWidget {
                 _offer(previous) != _offer(current),
             builder: (context, requestState) => DriverHomeMap(
               position: home.position,
-              isOnline: home.activity.isOnline,
+              isOnline: home.isOnline,
               bottomPadding: _requestCardHeight,
               panelHeight: _panelHeight,
               offer: _offer(requestState),
@@ -730,7 +763,7 @@ class _DriveTab extends StatelessWidget {
         ),
         Align(
           alignment: Alignment.bottomCenter,
-          child: home.activity.isOnline
+          child: home.isOnline
               ? _buildOnlinePanel(context, state)
               : _buildOfflinePanel(context, state),
         ),
@@ -739,10 +772,21 @@ class _DriveTab extends StatelessWidget {
   }
 
   Widget _buildTopBar(DriverHome home) {
-    final earnings = MapPill(
-      text: 'Aujourd’hui ${formatEuro(home.activity.todayEarningsCents)}',
+    // Today's earnings: a small loader, the amount, or "–" when the API
+    // failed.
+    final earnings = BlocBuilder<DriverActivityBloc, DriverActivityState>(
+      builder: (context, activityState) => switch (activityState) {
+        DriverActivityLoading() => const MapPill(
+          text: 'Aujourd’hui',
+          isLoading: true,
+        ),
+        DriverActivityReady(:final activity) => MapPill(
+          text: 'Aujourd’hui ${formatEuro(activity.todayEarningsCents)}',
+        ),
+        DriverActivityFailure() => const MapPill(text: 'Aujourd’hui –'),
+      },
     );
-    if (home.activity.isOnline) {
+    if (home.isOnline) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -789,13 +833,15 @@ class _DriveTab extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const DocumentsBanner(),
-        OfflinePanel(
-          activity: state.home.activity,
-          nextBooking: state.home.nextBooking,
-          isSwitching: state.isSwitchingOnline,
-          failureMessage: state.switchFailureMessage,
-          onGoOnlinePressed: () => context.read<DriverHomeBloc>().add(
-            const DriverOnlineToggled(isOnline: true),
+        BlocBuilder<DriverActivityBloc, DriverActivityState>(
+          builder: (context, activityState) => OfflinePanel(
+            activityState: activityState,
+            nextBooking: state.home.nextBooking,
+            isSwitching: state.isSwitchingOnline,
+            failureMessage: state.switchFailureMessage,
+            onGoOnlinePressed: () => context.read<DriverHomeBloc>().add(
+              const DriverOnlineToggled(isOnline: true),
+            ),
           ),
         ),
       ],

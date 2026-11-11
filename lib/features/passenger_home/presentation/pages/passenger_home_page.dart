@@ -276,6 +276,11 @@ class _PassengerTabsState extends State<_PassengerTabs> {
     if (key == _ridesTab) {
       context.read<RideHistoryBloc>().add(const RideHistoryRequested());
     }
+    // The profile may have changed: spec
+    // taxi-vroom-api/docs/specs/compte-a-jour.md.
+    if (key == _accountTab) {
+      context.read<AccountBloc>().add(const AccountRequested());
+    }
   }
 
   Widget _buildTabBar() {

@@ -77,8 +77,9 @@ class DriverBookingsBloc
         currentState.answeringId != null) {
       return;
     }
-    // A refresh keeps the list on screen instead of a loader.
-    if (state is! DriverBookingsReady) emit(const DriverBookingsLoading());
+    // The loader shows each time the API is asked, never the old list
+    // (decision of the user, 2026-11-11).
+    emit(const DriverBookingsLoading());
     await _reload(emit);
   }
 

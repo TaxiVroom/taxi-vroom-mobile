@@ -1,6 +1,7 @@
 import 'package:mobile/features/driver_home/domain/entities/driver_document.dart';
 
-// One document type of the driver, from GET /v1/drivers/me/documents.
+// One document type of the driver, from GET /v1/drivers/me/documents or the
+// "documents" of GET /v1/drivers/me/account.
 class DriverDocumentModel {
   const DriverDocumentModel({
     required this.documentTypeId,
@@ -26,6 +27,16 @@ class DriverDocumentModel {
         requiredFrom: json['requiredFrom'] as String?,
         inReview: json['inReview'] as bool,
       );
+
+  // The {"documents": [...], "isBlocked", "inOrderUntil"} object both routes
+  // answer.
+  static List<DriverDocumentModel> listFromJson(Map<String, dynamic> json) =>
+      (json['documents'] as List<dynamic>)
+          .map(
+            (json) =>
+                DriverDocumentModel.fromJson(json as Map<String, dynamic>),
+          )
+          .toList();
 
   final String documentTypeId;
   final String name;

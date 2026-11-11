@@ -1,7 +1,7 @@
 import 'package:mobile/core/domain/entities/vehicle.dart';
 import 'package:mobile/core/domain/entities/vehicle_color.dart';
 
-// GET /v1/drivers/me/vehicle, e.g. {"model":"Renault Austral",
+// "vehicle" of GET /v1/drivers/me/account, e.g. {"model":"Renault Austral",
 // "color":"GREY","plate":"AB-123-CD","adsNumber":"118",
 // "communeCode":"67482","communeName":"Strasbourg"}.
 class DriverVehicleModel {

@@ -20,6 +20,8 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
     AccountRequested event,
     Emitter<AccountState> emit,
   ) async {
+    // The loader each time the tab opens, until the API answers (decision of
+    // the user, 2026-11-11).
     emit(const AccountLoading());
     switch (await _loadAccountUseCase()) {
       case Ok(:final value):

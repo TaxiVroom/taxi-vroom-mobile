@@ -12,13 +12,12 @@ final class DriverAccountLoading extends DriverAccountState {
 }
 
 final class DriverAccountReady extends DriverAccountState {
-  const DriverAccountReady({required this.account, required this.documents});
+  const DriverAccountReady({required this.account});
 
   final DriverAccount account;
-  final DriverDocuments documents;
 
   @override
-  List<Object?> get props => [account, documents];
+  List<Object?> get props => [account];
 }
 
 final class DriverAccountFailure extends DriverAccountState {

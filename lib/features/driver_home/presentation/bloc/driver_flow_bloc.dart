@@ -82,15 +82,15 @@ class DriverFlowBloc extends Bloc<DriverFlowEvent, DriverFlowState> {
       add(_DriverCurrentRideFound(current: current));
       return;
     }
-    // A document with a problem: "Vos documents" opens at once (decision
-    // of the user, 2026-11-10).
+    // A document to send: "Vos documents" opens at once (decision of the
+    // user, 2026-11-10); one waiting for the admin does not (2026-11-11).
     await _readDocuments();
     emit(_homeOrDocuments());
   }
 
   DriverFlowState _homeOrDocuments() {
     final documents = _documents;
-    if (documents != null && documents.needsAction) {
+    if (documents != null && documents.hasDocumentToSend) {
       return DriverFlowDocuments(documents: documents);
     }
     return _home();
@@ -110,9 +110,13 @@ class DriverFlowBloc extends Bloc<DriverFlowEvent, DriverFlowState> {
     DriverDocumentsBlocked event,
     Emitter<DriverFlowState> emit,
   ) async {
+    // A loader over the home until "Vos documents" opens.
+    emit(const DriverFlowCheckingDocuments(isOverHome: true));
     await _readDocuments();
     final documents = _documents;
-    if (documents != null) emit(DriverFlowDocuments(documents: documents));
+    emit(
+      documents == null ? _home() : DriverFlowDocuments(documents: documents),
+    );
   }
 
   Future<void> _onDocumentsRefreshed(
@@ -121,15 +125,30 @@ class DriverFlowBloc extends Bloc<DriverFlowEvent, DriverFlowState> {
   ) async {
     // Never over a ride, nor while a document is being sent.
     if (!_showsHomeOrDocuments) return;
+    // "Vos documents" on screen: a loader instead of the old states. The
+    // home shows none: its decision only comes after the answer.
+    switch (state) {
+      case DriverFlowDocuments(:final documents):
+        emit(DriverFlowDocuments(documents: documents, isRefreshing: true));
+      case DriverFlowDocumentsReview(:final documents):
+        emit(
+          DriverFlowDocumentsReview(documents: documents, isRefreshing: true),
+        );
+      case _:
+        break;
+    }
     await _readDocuments();
     final documents = _documents;
     switch (state) {
       case DriverFlowHome():
         emit(_homeOrDocuments());
-      // Opened by the driver: updated, it stays open.
-      case DriverFlowDocumentsReview(sendingTypeId: null)
-          when documents != null:
-        emit(DriverFlowDocumentsReview(documents: documents));
+      // Opened by the driver: updated, it stays open. Unread, the states
+      // it showed come back without the loader.
+      case DriverFlowDocumentsReview(
+        sendingTypeId: null,
+        documents: final shown,
+      ):
+        emit(DriverFlowDocumentsReview(documents: documents ?? shown));
       // Opened for a problem: once it is gone, the home. Spec
       // taxi-vroom-api/docs/specs/documents-du-chauffeur.md, step 6 bis.
       case DriverFlowDocuments(sendingTypeId: null):

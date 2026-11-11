@@ -28,6 +28,30 @@ void main() {
     });
   });
 
+  group('formatWholeEuro', () {
+    test('shows a round amount without cents', () {
+      // Arrange
+      const cents = 5000;
+
+      // Act
+      final label = formatWholeEuro(cents);
+
+      // Assert
+      expect(label, '50 €');
+    });
+
+    test('shows zero as 0 €', () {
+      // Arrange
+      const cents = 0;
+
+      // Act
+      final label = formatWholeEuro(cents);
+
+      // Assert
+      expect(label, '0 €');
+    });
+  });
+
   group('parseEuroCents', () {
     test('reads a French amount with a comma', () {
       // Arrange

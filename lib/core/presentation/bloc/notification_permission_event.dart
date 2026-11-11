@@ -41,7 +41,8 @@ final class NotificationPermissionEnabled extends NotificationPermissionEvent {
   const NotificationPermissionEnabled();
 }
 
-// "Réglages" on the message shown after a permanent denial.
+// "Réglages" on the message shown after a permanent denial, or "Désactiver"
+// on the account tab.
 final class NotificationSettingsOpened extends NotificationPermissionEvent {
   const NotificationSettingsOpened();
 }

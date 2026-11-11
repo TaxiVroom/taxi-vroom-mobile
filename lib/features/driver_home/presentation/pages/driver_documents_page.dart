@@ -29,8 +29,13 @@ class DriverDocumentsPage extends StatelessWidget {
     this.closeLabel = 'Plus tard',
     this.canPostpone = true,
     this.sendingTypeId,
+    this.isRefreshing = false,
     super.key,
   });
+
+  // Read again: a loader instead of the old states, only the title and the
+  // close button stay.
+  final bool isRefreshing;
 
   // The document being sent: its card shows a spinner, as at the
   // registration.
@@ -63,37 +68,48 @@ class DriverDocumentsPage extends StatelessWidget {
                 'Vos documents',
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
               ),
-              const SizedBox(height: 4),
-              Text(_summary, style: const TextStyle(color: AppColors.muted)),
-              // As at the registration: each document to send opens from
-              // its own line, however many there are.
-              if (hasToSend) ...[
+              if (isRefreshing)
+                const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else ...[
                 const SizedBox(height: 4),
-                const Text(
-                  'Touchez un document à envoyer pour l’ajouter.',
-                  style: TextStyle(fontSize: 13, color: AppColors.muted),
-                ),
-              ],
-              if (failureMessage case final message?) ...[
+                Text(_summary, style: const TextStyle(color: AppColors.muted)),
+                // As at the registration: each document to send opens from
+                // its own line, however many there are.
+                if (hasToSend) ...[
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Touchez un document à envoyer pour l’ajouter.',
+                    style: TextStyle(fontSize: 13, color: AppColors.muted),
+                  ),
+                ],
+                if (failureMessage case final message?) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    message,
+                    style: const TextStyle(color: AppColors.danger),
+                  ),
+                ],
                 const SizedBox(height: 8),
-                Text(message, style: const TextStyle(color: AppColors.danger)),
-              ],
-              const SizedBox(height: 8),
-              Expanded(
-                child: ListView(
-                  children: [
-                    for (final (index, document)
-                        in documents.documents.indexed) ...[
-                      if (index > 0) const SizedBox(height: 12),
-                      _buildDocument(context, document),
+                Expanded(
+                  child: ListView(
+                    children: [
+                      for (final (index, document)
+                          in documents.documents.indexed) ...[
+                        if (index > 0) const SizedBox(height: 12),
+                        _buildDocument(context, document),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
+              ],
               if (canPostpone) ...[
                 const SizedBox(height: 8),
                 SecondaryButton(
-                  onPressed: onPostponed,
+                  // Disabled while a document is being sent (decision of the
+                  // user, 2026-11-11).
+                  onPressed: sendingTypeId == null ? onPostponed : null,
                   alignment: Alignment.center,
                   child: Text(closeLabel),
                 ),

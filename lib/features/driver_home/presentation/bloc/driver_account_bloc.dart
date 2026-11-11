@@ -2,7 +2,6 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_account.dart';
-import 'package:mobile/features/driver_home/domain/entities/driver_documents.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
 
 part 'driver_account_event.dart';
@@ -23,15 +22,12 @@ class DriverAccountBloc extends Bloc<DriverAccountEvent, DriverAccountState> {
     DriverAccountRequested event,
     Emitter<DriverAccountState> emit,
   ) async {
+    // The loader each time the tab opens, until the API answers (decision of
+    // the user, 2026-11-11).
     emit(const DriverAccountLoading());
     switch (await _loadDriverAccountUseCase()) {
       case Ok(:final value):
-        emit(
-          DriverAccountReady(
-            account: value.account,
-            documents: value.documents,
-          ),
-        );
+        emit(DriverAccountReady(account: value));
       case Error(:final error):
         emit(DriverAccountFailure(message: error.message));
     }

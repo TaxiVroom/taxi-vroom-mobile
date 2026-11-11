@@ -96,9 +96,7 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     emit(
       switch (result) {
         Ok() => DriverHomeReady(
-          home: home.withActivity(
-            home.activity.withOnline(isOnline: event.isOnline),
-          ),
+          home: home.withOnline(isOnline: event.isOnline),
         ),
         Error(:final DocumentsBlockingFailure error) => DriverHomeReady(
           home: home,
@@ -155,7 +153,7 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     final home = currentState.home;
     emit(
       DriverHomeReady(
-        home: home.withActivity(home.activity.withOnline(isOnline: false)),
+        home: home.withOnline(isOnline: false),
         isBlockedByDocuments: true,
       ),
     );

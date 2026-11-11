@@ -29,11 +29,7 @@ class DriverDocumentRemoteDataSourceImpl
     final response = await _dio.get<Map<String, dynamic>>(
       '/v1/drivers/me/documents',
     );
-    return (response.data!['documents'] as List<dynamic>)
-        .map(
-          (json) => DriverDocumentModel.fromJson(json as Map<String, dynamic>),
-        )
-        .toList();
+    return DriverDocumentModel.listFromJson(response.data!);
   }
 
   @override

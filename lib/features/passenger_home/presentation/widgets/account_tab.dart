@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/core/utils/phone_formatter.dart';
+import 'package:mobile/core/widgets/contact_us_row.dart';
 import 'package:mobile/core/widgets/notifications_row.dart';
 import 'package:mobile/core/widgets/place_list_tile.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
@@ -57,21 +59,8 @@ class AccountTab extends StatelessWidget {
           const NotificationsRow(),
           const SizedBox(height: 16),
           const SectionLabel('Assistance'),
-          // Help and terms pages are not built yet.
-          PlaceListTile(
-            icon: Icons.help_outline,
-            title: 'Aide',
-            subtitle: 'Questions fréquentes, nous contacter',
-            onPressed: () {},
-            trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
-          ),
-          PlaceListTile(
-            icon: Icons.description_outlined,
-            title: "Conditions d'utilisation",
-            subtitle: 'Vos droits et nos engagements',
-            onPressed: () {},
-            trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
-          ),
+          // The number came with the account: the phone app opens at once.
+          ContactUsRow(knownPhone: account.contactPhone),
           const SizedBox(height: 24),
           DestructiveButton(
             onPressed: onSignOutRequested,
@@ -100,7 +89,7 @@ class AccountTab extends StatelessWidget {
                 ),
               ),
               Text(
-                account.phone,
+                formatPhone(account.phone),
                 style: const TextStyle(color: AppColors.muted),
               ),
               Text(

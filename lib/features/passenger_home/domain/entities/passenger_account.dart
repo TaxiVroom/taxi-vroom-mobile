@@ -10,6 +10,7 @@ class PassengerAccount extends Equatable {
     required this.phone,
     required this.email,
     required this.savedPlaces,
+    this.contactPhone,
   });
 
   final String firstName;
@@ -18,8 +19,28 @@ class PassengerAccount extends Equatable {
   final String email;
   final List<SavedPlace> savedPlaces;
 
+  // The number "Contacter le développeur" calls, from GET
+  // /v1/enterprise-contact, asked with the account by LoadAccountUseCase.
+  final String? contactPhone;
+
   String get fullName => '$firstName $lastName';
 
+  PassengerAccount withContactPhone(String contactPhone) => PassengerAccount(
+    firstName: firstName,
+    lastName: lastName,
+    phone: phone,
+    email: email,
+    savedPlaces: savedPlaces,
+    contactPhone: contactPhone,
+  );
+
   @override
-  List<Object?> get props => [firstName, lastName, phone, email, savedPlaces];
+  List<Object?> get props => [
+    firstName,
+    lastName,
+    phone,
+    email,
+    savedPlaces,
+    contactPhone,
+  ];
 }

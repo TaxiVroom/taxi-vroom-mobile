@@ -7,7 +7,7 @@ sealed class DriverAccountEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-// The tab is shown, or the driver taps "Réessayer".
+// The home is shown, the driver opens the tab, or taps "Réessayer".
 final class DriverAccountRequested extends DriverAccountEvent {
   const DriverAccountRequested();
 }

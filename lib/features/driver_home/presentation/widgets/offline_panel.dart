@@ -3,8 +3,8 @@ import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/utils/rating_formatter.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
 import 'package:mobile/core/widgets/bottom_panel.dart';
-import 'package:mobile/features/driver_home/domain/entities/driver_activity.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_booking.dart';
+import 'package:mobile/features/driver_home/presentation/bloc/driver_activity_bloc.dart';
 import 'package:mobile/features/driver_home/presentation/widgets/go_button.dart';
 import 'package:mobile/features/driver_home/presentation/widgets/status_dot.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -13,7 +13,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 /// and their next booking.
 class OfflinePanel extends StatelessWidget {
   const OfflinePanel({
-    required this.activity,
+    required this.activityState,
     required this.nextBooking,
     required this.isSwitching,
     required this.onGoOnlinePressed,
@@ -21,7 +21,9 @@ class OfflinePanel extends StatelessWidget {
     super.key,
   });
 
-  final DriverActivity activity;
+  // The three cards: a small loader, the figures, or "–" when the API
+  // failed.
+  final DriverActivityState activityState;
   final DriverBooking? nextBooking;
   final bool isSwitching;
   final VoidCallback onGoOnlinePressed;
@@ -70,19 +72,41 @@ class OfflinePanel extends StatelessWidget {
     );
   }
 
+  // A null value shows "–": the API failed, no rating yet, or under 10
+  // requests.
   Widget _buildStats() {
+    final isLoading = activityState is DriverActivityLoading;
+    final activity = switch (activityState) {
+      DriverActivityReady(:final activity) => activity,
+      _ => null,
+    };
+    final rating = activity?.averageRating;
+    final acceptance = activity?.acceptanceRatePercent;
     return Row(
       children: [
-        _buildStat('${activity.weekRideCount}', 'courses, semaine'),
+        _buildStat(
+          activity == null ? null : '${activity.weekRideCount}',
+          'courses, semaine',
+          isLoading: isLoading,
+        ),
         const SizedBox(width: 8),
-        _buildStat(formatRating(activity.averageRating), 'note moyenne'),
+        _buildStat(
+          rating == null ? null : formatRating(rating),
+          'note moyenne',
+          isLoading: isLoading,
+        ),
         const SizedBox(width: 8),
-        _buildStat('${activity.acceptanceRatePercent} %', 'acceptation'),
+        _buildStat(
+          acceptance == null ? null : '$acceptance %',
+          'acceptation',
+          isLoading: isLoading,
+        ),
       ],
     );
   }
 
-  Widget _buildStat(String value, String label) {
+  Widget _buildStat(String? value, String label, {required bool isLoading}) {
+    const valueStyle = TextStyle(fontSize: 18, fontWeight: FontWeight.bold);
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -93,10 +117,18 @@ class OfflinePanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              value,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            // The spinner takes the line of the value: the card keeps its
+            // height.
+            if (isLoading)
+              const SizedBox(
+                height: 24,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: CircularProgressIndicator(size: 16, strokeWidth: 2),
+                ),
+              )
+            else
+              Text(value ?? '–', style: valueStyle),
             Text(
               label,
               style: const TextStyle(fontSize: 12, color: AppColors.muted),

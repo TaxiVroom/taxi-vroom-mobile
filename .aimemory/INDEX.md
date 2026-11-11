@@ -17,4 +17,7 @@ bookings: advance bookings shipped, spec taxi-vroom-api/docs/specs/reservations-
 pickupPlace: the passenger chooses and confirms the pickup, shipped, spec taxi-vroom-api/docs/specs/point-de-prise-en-charge.md
 navigation: "Itinéraire" opens Google Maps or Waze, shipped, spec taxi-vroom-api/docs/specs/navigation-externe.md
 documents: "Vos documents" real, opens on arrival when a document needs action, spec taxi-vroom-api/docs/specs/documents-du-chauffeur.md
+account: both "Compte" tabs real, one API call with a loader on each arrival, spec taxi-vroom-api/docs/specs/compte-a-jour.md
+contact: "Contacter le développeur" in both Compte tabs calls the number from GET /v1/enterprise-contact, spec taxi-vroom-api/docs/specs/aide-chauffeur.md
+earnings: "Gains" by day, week or month and the "Conduire" pill and three cards are real, a loader on every API call, spec taxi-vroom-api/docs/specs/gains-reels.md (screen: gains-du-chauffeur.md)
 next: to choose with the user; ideas noted for later in taxi-vroom-api/docs/a-faire.md

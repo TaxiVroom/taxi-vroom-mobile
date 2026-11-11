@@ -11,6 +11,11 @@ class NotificationsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<RegistrationBloc, RegistrationState>(
       builder: (context, state) {
+        final (isEnabling, isSkipping) = switch (state) {
+          RegistrationNotificationReady(:final isEnabling, :final isSkipping) =>
+            (isEnabling, isSkipping),
+          _ => (false, false),
+        };
         return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, _) {
@@ -18,7 +23,13 @@ class NotificationsPage extends StatelessWidget {
           },
           child: Scaffold(
             backgroundColor: Colors.white,
-            footers: [_buildFooterButtons(context)],
+            footers: [
+              _buildFooterButtons(
+                context,
+                isEnabling: isEnabling,
+                isSkipping: isSkipping,
+              ),
+            ],
             child: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -59,15 +70,30 @@ class NotificationsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildFooterButtons(BuildContext context) {
+  // While the registration is sent, both buttons are disabled and the tapped
+  // one shows a spinner, as "Continuer" on the name page.
+  Widget _buildFooterButtons(
+    BuildContext context, {
+    required bool isEnabling,
+    required bool isSkipping,
+  }) {
+    final isSending = isEnabling || isSkipping;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildEnableNotificationsButton(context),
+          _buildEnableNotificationsButton(
+            context,
+            isSending: isSending,
+            isLoading: isEnabling,
+          ),
           const SizedBox(height: 4),
-          _buildSkipButton(context),
+          _buildSkipButton(
+            context,
+            isSending: isSending,
+            isLoading: isSkipping,
+          ),
         ],
       ),
     );
@@ -88,23 +114,47 @@ class NotificationsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildEnableNotificationsButton(BuildContext context) {
+  Widget _buildEnableNotificationsButton(
+    BuildContext context, {
+    required bool isSending,
+    required bool isLoading,
+  }) {
     return SizedBox(
       width: double.infinity,
       child: PrimaryButton(
-        onPressed: () => _onNotificationPermissionRequested(context),
+        onPressed: isSending
+            ? null
+            : () => _onNotificationPermissionRequested(context),
         alignment: Alignment.center,
+        trailing: isLoading
+            ? const AspectRatio(
+                aspectRatio: 1,
+                child: CircularProgressIndicator(onSurface: true),
+              )
+            : null,
         child: const Text('Activer les notifications'),
       ),
     );
   }
 
-  Widget _buildSkipButton(BuildContext context) {
+  Widget _buildSkipButton(
+    BuildContext context, {
+    required bool isSending,
+    required bool isLoading,
+  }) {
     return SizedBox(
       width: double.infinity,
       child: GhostButton(
-        onPressed: () => _onNotificationPermissionSkipped(context),
+        onPressed: isSending
+            ? null
+            : () => _onNotificationPermissionSkipped(context),
         alignment: Alignment.center,
+        trailing: isLoading
+            ? const AspectRatio(
+                aspectRatio: 1,
+                child: CircularProgressIndicator(),
+              )
+            : null,
         child: const Text(
           'Passer',
           style: TextStyle(color: Color(0xFF6B7280)),
@@ -118,14 +168,14 @@ class NotificationsPage extends StatelessWidget {
   }
 
   void _onNotificationPermissionRequested(BuildContext context) {
-    context
-        .read<RegistrationBloc>()
-        .add(const RegistrationNotificationPermissionRequested());
+    context.read<RegistrationBloc>().add(
+      const RegistrationNotificationPermissionRequested(),
+    );
   }
 
   void _onNotificationPermissionSkipped(BuildContext context) {
-    context
-        .read<RegistrationBloc>()
-        .add(const RegistrationNotificationPermissionSkipped());
+    context.read<RegistrationBloc>().add(
+      const RegistrationNotificationPermissionSkipped(),
+    );
   }
 }

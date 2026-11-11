@@ -129,7 +129,17 @@ final class RegistrationNotificationReady extends RegistrationState {
     super.email,
     super.firstName,
     super.lastName,
+    this.isEnabling = false,
+    this.isSkipping = false,
   });
+
+  // The registration is being sent after "Activer les notifications" or
+  // "Passer": the tapped button shows a spinner, both are disabled.
+  final bool isEnabling;
+  final bool isSkipping;
+
+  @override
+  List<Object?> get props => [...super.props, isEnabling, isSkipping];
 }
 
 final class RegistrationAuthenticated extends RegistrationState {

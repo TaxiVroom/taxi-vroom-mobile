@@ -10,15 +10,18 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart'
 import 'package:mobile/core/data/datasources/connection_remote_datasource.dart';
 import 'package:mobile/core/data/datasources/device_location_datasource.dart';
 import 'package:mobile/core/data/datasources/email_availability_remote_datasource.dart';
+import 'package:mobile/core/data/datasources/enterprise_contact_remote_datasource.dart';
 import 'package:mobile/core/data/datasources/push_registration_remote_datasource.dart';
 import 'package:mobile/core/data/datasources/route_remote_datasource.dart';
 import 'package:mobile/core/data/repositories/connection_repository_impl.dart';
 import 'package:mobile/core/data/repositories/email_availability_repository_impl.dart';
+import 'package:mobile/core/data/repositories/enterprise_contact_repository_impl.dart';
 import 'package:mobile/core/data/repositories/location_repository_impl.dart';
 import 'package:mobile/core/data/repositories/navigation_repository_impl.dart';
 import 'package:mobile/core/data/repositories/notification_permission_repository_impl.dart';
 import 'package:mobile/core/data/repositories/push_registration_repository_impl.dart';
 import 'package:mobile/core/data/repositories/route_repository_impl.dart';
+import 'package:mobile/core/domain/usecases/call_enterprise_usecase.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/core/domain/usecases/enable_notifications_usecase.dart';
 import 'package:mobile/core/domain/usecases/ensure_notification_permission_usecase.dart';
@@ -31,6 +34,7 @@ import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_push_token_refresh_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
 import 'package:mobile/core/network/auth_interceptor.dart';
+import 'package:mobile/core/presentation/bloc/contact_us_bloc.dart';
 import 'package:mobile/core/presentation/bloc/navigation_bloc.dart';
 import 'package:mobile/core/presentation/bloc/notification_permission_bloc.dart';
 import 'package:mobile/env/app_config.dart';
@@ -43,16 +47,15 @@ import 'package:mobile/features/authentication/domain/usecases/sign_out_usecase.
 import 'package:mobile/features/authentication/domain/usecases/verify_otp_usecase.dart';
 import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:mobile/features/authentication/presentation/navigator/auth_navigator.dart';
-import 'package:mobile/features/driver_home/data/datasources/driver_account_remote_datasource_fake.dart';
-import 'package:mobile/features/driver_home/data/datasources/driver_activity_remote_datasource_fake.dart';
+import 'package:mobile/features/driver_home/data/datasources/driver_account_remote_datasource.dart';
+import 'package:mobile/features/driver_home/data/datasources/driver_activity_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_booking_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_document_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_document_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_presence_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource_fake.dart';
-import 'package:mobile/features/driver_home/data/datasources/driver_vehicle_remote_datasource.dart';
-import 'package:mobile/features/driver_home/data/datasources/earnings_remote_datasource_fake.dart';
+import 'package:mobile/features/driver_home/data/datasources/earnings_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/ride_request_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/repositories/device_driving_position_repository.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_account_repository_impl.dart';
@@ -61,7 +64,6 @@ import 'package:mobile/features/driver_home/data/repositories/driver_booking_rep
 import 'package:mobile/features/driver_home/data/repositories/driver_document_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_presence_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_ride_repository_impl.dart';
-import 'package:mobile/features/driver_home/data/repositories/driver_vehicle_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/earnings_repository_impl.dart';
 import 'package:mobile/features/driver_home/data/repositories/ride_request_repository_impl.dart';
 import 'package:mobile/features/driver_home/domain/usecases/accept_booking_usecase.dart';
@@ -78,9 +80,10 @@ import 'package:mobile/features/driver_home/domain/usecases/submit_driver_docume
 import 'package:mobile/features/driver_home/domain/usecases/watch_document_notifications_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_online_allowed_usecase.dart';
 import 'package:mobile/core/domain/usecases/open_location_settings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_driver_activity_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/load_weekly_earnings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_earnings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/refuse_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
@@ -91,13 +94,14 @@ import 'package:mobile/features/driver_home/domain/usecases/watch_passenger_canc
 import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_ride_usecase.dart';
-import 'package:mobile/features/passenger_home/data/datasources/account_remote_datasource_fake.dart';
+import 'package:mobile/features/passenger_home/data/datasources/account_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/address_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/nearby_taxi_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/place_search_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/recent_destination_remote_datasource_fake.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_booking_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource.dart';
+import 'package:mobile/features/passenger_home/data/datasources/saved_place_datasource_fake.dart';
 import 'package:mobile/features/passenger_home/data/datasources/taxi_offer_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/repositories/account_repository_impl.dart';
 import 'package:mobile/features/passenger_home/data/repositories/address_repository_impl.dart';
@@ -225,8 +229,13 @@ class App extends StatelessWidget {
       taxiOfferRepository: taxiOfferRepo,
     );
 
-    // Compte passager : pas encore d'endpoint backend, profil fake.
-    final accountRepo = AccountRepositoryImpl(AccountRemoteDataSourceFake());
+    // Compte passager : profil réel (GET /v1/me) ; les adresses enregistrées
+    // restent simulées, l'API n'en a pas (spec
+    // taxi-vroom-api/docs/specs/compte-a-jour.md).
+    final accountRepo = AccountRepositoryImpl(
+      AccountRemoteDataSourceImpl(dio),
+      SavedPlaceDataSourceFake(),
+    );
 
     // Position GPS, partagée par les accueils passager et chauffeur.
     const locationRepo = LocationRepositoryImpl(DeviceLocationDataSourceImpl());
@@ -272,11 +281,10 @@ class App extends StatelessWidget {
       locationRepository: locationRepo,
     );
 
-    // Accueil chauffeur. Pas encore d'endpoint backend : la disponibilité est
-    // fake. Une seule instance de disponibilité, partagée
-    // par le chargement et les changements d'état.
+    // Accueil chauffeur : la pastille et les trois cases, GET
+    // /v1/drivers/me/activity, spec taxi-vroom-api/docs/specs/gains-reels.md.
     final driverActivityRepo = DriverActivityRepositoryImpl(
-      DriverActivityRemoteDataSourceFake(),
+      DriverActivityRemoteDataSourceImpl(dio),
     );
     // Demandes de course : proposées par le backend dans Firebase, réponses
     // via l'API. Une seule instance, partagée par le suivi, l'acceptation et
@@ -310,9 +318,15 @@ class App extends StatelessWidget {
       DriverDocumentRemoteDataSourceImpl(dio),
     );
 
-    // Compte chauffeur : pas encore d'endpoint backend, profil fake.
+    // Compte chauffeur : profil, véhicule et documents en un appel (spec
+    // taxi-vroom-api/docs/specs/compte-a-jour.md).
     final driverAccountRepo = DriverAccountRepositoryImpl(
-      DriverAccountRemoteDataSourceFake(),
+      DriverAccountRemoteDataSourceImpl(dio),
+    );
+    // Le numéro de « Contacter le développeur » : demandé à chaque ouverture
+    // du « Compte », passager et chauffeur, en même temps que le compte.
+    final enterpriseContactRepo = EnterpriseContactRepositoryImpl(
+      EnterpriseContactRemoteDataSourceImpl(dio),
     );
     // Présence des chauffeurs en ligne, dans Firebase Realtime Database.
     final driverPresenceRepo = DriverPresenceRepositoryImpl(
@@ -323,7 +337,6 @@ class App extends StatelessWidget {
     );
     final loadDriverHomeUseCase = LoadDriverHomeUseCase(
       locationRepository: locationRepo,
-      driverActivityRepository: driverActivityRepo,
       driverBookingRepository: driverBookingRepo,
     );
 
@@ -353,6 +366,16 @@ class App extends StatelessWidget {
             create: (_) => NavigationBloc(
               openNavigationUseCase: const OpenNavigationUseCase(
                 NavigationRepositoryImpl(),
+              ),
+            ),
+          ),
+          // "Nous contacter" in both "Compte" tabs: the number comes from
+          // the API. Spec taxi-vroom-api/docs/specs/aide-chauffeur.md.
+          BlocProvider(
+            create: (_) => ContactUsBloc(
+              callEnterpriseUseCase: CallEnterpriseUseCase(
+                enterpriseContactRepository: enterpriseContactRepo,
+                navigationRepository: const NavigationRepositoryImpl(),
               ),
             ),
           ),
@@ -444,7 +467,10 @@ class App extends StatelessWidget {
             getPickupForArrivalUseCase: GetPickupForArrivalUseCase(routeRepo),
             loadRideHistoryUseCase: LoadRideHistoryUseCase(rideRepo),
             cancelBookingUseCase: CancelBookingUseCase(rideRepo),
-            loadAccountUseCase: LoadAccountUseCase(accountRepo),
+            loadAccountUseCase: LoadAccountUseCase(
+              accountRepository: accountRepo,
+              enterpriseContactRepository: enterpriseContactRepo,
+            ),
             loadDriverDocumentsUseCase: LoadDriverDocumentsUseCase(
               driverDocumentRepo,
             ),
@@ -460,10 +486,12 @@ class App extends StatelessWidget {
               locationRepo,
             ),
             loadDriverHomeUseCase: loadDriverHomeUseCase,
+            loadDriverActivityUseCase: LoadDriverActivityUseCase(
+              driverActivityRepo,
+            ),
             setOnlineUseCase: SetOnlineUseCase(
               locationRepository: locationRepo,
               driverPresenceRepository: driverPresenceRepo,
-              driverActivityRepository: driverActivityRepo,
               driverDocumentRepository: driverDocumentRepo,
             ),
             shareDriverPositionUseCase: ShareDriverPositionUseCase(
@@ -512,17 +540,14 @@ class App extends StatelessWidget {
             departForBookingUseCase: DepartForBookingUseCase(
               driverBookingRepo,
             ),
-            // Gains : pas encore d'endpoint backend, semaine fake.
-            loadWeeklyEarningsUseCase: LoadWeeklyEarningsUseCase(
-              EarningsRepositoryImpl(EarningsRemoteDataSourceFake()),
+            // Gains : GET /v1/drivers/me/earnings, spec
+            // taxi-vroom-api/docs/specs/gains-reels.md.
+            loadEarningsUseCase: LoadEarningsUseCase(
+              EarningsRepositoryImpl(EarningsRemoteDataSourceImpl(dio)),
             ),
             loadDriverAccountUseCase: LoadDriverAccountUseCase(
               driverAccountRepository: driverAccountRepo,
-              // The vehicle is real: GET /v1/drivers/me/vehicle.
-              driverVehicleRepository: DriverVehicleRepositoryImpl(
-                DriverVehicleRemoteDataSourceImpl(dio),
-              ),
-              driverDocumentRepository: driverDocumentRepo,
+              enterpriseContactRepository: enterpriseContactRepo,
             ),
             driverUpdateRegistrationFlowUseCase: UpdateRegistrationFlowUseCase(
               driverRegistrationRepo,

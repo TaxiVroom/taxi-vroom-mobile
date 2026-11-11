@@ -1,7 +1,6 @@
 import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/domain/repositories/location_repository.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/features/driver_home/domain/repositories/driver_activity_repository.dart';
 import 'package:mobile/features/driver_home/domain/repositories/driver_document_repository.dart';
 import 'package:mobile/features/driver_home/domain/repositories/driver_presence_repository.dart';
 
@@ -13,16 +12,13 @@ class SetOnlineUseCase {
   const SetOnlineUseCase({
     required LocationRepository locationRepository,
     required DriverPresenceRepository driverPresenceRepository,
-    required DriverActivityRepository driverActivityRepository,
     required DriverDocumentRepository driverDocumentRepository,
   }) : _locationRepository = locationRepository,
        _driverPresenceRepository = driverPresenceRepository,
-       _driverActivityRepository = driverActivityRepository,
        _driverDocumentRepository = driverDocumentRepository;
 
   final LocationRepository _locationRepository;
   final DriverPresenceRepository _driverPresenceRepository;
-  final DriverActivityRepository _driverActivityRepository;
   final DriverDocumentRepository _driverDocumentRepository;
 
   Future<Result<void>> call({required bool isOnline}) async {
@@ -41,8 +37,6 @@ class SetOnlineUseCase {
     } else {
       presence = await _driverPresenceRepository.goOffline();
     }
-    if (presence case Error(:final error)) return Result.error(error);
-
-    return _driverActivityRepository.setOnline(isOnline: isOnline);
+    return presence;
   }
 }

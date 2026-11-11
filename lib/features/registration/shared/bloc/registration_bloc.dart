@@ -287,19 +287,32 @@ abstract class RegistrationBloc
     Emitter<RegistrationState> emit,
   ) async {
     await notifyPermissionGranted();
-    await _finalizeRegistration(emit);
+    await _finalizeRegistration(emit, isSkipped: false);
   }
 
   Future<void> _onNotificationPermissionSkipped(
     RegistrationNotificationPermissionSkipped event,
     Emitter<RegistrationState> emit,
   ) async {
-    await _finalizeRegistration(emit);
+    await _finalizeRegistration(emit, isSkipped: true);
   }
 
-  Future<void> _finalizeRegistration(Emitter<RegistrationState> emit) async {
+  Future<void> _finalizeRegistration(
+    Emitter<RegistrationState> emit, {
+    required bool isSkipped,
+  }) async {
     // On failure the passenger stays on the notifications screen.
     final notificationsStep = state.currentStep;
+    // A spinner on the tapped button until the API answers (decision of the
+    // user, 2026-11-11).
+    emit(RegistrationNotificationReady(
+      currentStep: notificationsStep,
+      email: state.email,
+      firstName: state.firstName,
+      lastName: state.lastName,
+      isEnabling: !isSkipped,
+      isSkipping: isSkipped,
+    ));
     final result = await completeRegistration();
     switch (result) {
       case Ok():

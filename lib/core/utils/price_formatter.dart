@@ -3,6 +3,9 @@
 String formatEuroRange(int minCents, int maxCents) =>
     '${minCents ~/ 100}–${(maxCents / 100).ceil()} €';
 
+// 5000 -> "50 €", e.g. a mark on a chart's axis.
+String formatWholeEuro(int cents) => '${cents ~/ 100} €';
+
 // 2967 -> "29,67 €".
 String formatEuro(int cents) =>
     '${(cents / 100).toStringAsFixed(2).replaceAll('.', ',')} €';

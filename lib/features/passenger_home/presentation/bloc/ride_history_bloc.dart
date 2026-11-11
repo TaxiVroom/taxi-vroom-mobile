@@ -36,8 +36,9 @@ class RideHistoryBloc extends Bloc<RideHistoryEvent, RideHistoryState> {
     RideHistoryRequested event,
     Emitter<RideHistoryState> emit,
   ) async {
-    // A refresh keeps the current list on screen instead of a spinner.
-    if (state is! RideHistoryReady) emit(const RideHistoryLoading());
+    // The loader shows each time the API is asked, never the old list
+    // (decision of the user, 2026-11-11).
+    emit(const RideHistoryLoading());
     await _load(emit);
   }
 

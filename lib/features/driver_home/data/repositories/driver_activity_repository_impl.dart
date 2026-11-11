@@ -19,14 +19,4 @@ class DriverActivityRepositoryImpl implements DriverActivityRepository {
       return Result.error(e.toFailure());
     }
   }
-
-  @override
-  Future<Result<void>> setOnline({required bool isOnline}) async {
-    try {
-      await _dataSource.setOnline(isOnline: isOnline);
-      return const Result.ok(null);
-    } on DioException catch (e) {
-      return Result.error(e.toFailure());
-    }
-  }
 }
