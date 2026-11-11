@@ -26,7 +26,7 @@ class ContactUsRow extends StatelessWidget {
       builder: (context, state) => PlaceListTile(
         icon: Icons.phone_outlined,
         title: 'Contacter le développeur',
-        subtitle: 'Intéressé par mon profil ? N’hésitez pas à m’appeler 😊',
+        subtitle: 'Intéressé(e) par mon profil ? N’hésitez pas à m’appeler 😊',
         wrapsSubtitle: true,
         onPressed: () => context.read<ContactUsBloc>().add(
           ContactUsCalled(knownPhone: knownPhone),

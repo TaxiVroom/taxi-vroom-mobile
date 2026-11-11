@@ -255,23 +255,28 @@ class _DestinationSearchViewState extends State<_DestinationSearchView> {
   Widget _buildOptions() {
     return Row(
       children: [
-        OutlineButton(
-          onPressed: _onMapPressed,
-          leading: const Icon(Icons.place_outlined, size: 16),
-          child: const Text('Choisir sur la carte'),
+        // Its own context, inside this page's Scaffold: the sheet opens in
+        // this page's drawer overlay, not in the home's below (the same fix
+        // as SavedPlacePage).
+        Builder(
+          builder: (buttonContext) => OutlineButton(
+            onPressed: () => _onMapPressed(buttonContext),
+            leading: const Icon(Icons.place_outlined, size: 16),
+            child: const Text('Choisir sur la carte'),
+          ),
         ),
       ],
     );
   }
 
   // For the field being typed in: the pickup, or the destination.
-  Future<void> _onMapPressed() async {
+  Future<void> _onMapPressed(BuildContext buttonContext) async {
     final flowBloc = context.read<PassengerFlowBloc>();
     final isPickup =
         context.read<DestinationSearchBloc>().state.activeField ==
         SearchField.pickup;
     final place = await openPlacePickerSheet(
-      context,
+      buttonContext,
       initial: flowBloc.state.pickupPlace?.coordinates ?? widget.origin,
       title: isPickup ? 'Choisir le départ' : 'Choisir la destination',
       confirmLabel: 'Confirmer',
