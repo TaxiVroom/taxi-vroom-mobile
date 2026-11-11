@@ -4,6 +4,7 @@ import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_offer.dart';
 import 'package:mobile/features/passenger_home/domain/repositories/taxi_offer_repository.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/find_place_at_usecase.dart';
 
 // "Confirmer le point de prise en charge": the offer to order. The price
 // depends on the pickup, so a pin moved more than a few meters is priced
@@ -19,15 +20,17 @@ class OfferFromPickupUseCase {
   Future<Result<TaxiOffer>> call({
     required TaxiOffer shown,
     required Coordinates pricedFrom,
-    required Coordinates pickup,
+    required Place pickup,
     required Place destination,
     DateTime? scheduledPickup,
   }) async {
-    if (pricedFrom.distanceTo(pickup) <= _movedMeters) {
+    if (pricedFrom.distanceTo(pickup.coordinates) <= _movedMeters) {
       return Result.ok(shown);
     }
+    // Named with the pin's Mapbox address, kept by the ride.
     final priced = await _repository.getOffers(
-      from: pickup,
+      from: pickup.coordinates,
+      fromName: FindPlaceAtUseCase.knownAddress(pickup),
       to: destination,
       scheduledPickup: scheduledPickup,
     );

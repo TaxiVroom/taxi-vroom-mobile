@@ -14,12 +14,12 @@ class TaxiOfferRepositoryImpl implements TaxiOfferRepository {
   final TaxiOfferRemoteDataSource _dataSource;
 
   // The server's 400 and 422 codes (see the API's ride.errors.ts).
-  static const _refusals = {
+  static const Map<String, Failure> _refusals = {
     'RIDE.AREA_NOT_SERVED': ValidationFailure(
       "Taxi Vroom n'est pas encore disponible dans votre département.",
     ),
-    'RIDE.NO_DRIVER_AVAILABLE': ValidationFailure(
-      'Aucun taxi disponible pour le moment.',
+    'RIDE.NO_DRIVER_AVAILABLE': NoDriverAvailableFailure(
+      'Aucun taxi libre pour le moment',
     ),
     'RIDE.PICKUP_TIME_NOT_BOOKABLE': ValidationFailure(
       'Cet horaire ne peut plus être réservé, choisissez-en un autre.',
@@ -30,12 +30,14 @@ class TaxiOfferRepositoryImpl implements TaxiOfferRepository {
   Future<Result<List<TaxiOffer>>> getOffers({
     required Coordinates from,
     required Place to,
+    String? fromName,
     DateTime? scheduledPickup,
   }) async {
     try {
       final models = await _dataSource.getOffers(
         fromLatitude: from.latitude,
         fromLongitude: from.longitude,
+        fromName: fromName,
         toLatitude: to.coordinates.latitude,
         toLongitude: to.coordinates.longitude,
         destinationName: to.name,

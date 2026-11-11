@@ -14,6 +14,12 @@ abstract class PlaceSearchRemoteDataSource {
     required String mapboxId,
     required String sessionToken,
   });
+
+  // The address at a point; empty when there is none.
+  Future<List<PlaceModel>> reverse({
+    required double latitude,
+    required double longitude,
+  });
 }
 
 // Mapbox Search Box API: https://docs.mapbox.com/api/search/search-box/
@@ -64,8 +70,32 @@ class PlaceSearchRemoteDataSourceImpl implements PlaceSearchRemoteDataSource {
         'language': 'fr',
       },
     );
-    return (response.data!['features'] as List<dynamic>)
-        .map((e) => PlaceModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return _places(response);
   }
+
+  // Billed per request, outside the /suggest sessions.
+  @override
+  Future<List<PlaceModel>> reverse({
+    required double latitude,
+    required double longitude,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/search/searchbox/v1/reverse',
+      queryParameters: {
+        'longitude': longitude,
+        'latitude': latitude,
+        'access_token': _accessToken,
+        'language': 'fr',
+        'country': 'fr',
+        'types': 'address',
+        'limit': 1,
+      },
+    );
+    return _places(response);
+  }
+
+  List<PlaceModel> _places(Response<Map<String, dynamic>> response) =>
+      (response.data!['features'] as List<dynamic>)
+          .map((e) => PlaceModel.fromJson(e as Map<String, dynamic>))
+          .toList();
 }

@@ -95,30 +95,33 @@ import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_
 import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/data/datasources/account_remote_datasource.dart';
-import 'package:mobile/features/passenger_home/data/datasources/address_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/nearby_taxi_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/place_search_remote_datasource.dart';
-import 'package:mobile/features/passenger_home/data/datasources/recent_destination_remote_datasource_fake.dart';
+import 'package:mobile/features/passenger_home/data/datasources/recent_destination_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_booking_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource.dart';
-import 'package:mobile/features/passenger_home/data/datasources/saved_place_datasource_fake.dart';
+import 'package:mobile/features/passenger_home/data/datasources/saved_place_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/taxi_offer_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/repositories/account_repository_impl.dart';
-import 'package:mobile/features/passenger_home/data/repositories/address_repository_impl.dart';
 import 'package:mobile/features/passenger_home/data/repositories/nearby_taxi_repository_impl.dart';
 import 'package:mobile/features/passenger_home/data/repositories/place_search_repository_impl.dart';
 import 'package:mobile/features/passenger_home/data/repositories/recent_destination_repository_impl.dart';
 import 'package:mobile/features/passenger_home/data/repositories/ride_repository_impl.dart';
+import 'package:mobile/features/passenger_home/data/repositories/saved_place_repository_impl.dart';
 import 'package:mobile/features/passenger_home/data/repositories/taxi_offer_repository_impl.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/add_saved_place_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_booking_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/change_saved_place_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/delete_saved_place_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/find_place_at_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_account_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_current_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_recent_destinations_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/offer_from_pickup_usecase.dart';
@@ -200,13 +203,10 @@ class App extends StatelessWidget {
       ),
     );
 
-    // The address under the pin of "Choisir sur la carte": the State's
-    // Géoplateforme, without the Firebase interceptor either.
-    final addressRepo = AddressRepositoryImpl(
-      AddressRemoteDataSourceImpl(
-        Dio(BaseOptions(baseUrl: 'https://data.geopf.fr')),
-      ),
-    );
+    // L'adresse sous chaque épingle (départ, « Maison », « Travail ») et le
+    // nom du départ envoyé à l'estimation : Mapbox, comme la recherche
+    // (choix du user, spec point-de-prise-en-charge.md, « Tout sur Mapbox »).
+    final findPlaceAtUseCase = FindPlaceAtUseCase(placeSearchRepo);
 
     // Itinéraires réels via Mapbox : choix du taxi et suivi de la course.
     final routeRepo = RouteRepositoryImpl(
@@ -227,14 +227,16 @@ class App extends StatelessWidget {
     final loadTaxiChoiceUseCase = LoadTaxiChoiceUseCase(
       routeRepository: routeRepo,
       taxiOfferRepository: taxiOfferRepo,
+      findPlaceAtUseCase: findPlaceAtUseCase,
     );
 
-    // Compte passager : profil réel (GET /v1/me) ; les adresses enregistrées
-    // restent simulées, l'API n'en a pas (spec
-    // taxi-vroom-api/docs/specs/compte-a-jour.md).
-    final accountRepo = AccountRepositoryImpl(
-      AccountRemoteDataSourceImpl(dio),
-      SavedPlaceDataSourceFake(),
+    // Compte passager : profil réel (GET /v1/me), spec
+    // taxi-vroom-api/docs/specs/compte-a-jour.md.
+    final accountRepo = AccountRepositoryImpl(AccountRemoteDataSourceImpl(dio));
+    // « Maison » et « Travail » via l'API, partagés par l'accueil et le
+    // compte du passager, spec taxi-vroom-api/docs/specs/maison-et-travail.md.
+    final savedPlaceRepo = SavedPlaceRepositoryImpl(
+      SavedPlaceRemoteDataSourceImpl(dio),
     );
 
     // Position GPS, partagée par les accueils passager et chauffeur.
@@ -264,12 +266,10 @@ class App extends StatelessWidget {
       ),
     );
 
-    // Accueil passager. Pas encore d'endpoint backend : destinations fake.
+    // Accueil passager : position, « Maison » et « Travail ».
     final loadPassengerHomeUseCase = LoadPassengerHomeUseCase(
       locationRepository: locationRepo,
-      recentDestinationRepository: RecentDestinationRepositoryImpl(
-        RecentDestinationRemoteDataSourceFake(),
-      ),
+      savedPlaceRepository: savedPlaceRepo,
     );
     // Taxis autour du passager : les chauffeurs en ligne dans Firebase. Pour
     // voir 6 taxis fake même sans chauffeur en ligne, remplacer la source par
@@ -442,7 +442,7 @@ class App extends StatelessWidget {
               placeSearchRepo,
             ),
             selectDestinationUseCase: SelectDestinationUseCase(placeSearchRepo),
-            findPlaceAtUseCase: FindPlaceAtUseCase(addressRepo),
+            findPlaceAtUseCase: findPlaceAtUseCase,
             offerFromPickupUseCase: OfferFromPickupUseCase(taxiOfferRepo),
             loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
             getPickupDaysUseCase: const GetPickupDaysUseCase(),
@@ -469,7 +469,18 @@ class App extends StatelessWidget {
             cancelBookingUseCase: CancelBookingUseCase(rideRepo),
             loadAccountUseCase: LoadAccountUseCase(
               accountRepository: accountRepo,
+              savedPlaceRepository: savedPlaceRepo,
               enterpriseContactRepository: enterpriseContactRepo,
+            ),
+            addSavedPlaceUseCase: AddSavedPlaceUseCase(savedPlaceRepo),
+            changeSavedPlaceUseCase: ChangeSavedPlaceUseCase(savedPlaceRepo),
+            deleteSavedPlaceUseCase: DeleteSavedPlaceUseCase(savedPlaceRepo),
+            // Les 3 dernières destinations, dans « Votre trajet » (spec
+            // destinations-recentes.md).
+            loadRecentDestinationsUseCase: LoadRecentDestinationsUseCase(
+              RecentDestinationRepositoryImpl(
+                RecentDestinationRemoteDataSourceImpl(dio),
+              ),
             ),
             loadDriverDocumentsUseCase: LoadDriverDocumentsUseCase(
               driverDocumentRepo,

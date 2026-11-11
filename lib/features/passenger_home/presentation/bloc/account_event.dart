@@ -11,3 +11,13 @@ sealed class AccountEvent extends Equatable {
 final class AccountRequested extends AccountEvent {
   const AccountRequested();
 }
+
+// The trash of a "Maison" or "Travail" row.
+final class AccountSavedPlaceDeleteRequested extends AccountEvent {
+  const AccountSavedPlaceDeleteRequested({required this.kind});
+
+  final SavedPlaceKind kind;
+
+  @override
+  List<Object?> get props => [kind];
+}

@@ -22,6 +22,12 @@ class EstimateExpiredFailure extends ValidationFailure {
   const EstimateExpiredFailure(super.message);
 }
 
+// No free taxi within reach for a ride right now: a booking for later is
+// still possible. Spec taxi-vroom-api/docs/specs/heure-de-prise-en-charge.md.
+class NoDriverAvailableFailure extends ValidationFailure {
+  const NoDriverAvailableFailure(super.message);
+}
+
 // Another driver or registration already has this plate. Spec
 // taxi-vroom-api/docs/specs/vehicule-du-chauffeur.md, point 7.
 class VehiclePlateTakenFailure extends ValidationFailure {

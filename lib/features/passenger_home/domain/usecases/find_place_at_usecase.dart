@@ -17,6 +17,14 @@ class FindPlaceAtUseCase {
     coordinates: point,
   );
 
+  static bool isUnknown(Place place) =>
+      place == unknownPlaceAt(place.coordinates);
+
+  // What names a pickup sent to the API: none for a point without a known
+  // address, which the API then names "Position de départ".
+  static String? knownAddress(Place place) =>
+      isUnknown(place) ? null : place.fullAddress;
+
   Future<Place> call(Coordinates point) async =>
       switch (await _repository.findPlaceAt(point)) {
         Ok(value: final place?) => place,

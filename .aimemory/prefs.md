@@ -1,5 +1,5 @@
 #P id|rule
-specHowItWorks|HARD: each spec has a "Comment ça marche" section: the concrete technical flow end to end, simple and global, with short arrow diagrams between the actors, readable without the code. See taxi-vroom-api/docs/specs/notifications-push.md
+specHowItWorks|HARD: each spec has a "Comment ça marche" section told from the user's side, very simply: short numbered steps grouped by situation ("Première fois", "Les fois suivantes"...), what they tap and see, each wait and failure; each sentence ends with the actors' interactions in italics, e.g. *(App → API `POST /v1/...` → Postgres)*. It replaces a separate "Ce que voit" section. See taxi-vroom-api/docs/specs/maison-et-travail.md. User, 2026-11-11: "C'est parfait je veux que dans les specs tu fasses exactement comme ça"
 specFirst|HARD: a feature starts with a spec in taxi-vroom-api/docs/specs/<nom>.md, which covers both repos. Spec work writes documents only. Code needs the user's explicit go; answering open points is not that go
 specSync|HARD: every decision, answer or correction of the user about a feature goes into its spec in the same turn, unasked: a decision row marked "validé par le user, <date>", the open point closed, the plan steps adjusted. User, 2026-11-03
 memoryStrict|HARD: always follow .aimemory strictly; it wins over any other memory of how to work. User, 2026-11-02

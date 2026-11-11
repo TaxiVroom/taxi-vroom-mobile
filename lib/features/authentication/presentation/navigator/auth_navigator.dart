@@ -40,15 +40,19 @@ import 'package:mobile/features/driver_home/domain/usecases/watch_ride_requests_
 import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/withdraw_from_ride_usecase.dart';
 import 'package:mobile/features/driver_home/presentation/pages/driver_home_page.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/add_saved_place_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_booking_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/change_saved_place_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/delete_saved_place_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/find_place_at_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_account_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_current_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_recent_destinations_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/offer_from_pickup_usecase.dart';
@@ -114,6 +118,10 @@ class AuthNavigator extends StatelessWidget {
     required this.loadRideHistoryUseCase,
     required this.cancelBookingUseCase,
     required this.loadAccountUseCase,
+    required this.addSavedPlaceUseCase,
+    required this.changeSavedPlaceUseCase,
+    required this.deleteSavedPlaceUseCase,
+    required this.loadRecentDestinationsUseCase,
     required this.loadDriverDocumentsUseCase,
     required this.submitDriverDocumentUseCase,
     required this.watchDocumentNotificationsUseCase,
@@ -193,6 +201,10 @@ class AuthNavigator extends StatelessWidget {
   final LoadRideHistoryUseCase loadRideHistoryUseCase;
   final CancelBookingUseCase cancelBookingUseCase;
   final LoadAccountUseCase loadAccountUseCase;
+  final AddSavedPlaceUseCase addSavedPlaceUseCase;
+  final ChangeSavedPlaceUseCase changeSavedPlaceUseCase;
+  final DeleteSavedPlaceUseCase deleteSavedPlaceUseCase;
+  final LoadRecentDestinationsUseCase loadRecentDestinationsUseCase;
 
   // Use cases de l'accueil chauffeur, transmis à DriverHomePage.
   final LoadDriverDocumentsUseCase loadDriverDocumentsUseCase;
@@ -357,6 +369,10 @@ class AuthNavigator extends StatelessWidget {
             loadRideHistoryUseCase: loadRideHistoryUseCase,
             cancelBookingUseCase: cancelBookingUseCase,
             loadAccountUseCase: loadAccountUseCase,
+            addSavedPlaceUseCase: addSavedPlaceUseCase,
+            changeSavedPlaceUseCase: changeSavedPlaceUseCase,
+            deleteSavedPlaceUseCase: deleteSavedPlaceUseCase,
+            loadRecentDestinationsUseCase: loadRecentDestinationsUseCase,
             onSignOutRequested: () =>
                 context.read<AuthBloc>().add(const AuthSignOutRequested()),
           ),

@@ -19,11 +19,12 @@ final class TaxiChoiceStarted extends TaxiChoiceEvent {
   List<Object?> get props => [scheduledPickup];
 }
 
-// The passenger taps "Commander le taxi", then confirms the [pickup].
+// The passenger taps "Commander le taxi", then confirms the [pickup], with
+// its Mapbox address.
 final class TaxiRideOrdered extends TaxiChoiceEvent {
   const TaxiRideOrdered({required this.pickup});
 
-  final Coordinates pickup;
+  final Place pickup;
 
   @override
   List<Object?> get props => [pickup];
@@ -34,10 +35,15 @@ final class TaxiRideOrdered extends TaxiChoiceEvent {
 final class TaxiRideBooked extends TaxiChoiceEvent {
   const TaxiRideBooked({required this.pickup});
 
-  final Coordinates pickup;
+  final Place pickup;
 
   @override
   List<Object?> get props => [pickup];
+}
+
+// A taxi became free around the pickup while none was: estimated again.
+final class _TaxiChoiceFreeTaxiSeen extends TaxiChoiceEvent {
+  const _TaxiChoiceFreeTaxiSeen();
 }
 
 final class TaxiOfferSelected extends TaxiChoiceEvent {

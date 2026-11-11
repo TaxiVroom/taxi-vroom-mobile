@@ -2,12 +2,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/phone_formatter.dart';
 import 'package:mobile/core/widgets/contact_us_row.dart';
+import 'package:mobile/core/widgets/message_toast.dart';
 import 'package:mobile/core/widgets/notifications_row.dart';
 import 'package:mobile/core/widgets/place_list_tile.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/core/widgets/section_label.dart';
 import 'package:mobile/features/passenger_home/domain/entities/passenger_account.dart';
+import 'package:mobile/features/passenger_home/domain/entities/saved_place.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/account_bloc.dart';
+import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_bloc.dart';
+import 'package:mobile/features/passenger_home/presentation/bloc/passenger_home_bloc.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// The passenger's profile, saved addresses, preferences and sign out.
@@ -19,7 +23,8 @@ class AccountTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: BlocBuilder<AccountBloc, AccountState>(
+      child: BlocConsumer<AccountBloc, AccountState>(
+        listener: _onDeletionAnswered,
         builder: (context, state) => switch (state) {
           AccountLoading() => const Center(child: CircularProgressIndicator()),
           AccountFailure(:final message) => RetryMessage(
@@ -27,13 +32,38 @@ class AccountTab extends StatelessWidget {
             onRetry: () =>
                 context.read<AccountBloc>().add(const AccountRequested()),
           ),
-          AccountReady(:final account) => _buildAccount(context, account),
+          AccountReady(:final account, :final deletingKind) => _buildAccount(
+            context,
+            account,
+            deletingKind,
+          ),
         },
       ),
     );
   }
 
-  Widget _buildAccount(BuildContext context, PassengerAccount account) {
+  // Deleted: the home's shortcut is emptied too. Failed: told, it stays.
+  void _onDeletionAnswered(BuildContext context, AccountState state) {
+    if (state is! AccountReady) return;
+    if (state.deletedKind case final kind?) {
+      context.read<PassengerHomeBloc>().add(
+        PassengerSavedPlaceRemoved(kind: kind),
+      );
+    }
+    if (state.failureMessage case final message?) {
+      showMessageToast(
+        context,
+        title: 'Adresse non supprimée',
+        message: message,
+      );
+    }
+  }
+
+  Widget _buildAccount(
+    BuildContext context,
+    PassengerAccount account,
+    SavedPlaceKind? deletingKind,
+  ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -42,16 +72,8 @@ class AccountTab extends StatelessWidget {
           _buildProfile(account),
           const SizedBox(height: 24),
           const SectionLabel('Adresses enregistrées'),
-          for (final place in account.savedPlaces)
-            PlaceListTile(
-              icon: switch (place.label) {
-                'Maison' => Icons.home_outlined,
-                'Travail' => Icons.work_outline,
-                _ => Icons.place_outlined,
-              },
-              title: place.label,
-              subtitle: place.address,
-            ),
+          for (final kind in SavedPlaceKind.values)
+            _buildSavedPlace(context, account, kind, deletingKind),
           // No payment means to set: every ride is paid on board, by card or
           // cash.
           const SizedBox(height: 16),
@@ -69,6 +91,83 @@ class AccountTab extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // Its address, or "Ajouter"; a tap opens the search to add or change it.
+  // Spec taxi-vroom-api/docs/specs/maison-et-travail.md.
+  Widget _buildSavedPlace(
+    BuildContext context,
+    PassengerAccount account,
+    SavedPlaceKind kind,
+    SavedPlaceKind? deletingKind,
+  ) {
+    final saved = account.savedPlaces
+        .where((place) => place.kind == kind)
+        .firstOrNull;
+    final tile = PlaceListTile(
+      icon: switch (kind) {
+        SavedPlaceKind.home => Icons.home_outlined,
+        SavedPlaceKind.work => Icons.work_outline,
+      },
+      title: kind.label,
+      subtitle: saved?.address ?? 'Ajouter',
+      // The loader in its place while the API deletes it.
+      trailing: deletingKind == kind
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(),
+            )
+          : const Icon(Icons.chevron_right, color: AppColors.muted),
+      onPressed: () => context.read<PassengerFlowBloc>().add(
+        PassengerSavedPlaceEditOpened(
+          kind: kind,
+          current: saved,
+          fromAccount: true,
+        ),
+      ),
+    );
+    if (saved == null || deletingKind != null) return tile;
+    return _buildSwipeToDelete(context, saved, tile);
+  }
+
+  // Slid to the left, as in the market's apps: "Supprimer" shows behind,
+  // then the row is deleted. Flutter's Dismissible: once dismissed it must
+  // leave the tree, which the deleting state does (a plain row with its
+  // loader). Spec taxi-vroom-api/docs/specs/maison-et-travail.md.
+  Widget _buildSwipeToDelete(
+    BuildContext context,
+    SavedPlace saved,
+    Widget tile,
+  ) {
+    return Dismissible(
+      key: ValueKey('saved-place-${saved.kind.name}-${saved.address}'),
+      direction: DismissDirection.endToStart,
+      resizeDuration: null,
+      background: Container(
+        color: AppColors.danger,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.delete_outline, color: Colors.white),
+            SizedBox(width: 8),
+            Text(
+              'Supprimer',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+      onDismissed: (_) => context.read<AccountBloc>().add(
+        AccountSavedPlaceDeleteRequested(kind: saved.kind),
+      ),
+      child: ColoredBox(color: Colors.white, child: tile),
     );
   }
 

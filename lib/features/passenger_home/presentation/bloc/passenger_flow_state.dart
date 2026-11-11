@@ -43,6 +43,34 @@ final class PassengerFlowDestinationSearch extends PassengerFlowState {
   });
 }
 
+// "Ajouter votre domicile", "Modifier votre lieu de travail"... Spec
+// taxi-vroom-api/docs/specs/maison-et-travail.md.
+final class PassengerFlowSavedPlaceEdit extends PassengerFlowState {
+  const PassengerFlowSavedPlaceEdit({
+    required this.kind,
+    required this.fromAccount,
+    this.current,
+    super.scheduledPickup,
+    super.pickupPlace,
+  });
+
+  final SavedPlaceKind kind;
+
+  // Null to add it.
+  final SavedPlace? current;
+  final bool fromAccount;
+
+  @override
+  List<Object?> get props => [
+    kind,
+    current,
+    fromAccount,
+    scheduledPickup,
+    pickupDays,
+    pickupPlace,
+  ];
+}
+
 // A ride was ordered: the passenger follows it until it ends or is cancelled.
 final class PassengerFlowRide extends PassengerFlowState {
   const PassengerFlowRide({

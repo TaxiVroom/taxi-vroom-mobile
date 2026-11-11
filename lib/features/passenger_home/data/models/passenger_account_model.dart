@@ -1,5 +1,4 @@
 import 'package:mobile/features/passenger_home/domain/entities/passenger_account.dart';
-import 'package:mobile/features/passenger_home/domain/entities/saved_place.dart';
 
 // GET /v1/me, e.g. {"role":"PASSENGER","firstName":"Jean",
 // "lastName":"Dupont","phone":"+33612345678","email":"jean@exemple.fr"}.
@@ -25,12 +24,12 @@ class PassengerAccountModel {
   final String phone;
   final String email;
 
-  // The saved addresses come from another source, still simulated.
-  PassengerAccount toDomain(List<SavedPlace> savedPlaces) => PassengerAccount(
+  // The saved places come from another call: PassengerAccount.complete.
+  PassengerAccount toDomain() => PassengerAccount(
     firstName: firstName,
     lastName: lastName,
     phone: phone,
     email: email,
-    savedPlaces: savedPlaces,
+    savedPlaces: const [],
   );
 }

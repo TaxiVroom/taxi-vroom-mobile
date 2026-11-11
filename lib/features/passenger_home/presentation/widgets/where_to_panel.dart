@@ -1,28 +1,27 @@
 import 'package:mobile/core/theme/app_colors.dart';
-import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/widgets/bottom_panel.dart';
 import 'package:mobile/core/widgets/connection_lost_banner.dart';
-import 'package:mobile/core/widgets/place_list_tile.dart';
-import 'package:mobile/features/passenger_home/domain/entities/recent_destination.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/pickup_time_chip.dart';
+import 'package:mobile/features/passenger_home/domain/entities/saved_place.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Bottom panel of the home screen: one question, "Où allez-vous ?".
 class WhereToPanel extends StatelessWidget {
   const WhereToPanel({
-    required this.recentDestinations,
     required this.nearbyTaxiCount,
     required this.isConnected,
     required this.onWhereToPressed,
+    required this.onShortcutPressed,
     super.key,
   });
 
-  final List<RecentDestination> recentDestinations;
   final int nearbyTaxiCount;
 
   // Without connection, the taxis shown may no longer be where they are.
   final bool isConnected;
   final VoidCallback onWhereToPressed;
+
+  // "Maison" or "Travail".
+  final ValueChanged<SavedPlaceKind> onShortcutPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -40,65 +39,50 @@ class WhereToPanel extends StatelessWidget {
           _buildWhereToButton(),
           const SizedBox(height: 12),
           _buildShortcuts(),
-          const SizedBox(height: 8),
-          for (final destination in recentDestinations)
-            PlaceListTile(
-              icon: Icons.history,
-              title: destination.name,
-              subtitle:
-                  '${destination.address}, '
-                  '${formatDistanceKm(destination.distanceKm)}',
-            ),
-          const SizedBox(height: 8),
+          // Only "Maison" and "Travail": the recent destinations are in
+          // "Votre trajet" (user's decision, spec destinations-recentes.md).
+          const SizedBox(height: 16),
           _buildFreeTaxiCount(),
         ],
       ),
     );
   }
 
+  // The pickup time is chosen on the taxi choice only (spec
+  // heure-de-prise-en-charge.md).
   Widget _buildWhereToButton() {
-    return Row(
-      children: [
-        Expanded(
-          child: SecondaryButton(
-            onPressed: onWhereToPressed,
-            alignment: Alignment.centerLeft,
-            leading: const Icon(Icons.search),
-            child: const Text(
-              'Où allez-vous ?',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        const PickupTimeChip(),
-      ],
+    return SecondaryButton(
+      onPressed: onWhereToPressed,
+      alignment: Alignment.centerLeft,
+      leading: const Icon(Icons.search),
+      child: const Text(
+        'Où allez-vous ?',
+        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+      ),
     );
   }
 
   Widget _buildShortcuts() {
     return Row(
       children: [
-        _buildShortcut(Icons.home_outlined, 'Maison'),
+        _buildShortcut(Icons.home_outlined, SavedPlaceKind.home),
         const SizedBox(width: 8),
-        _buildShortcut(Icons.work_outline, 'Travail'),
-        const SizedBox(width: 8),
-        _buildShortcut(Icons.train_outlined, 'Gare'),
+        _buildShortcut(Icons.work_outline, SavedPlaceKind.work),
       ],
     );
   }
 
-  Widget _buildShortcut(IconData icon, String label) {
+  Widget _buildShortcut(IconData icon, SavedPlaceKind kind) {
     return Expanded(
       child: OutlineButton(
-        onPressed: () {},
+        onPressed: () => onShortcutPressed(kind),
         alignment: Alignment.center,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 20),
             const SizedBox(height: 4),
-            Text(label, maxLines: 1),
+            Text(kind.label, maxLines: 1),
           ],
         ),
       ),

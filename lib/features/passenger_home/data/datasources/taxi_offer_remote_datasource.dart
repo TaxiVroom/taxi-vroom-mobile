@@ -11,6 +11,7 @@ abstract class TaxiOfferRemoteDataSource {
     required double toLatitude,
     required double toLongitude,
     required String destinationName,
+    String? fromName,
     DateTime? scheduledPickup,
   });
 }
@@ -29,6 +30,7 @@ class TaxiOfferRemoteDataSourceImpl implements TaxiOfferRemoteDataSource {
     required double toLatitude,
     required double toLongitude,
     required String destinationName,
+    String? fromName,
     DateTime? scheduledPickup,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
@@ -36,6 +38,8 @@ class TaxiOfferRemoteDataSourceImpl implements TaxiOfferRemoteDataSource {
       data: {
         'originLatitude': fromLatitude,
         'originLongitude': fromLongitude,
+        // Without it, the API names the pickup "Position de départ".
+        'originName': ?fromName,
         'destinationName': destinationName,
         'destinationLatitude': toLatitude,
         'destinationLongitude': toLongitude,

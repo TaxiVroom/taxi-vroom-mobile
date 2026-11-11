@@ -122,6 +122,7 @@ class RideRemoteDataSourceFake
     required double toLatitude,
     required double toLongitude,
     required String destinationName,
+    String? fromName,
     DateTime? scheduledPickup,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));

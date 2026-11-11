@@ -17,15 +17,33 @@ class PassengerAccount extends Equatable {
   final String lastName;
   final String phone;
   final String email;
+  // "Maison" and "Travail", only those set, from GET /v1/me/saved-places.
   final List<SavedPlace> savedPlaces;
 
   // The number "Contacter le développeur" calls, from GET
-  // /v1/enterprise-contact, asked with the account by LoadAccountUseCase.
+  // /v1/enterprise-contact.
   final String? contactPhone;
 
   String get fullName => '$firstName $lastName';
 
-  PassengerAccount withContactPhone(String contactPhone) => PassengerAccount(
+  // Deleted from its row in "Compte".
+  PassengerAccount withoutSavedPlace(SavedPlaceKind kind) => PassengerAccount(
+    firstName: firstName,
+    lastName: lastName,
+    phone: phone,
+    email: email,
+    savedPlaces: [
+      for (final place in savedPlaces)
+        if (place.kind != kind) place,
+    ],
+    contactPhone: contactPhone,
+  );
+
+  // The profile with what LoadAccountUseCase asked beside it.
+  PassengerAccount complete({
+    required List<SavedPlace> savedPlaces,
+    required String contactPhone,
+  }) => PassengerAccount(
     firstName: firstName,
     lastName: lastName,
     phone: phone,

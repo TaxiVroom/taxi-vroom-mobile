@@ -12,12 +12,31 @@ final class AccountLoading extends AccountState {
 }
 
 final class AccountReady extends AccountState {
-  const AccountReady({required this.account});
+  const AccountReady({
+    required this.account,
+    this.deletingKind,
+    this.deletedKind,
+    this.failureMessage,
+  });
 
   final PassengerAccount account;
 
+  // Its trash shows the loader until the API answers.
+  final SavedPlaceKind? deletingKind;
+
+  // Just deleted: the home's shortcut is emptied too.
+  final SavedPlaceKind? deletedKind;
+
+  // The deletion failed: told once, the place stays.
+  final String? failureMessage;
+
   @override
-  List<Object?> get props => [account];
+  List<Object?> get props => [
+    account,
+    deletingKind,
+    deletedKind,
+    failureMessage,
+  ];
 }
 
 final class AccountFailure extends AccountState {

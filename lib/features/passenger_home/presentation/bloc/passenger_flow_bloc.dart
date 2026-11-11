@@ -4,6 +4,7 @@ import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/domain/entities/pickup_day.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
+import 'package:mobile/features/passenger_home/domain/entities/saved_place.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_current_ride_usecase.dart';
 
@@ -27,6 +28,9 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
     on<_PassengerPushedRideOpened>(_onPushedRideOpened);
     on<PassengerDestinationSearchOpened>(_onDestinationSearchOpened);
     on<PassengerDestinationSelected>(_onDestinationSelected);
+    on<PassengerSavedPlaceEditOpened>(_onSavedPlaceEditOpened);
+    on<PassengerSavedPlaceSaved>(_onSavedPlaceSaved);
+    on<PassengerSavedPlaceDeleted>(_onSavedPlaceDeleted);
     on<PassengerRideOrdered>(_onRideOrdered);
     on<PassengerRideEnded>(_onRideEnded);
     on<PassengerRideBooked>(_onRideBooked);
@@ -121,6 +125,55 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
     );
   }
 
+  void _onSavedPlaceEditOpened(
+    PassengerSavedPlaceEditOpened event,
+    Emitter<PassengerFlowState> emit,
+  ) {
+    emit(
+      PassengerFlowSavedPlaceEdit(
+        kind: event.kind,
+        current: event.current,
+        fromAccount: event.fromAccount,
+        scheduledPickup: state.scheduledPickup,
+        pickupPlace: state.pickupPlace,
+      ),
+    );
+  }
+
+  // From the home, the passenger tapped "Maison" to go there: the taxi
+  // choice opens at once. Validated by the user, 2026-11-11.
+  void _onSavedPlaceSaved(
+    PassengerSavedPlaceSaved event,
+    Emitter<PassengerFlowState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is! PassengerFlowSavedPlaceEdit) return;
+    if (currentState.fromAccount) {
+      emit(_home());
+      return;
+    }
+    emit(
+      PassengerFlowTaxiChoice(
+        destination: event.place.toDestination(),
+        scheduledPickup: state.scheduledPickup,
+        pickupPlace: state.pickupPlace,
+      ),
+    );
+  }
+
+  void _onSavedPlaceDeleted(
+    PassengerSavedPlaceDeleted event,
+    Emitter<PassengerFlowState> emit,
+  ) {
+    emit(_home());
+  }
+
+  // The home no longer shows the pickup time: back to "Maintenant", so the
+  // next destination never opens on a forgotten time (user's decision, spec
+  // heure-de-prise-en-charge.md). The pickup place is kept.
+  PassengerFlowHome _home() =>
+      PassengerFlowHome(pickupPlace: state.pickupPlace);
+
   // The ride page shows where the taxi comes; a ride opened at start or by a
   // notification falls back to where the phone is.
   void _onRideOrdered(
@@ -196,10 +249,7 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
         // Leaving an ordered ride goes through "Annuler la course" only; the
         // start ends on its own.
         PassengerFlowRide() || PassengerFlowStarting() => state,
-        _ => PassengerFlowHome(
-          scheduledPickup: state.scheduledPickup,
-          pickupPlace: state.pickupPlace,
-        ),
+        _ => _home(),
       },
     );
   }
@@ -227,7 +277,9 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
       pickupPlace: pickupPlace,
     ),
     // The pickup of an ordered ride can't change anymore; nothing to change
-    // while starting.
-    PassengerFlowRide() || PassengerFlowStarting() => state,
+    // while starting, nor on a saved place's screen.
+    PassengerFlowRide() ||
+    PassengerFlowStarting() ||
+    PassengerFlowSavedPlaceEdit() => state,
   };
 }

@@ -5,15 +5,15 @@ import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/widgets/place_list_tile.dart';
 import 'package:mobile/core/widgets/search_text_field.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
-import 'package:mobile/features/passenger_home/domain/entities/place_suggestion.dart';
-import 'package:mobile/features/passenger_home/domain/entities/recent_destination.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/find_place_at_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_recent_destinations_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/destination_search_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_bloc.dart';
-import 'package:mobile/features/passenger_home/presentation/widgets/pickup_time_chip.dart';
+import 'package:mobile/features/passenger_home/presentation/bloc/recent_destinations_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/place_picker_sheet.dart';
+import 'package:mobile/features/passenger_home/presentation/widgets/place_suggestions.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Mockup screen 4: the pickup, "Position actuelle" until another is chosen,
@@ -23,7 +23,7 @@ class DestinationSearchPage extends StatelessWidget {
   const DestinationSearchPage({
     required this.origin,
     required this.pickupPlace,
-    required this.recentDestinations,
+    required this.loadRecentDestinationsUseCase,
     required this.suggestDestinationsUseCase,
     required this.selectDestinationUseCase,
     required this.findPlaceAtUseCase,
@@ -35,23 +35,32 @@ class DestinationSearchPage extends StatelessWidget {
 
   // Null means "Position actuelle".
   final Place? pickupPlace;
-  final List<RecentDestination> recentDestinations;
+  final LoadRecentDestinationsUseCase loadRecentDestinationsUseCase;
   final SuggestDestinationsUseCase suggestDestinationsUseCase;
   final SelectDestinationUseCase selectDestinationUseCase;
   final FindPlaceAtUseCase findPlaceAtUseCase;
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => DestinationSearchBloc(
-        origin: origin,
-        suggestDestinationsUseCase: suggestDestinationsUseCase,
-        selectDestinationUseCase: selectDestinationUseCase,
-      ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => DestinationSearchBloc(
+            origin: origin,
+            suggestDestinationsUseCase: suggestDestinationsUseCase,
+            selectDestinationUseCase: selectDestinationUseCase,
+          ),
+        ),
+        // Read each time the screen opens: the ride just completed shows.
+        BlocProvider(
+          create: (_) => RecentDestinationsBloc(
+            loadRecentDestinationsUseCase: loadRecentDestinationsUseCase,
+          )..add(const RecentDestinationsRequested()),
+        ),
+      ],
       child: _DestinationSearchView(
         origin: origin,
         pickupPlace: pickupPlace,
-        recentDestinations: recentDestinations,
         findPlaceAtUseCase: findPlaceAtUseCase,
       ),
     );
@@ -62,13 +71,11 @@ class _DestinationSearchView extends StatefulWidget {
   const _DestinationSearchView({
     required this.origin,
     required this.pickupPlace,
-    required this.recentDestinations,
     required this.findPlaceAtUseCase,
   });
 
   final Coordinates origin;
   final Place? pickupPlace;
-  final List<RecentDestination> recentDestinations;
   final FindPlaceAtUseCase findPlaceAtUseCase;
 
   @override
@@ -243,11 +250,11 @@ class _DestinationSearchViewState extends State<_DestinationSearchView> {
     );
   }
 
+  // The pickup time is chosen on the taxi choice only (spec
+  // heure-de-prise-en-charge.md).
   Widget _buildOptions() {
     return Row(
       children: [
-        const PickupTimeChip(),
-        const SizedBox(width: 8),
         OutlineButton(
           onPressed: _onMapPressed,
           leading: const Icon(Icons.place_outlined, size: 16),
@@ -301,71 +308,41 @@ class _DestinationSearchViewState extends State<_DestinationSearchView> {
   }
 
   Widget _buildSuggestions(DestinationSearchState state) {
-    if (state.query.trim().isEmpty) {
-      return ListView(
-        children: [
-          for (final destination in widget.recentDestinations)
-            PlaceListTile(
-              icon: Icons.history,
-              title: destination.name,
-              subtitle:
-                  '${destination.address}, '
-                  '${formatDistanceKm(destination.distanceKm)}',
-              onPressed: () => _searchFor(destination.name),
+    if (state.query.trim().isNotEmpty) return PlaceSuggestions(state: state);
+    // A past destination is not a pickup: shown for the destination only.
+    if (state.activeField == SearchField.pickup) return const SizedBox.shrink();
+    return BlocBuilder<RecentDestinationsBloc, RecentDestinationsState>(
+      builder: (context, recentState) => switch (recentState) {
+        RecentDestinationsLoading() => const Padding(
+          padding: EdgeInsets.only(top: 16),
+          child: Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(),
             ),
-        ],
-      );
-    }
-
-    final failureMessage = state.failureMessage;
-    if (failureMessage != null) return _buildMessage(failureMessage);
-    // Nothing yet: the spinner is in the field.
-    if (state.suggestions.isEmpty) {
-      return state.isLoading
-          ? const SizedBox.shrink()
-          : _buildMessage('Aucune adresse trouvée');
-    }
-
-    return SearchResults(
-      isLoading: state.isLoading,
-      child: ListView(
-        children: [
-          for (final suggestion in state.suggestions)
-            PlaceListTile(
-              icon: Icons.place_outlined,
-              title: suggestion.name,
-              subtitle: _suggestionDetail(suggestion),
-              onPressed: () => context.read<DestinationSearchBloc>().add(
-                DestinationSuggestionSelected(suggestion: suggestion),
+          ),
+        ),
+        RecentDestinationsReady(:final destinations) => ListView(
+          children: [
+            for (final destination in destinations)
+              PlaceListTile(
+                icon: Icons.history,
+                title: destination.name,
+                subtitle: formatDistanceKm(
+                  widget.origin.distanceTo(destination.coordinates) / 1000,
+                ),
+                // Straight to the taxi choice, like a suggestion chosen.
+                onPressed: () => context.read<PassengerFlowBloc>().add(
+                  PassengerDestinationSelected(
+                    destination: destination.toDestination(),
+                  ),
+                ),
               ),
-            ),
-        ],
-      ),
+          ],
+        ),
+      },
     );
-  }
-
-  Widget _buildMessage(String message) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: Text(message, style: const TextStyle(color: AppColors.muted)),
-    );
-  }
-
-  String _suggestionDetail(PlaceSuggestion suggestion) {
-    final distanceKm = suggestion.distanceKm;
-    return distanceKm == null
-        ? suggestion.address
-        : '${suggestion.address}, ${formatDistanceKm(distanceKm)}';
-  }
-
-  void _searchFor(String query) {
-    final activeField = context.read<DestinationSearchBloc>().state.activeField;
-    (activeField == SearchField.pickup
-                ? _pickupController
-                : _destinationController)
-            .text =
-        query;
-    _onQueryChanged(query);
   }
 
   void _onPickupFocusChanged() {

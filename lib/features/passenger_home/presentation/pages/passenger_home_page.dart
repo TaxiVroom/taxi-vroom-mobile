@@ -5,15 +5,20 @@ import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/authentication/presentation/navigator/auth_navigator.dart'
     show AuthNavigator;
+import 'package:mobile/features/passenger_home/domain/entities/saved_place.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/add_saved_place_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/book_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_booking_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/cancel_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/change_saved_place_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/delete_saved_place_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/find_place_at_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_account_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_current_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_recent_destinations_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/offer_from_pickup_usecase.dart';
@@ -29,6 +34,7 @@ import 'package:mobile/features/passenger_home/presentation/bloc/passenger_home_
 import 'package:mobile/features/passenger_home/presentation/bloc/ride_history_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/pages/destination_search_page.dart';
 import 'package:mobile/features/passenger_home/presentation/pages/ride_page.dart';
+import 'package:mobile/features/passenger_home/presentation/pages/saved_place_page.dart';
 import 'package:mobile/features/passenger_home/presentation/pages/taxi_choice_page.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/account_tab.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/passenger_home_map.dart';
@@ -60,6 +66,10 @@ class PassengerHomePage extends StatelessWidget {
     required this.loadRideHistoryUseCase,
     required this.cancelBookingUseCase,
     required this.loadAccountUseCase,
+    required this.addSavedPlaceUseCase,
+    required this.changeSavedPlaceUseCase,
+    required this.deleteSavedPlaceUseCase,
+    required this.loadRecentDestinationsUseCase,
     required this.onSignOutRequested,
     super.key,
   });
@@ -84,6 +94,10 @@ class PassengerHomePage extends StatelessWidget {
   final LoadRideHistoryUseCase loadRideHistoryUseCase;
   final CancelBookingUseCase cancelBookingUseCase;
   final LoadAccountUseCase loadAccountUseCase;
+  final AddSavedPlaceUseCase addSavedPlaceUseCase;
+  final ChangeSavedPlaceUseCase changeSavedPlaceUseCase;
+  final DeleteSavedPlaceUseCase deleteSavedPlaceUseCase;
+  final LoadRecentDestinationsUseCase loadRecentDestinationsUseCase;
 
   /// Lets the parent ([AuthNavigator]) sign the passenger out, without this
   /// widget knowing about authentication.
@@ -120,6 +134,7 @@ class PassengerHomePage extends StatelessWidget {
         BlocProvider(
           create: (_) => AccountBloc(
             loadAccountUseCase: loadAccountUseCase,
+            deleteSavedPlaceUseCase: deleteSavedPlaceUseCase,
           )..add(const AccountRequested()),
         ),
       ],
@@ -184,7 +199,7 @@ class PassengerHomePage extends StatelessWidget {
       child: DestinationSearchPage(
         origin: homeState.home.position,
         pickupPlace: flowState.pickupPlace,
-        recentDestinations: homeState.home.recentDestinations,
+        loadRecentDestinationsUseCase: loadRecentDestinationsUseCase,
         suggestDestinationsUseCase: suggestDestinationsUseCase,
         selectDestinationUseCase: selectDestinationUseCase,
         findPlaceAtUseCase: findPlaceAtUseCase,
@@ -195,6 +210,23 @@ class PassengerHomePage extends StatelessWidget {
       // The start is handled above; listed for the switch to be complete.
       PassengerFlowStarting() || PassengerFlowHome() => [tabsPage],
       PassengerFlowDestinationSearch() => [tabsPage, destinationPage],
+      PassengerFlowSavedPlaceEdit(:final kind, :final current) => [
+        tabsPage,
+        MaterialPage<void>(
+          key: ValueKey('saved-place-${kind.name}'),
+          child: SavedPlacePage(
+            kind: kind,
+            current: current,
+            origin: homeState.home.position,
+            suggestDestinationsUseCase: suggestDestinationsUseCase,
+            selectDestinationUseCase: selectDestinationUseCase,
+            findPlaceAtUseCase: findPlaceAtUseCase,
+            addSavedPlaceUseCase: addSavedPlaceUseCase,
+            changeSavedPlaceUseCase: changeSavedPlaceUseCase,
+            deleteSavedPlaceUseCase: deleteSavedPlaceUseCase,
+          ),
+        ),
+      ],
       PassengerFlowTaxiChoice(
         :final destination,
         :final scheduledPickup,
@@ -214,6 +246,8 @@ class PassengerHomePage extends StatelessWidget {
               requestRideUseCase: requestRideUseCase,
               bookRideUseCase: bookRideUseCase,
               getPickupForArrivalUseCase: getPickupForArrivalUseCase,
+              watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
+              pickupPlace: pickupPlace,
               scheduledPickup: scheduledPickup,
             ),
           ),
@@ -315,6 +349,20 @@ class _HomeTab extends StatelessWidget {
   // Height of the "Où allez-vous ?" panel over the map.
   static const _panelHeight = 300.0;
 
+  // A saved "Maison" is a destination in one tap; an empty one opens its
+  // search first. Spec taxi-vroom-api/docs/specs/maison-et-travail.md.
+  void _onShortcutPressed(
+    BuildContext context,
+    SavedPlace? saved,
+    SavedPlaceKind kind,
+  ) {
+    context.read<PassengerFlowBloc>().add(
+      saved == null
+          ? PassengerSavedPlaceEditOpened(kind: kind, fromAccount: false)
+          : PassengerDestinationSelected(destination: saved.toDestination()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<PassengerHomeBloc, PassengerHomeState>(
@@ -345,11 +393,15 @@ class _HomeTab extends StatelessWidget {
               Align(
                 alignment: Alignment.bottomCenter,
                 child: WhereToPanel(
-                  recentDestinations: home.recentDestinations,
                   nearbyTaxiCount: nearbyTaxis.length,
                   isConnected: isConnected,
                   onWhereToPressed: () => context.read<PassengerFlowBloc>().add(
                     const PassengerDestinationSearchOpened(),
+                  ),
+                  onShortcutPressed: (kind) => _onShortcutPressed(
+                    context,
+                    home.savedPlaceOf(kind),
+                    kind,
                   ),
                 ),
               ),

@@ -6,6 +6,7 @@ import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/domain/entities/nearby_taxi.dart';
 import 'package:mobile/features/passenger_home/domain/entities/passenger_home.dart';
+import 'package:mobile/features/passenger_home/domain/entities/saved_place.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/watch_nearby_taxis_usecase.dart';
 
@@ -23,6 +24,8 @@ class PassengerHomeBloc extends Bloc<PassengerHomeEvent, PassengerHomeState> {
        super(const PassengerHomeLoading()) {
     on<PassengerHomeStarted>(_onStarted);
     on<PassengerConnectionChanged>(_onConnectionChanged);
+    on<PassengerSavedPlaceStored>(_onSavedPlaceStored);
+    on<PassengerSavedPlaceRemoved>(_onSavedPlaceRemoved);
   }
 
   final LoadPassengerHomeUseCase _loadPassengerHomeUseCase;
@@ -46,11 +49,12 @@ class PassengerHomeBloc extends Bloc<PassengerHomeEvent, PassengerHomeState> {
         );
         await emit.forEach<Result<List<NearbyTaxi>>>(
           _watchNearbyTaxisUseCase(around: home.position),
-          // Without an update, the taxis last seen stay on the map.
+          // Without an update, the taxis last seen stay on the map. The home
+          // is the state's: a saved place may have changed it since.
           onData: (result) => switch ((result, state)) {
             (
               Ok(value: final nearbyTaxis),
-              PassengerHomeReady(:final isConnected),
+              PassengerHomeReady(:final home, :final isConnected),
             ) =>
               PassengerHomeReady(
                 home: home,
@@ -77,6 +81,37 @@ class PassengerHomeBloc extends Bloc<PassengerHomeEvent, PassengerHomeState> {
         home: currentState.home,
         nearbyTaxis: currentState.nearbyTaxis,
         isConnected: event.isConnected,
+      ),
+    );
+  }
+
+  // The shortcut shows it at once, without reloading the home.
+  void _onSavedPlaceStored(
+    PassengerSavedPlaceStored event,
+    Emitter<PassengerHomeState> emit,
+  ) {
+    _emitHome(emit, (home) => home.withSavedPlace(event.place));
+  }
+
+  void _onSavedPlaceRemoved(
+    PassengerSavedPlaceRemoved event,
+    Emitter<PassengerHomeState> emit,
+  ) {
+    _emitHome(emit, (home) => home.withoutSavedPlace(event.kind));
+  }
+
+  void _emitHome(
+    Emitter<PassengerHomeState> emit,
+    PassengerHome Function(PassengerHome home) change,
+  ) {
+    final currentState = state;
+    if (currentState is! PassengerHomeReady) return;
+
+    emit(
+      PassengerHomeReady(
+        home: change(currentState.home),
+        nearbyTaxis: currentState.nearbyTaxis,
+        isConnected: currentState.isConnected,
       ),
     );
   }

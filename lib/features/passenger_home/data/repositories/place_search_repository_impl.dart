@@ -6,10 +6,15 @@ import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/data/datasources/place_search_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place.dart';
 import 'package:mobile/features/passenger_home/domain/entities/place_suggestion.dart';
+import 'package:mobile/features/passenger_home/domain/repositories/address_repository.dart';
 import 'package:mobile/features/passenger_home/domain/repositories/place_search_repository.dart';
 import 'package:uuid/uuid.dart';
 
-class PlaceSearchRepositoryImpl implements PlaceSearchRepository {
+// Also the address under every pin and the pickup name sent to the
+// estimate: Mapbox, like the search, by the user's choice. Spec
+// taxi-vroom-api/docs/specs/point-de-prise-en-charge.md, "Tout sur Mapbox".
+class PlaceSearchRepositoryImpl
+    implements PlaceSearchRepository, AddressRepository {
   PlaceSearchRepositoryImpl(this._dataSource);
 
   final PlaceSearchRemoteDataSource _dataSource;
@@ -49,6 +54,24 @@ class PlaceSearchRepositoryImpl implements PlaceSearchRepository {
         return const Result.error(ServerFailure('Adresse introuvable'));
       }
       return Result.ok(models.first.toDomain());
+    } on DioException catch (e) {
+      return Result.error(e.toFailure());
+    }
+  }
+
+  // At the pin itself, not at the address's own point.
+  @override
+  Future<Result<Place?>> findPlaceAt(Coordinates point) async {
+    try {
+      final models = await _dataSource.reverse(
+        latitude: point.latitude,
+        longitude: point.longitude,
+      );
+      if (models.isEmpty) return const Result.ok(null);
+      final place = models.first.toDomain();
+      return Result.ok(
+        Place(name: place.name, address: place.address, coordinates: point),
+      );
     } on DioException catch (e) {
       return Result.error(e.toFailure());
     }

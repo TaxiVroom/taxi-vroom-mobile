@@ -20,4 +20,7 @@ documents: "Vos documents" real, opens on arrival when a document needs action, 
 account: both "Compte" tabs real, one API call with a loader on each arrival, spec taxi-vroom-api/docs/specs/compte-a-jour.md
 contact: "Contacter le développeur" in both Compte tabs calls the number from GET /v1/enterprise-contact, spec taxi-vroom-api/docs/specs/aide-chauffeur.md
 earnings: "Gains" by day, week or month and the "Conduire" pill and three cards are real, a loader on every API call, spec taxi-vroom-api/docs/specs/gains-reels.md (screen: gains-du-chauffeur.md)
+homeWork: "Maison" and "Travail" shortcuts and "Compte" rows real, "Gare" removed, spec taxi-vroom-api/docs/specs/maison-et-travail.md
+recentDestinations: real, in "Votre trajet" only (3 last), spec taxi-vroom-api/docs/specs/destinations-recentes.md
+pickupTime: chosen on the taxi choice only, reset when back to the home, spec taxi-vroom-api/docs/specs/heure-de-prise-en-charge.md
 next: to choose with the user; ideas noted for later in taxi-vroom-api/docs/a-faire.md

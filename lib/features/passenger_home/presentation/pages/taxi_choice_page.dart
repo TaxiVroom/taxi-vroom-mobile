@@ -20,6 +20,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_ar
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/offer_from_pickup_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/watch_nearby_taxis_usecase.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/arrival_pickup_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/ride_history_bloc.dart';
@@ -43,12 +44,18 @@ class TaxiChoicePage extends StatelessWidget {
     required this.getPickupForArrivalUseCase,
     required this.findPlaceAtUseCase,
     required this.offerFromPickupUseCase,
+    required this.watchNearbyTaxisUseCase,
+    this.pickupPlace,
     this.scheduledPickup,
     super.key,
   });
 
   // The pickup: the place chosen, otherwise where the phone is.
   final Coordinates origin;
+
+  // The place chosen, with its Mapbox address; null for "Position actuelle".
+  final Place? pickupPlace;
+  final WatchNearbyTaxisUseCase watchNearbyTaxisUseCase;
   final Place destination;
   final LoadTaxiChoiceUseCase loadTaxiChoiceUseCase;
   final RequestRideUseCase requestRideUseCase;
@@ -70,11 +77,13 @@ class TaxiChoicePage extends StatelessWidget {
         BlocProvider(
           create: (_) => TaxiChoiceBloc(
             origin: origin,
+            pickupPlace: pickupPlace,
             destination: destination,
             loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
             requestRideUseCase: requestRideUseCase,
             bookRideUseCase: bookRideUseCase,
             offerFromPickupUseCase: offerFromPickupUseCase,
+            watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
           )..add(TaxiChoiceStarted(scheduledPickup: scheduledPickup)),
         ),
         BlocProvider(
@@ -202,6 +211,7 @@ class TaxiChoicePage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
+        if (choice.offers.isEmpty) _buildNoFreeTaxi(),
         for (final offer in choice.offers)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -215,16 +225,19 @@ class TaxiChoicePage extends StatelessWidget {
             ),
           ),
         _buildOptions(),
-        const SizedBox(height: 8),
-        Text(
-          scheduledPickup == null
-              ? 'Estimation, trajet du taxi jusqu’à vous inclus. Le prix final '
-                    'est celui du taximètre.'
-              : 'Estimation au tarif de l’heure de prise en charge, trajet du '
-                    'taxi jusqu’à vous inclus (5 km au plus). Le prix final '
-                    'est celui du taximètre.',
-          style: const TextStyle(fontSize: 12, color: AppColors.muted),
-        ),
+        // No price shown, nothing to explain.
+        if (choice.offers.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            scheduledPickup == null
+                ? 'Estimation, trajet du taxi jusqu’à vous inclus. Le prix '
+                      'final est celui du taximètre.'
+                : 'Estimation au tarif de l’heure de prise en charge, trajet '
+                      'du taxi jusqu’à vous inclus (5 km au plus). Le prix '
+                      'final est celui du taximètre.',
+            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+          ),
+        ],
         _buildPriceExplanation(context, choice.offerById(selectedOfferId)),
         if (orderFailureMessage != null) ...[
           const SizedBox(height: 8),
@@ -250,6 +263,38 @@ class TaxiChoicePage extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  // No free taxi for a ride now: the "Taxi" card greyed, without a price;
+  // "Commander" stays disabled (no offer selected) and the pickup time below
+  // still books for later. Spec heure-de-prise-en-charge.md.
+  Widget _buildNoFreeTaxi() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      // TaxiOfferTile's frame, unselected.
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Taxi',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.muted,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'Aucun taxi libre pour le moment',
+            style: TextStyle(fontSize: 13, color: AppColors.muted),
+          ),
+        ],
+      ),
     );
   }
 
@@ -288,8 +333,8 @@ class TaxiChoicePage extends StatelessWidget {
     flowBloc.add(PassengerPickupPlaceChanged(pickupPlace: pickup));
     taxiChoiceBloc.add(
       scheduledPickup == null
-          ? TaxiRideOrdered(pickup: pickup.coordinates)
-          : TaxiRideBooked(pickup: pickup.coordinates),
+          ? TaxiRideOrdered(pickup: pickup)
+          : TaxiRideBooked(pickup: pickup),
     );
   }
 

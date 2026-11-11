@@ -47,6 +47,40 @@ final class PassengerDestinationSelected extends PassengerFlowEvent {
   List<Object?> get props => [destination];
 }
 
+// A "Maison" or "Travail" to add (an empty shortcut, or "Ajouter" in
+// "Compte"), or to change (its row in "Compte").
+final class PassengerSavedPlaceEditOpened extends PassengerFlowEvent {
+  const PassengerSavedPlaceEditOpened({
+    required this.kind,
+    required this.fromAccount,
+    this.current,
+  });
+
+  final SavedPlaceKind kind;
+
+  // Null to add it.
+  final SavedPlace? current;
+  final bool fromAccount;
+
+  @override
+  List<Object?> get props => [kind, current, fromAccount];
+}
+
+// The place was added or changed: a taxi to it from the home, back to
+// "Compte" from there.
+final class PassengerSavedPlaceSaved extends PassengerFlowEvent {
+  const PassengerSavedPlaceSaved({required this.place});
+
+  final SavedPlace place;
+
+  @override
+  List<Object?> get props => [place];
+}
+
+final class PassengerSavedPlaceDeleted extends PassengerFlowEvent {
+  const PassengerSavedPlaceDeleted();
+}
+
 // A taxi was ordered right now: the passenger follows the ride.
 final class PassengerRideOrdered extends PassengerFlowEvent {
   const PassengerRideOrdered({required this.rideId});
