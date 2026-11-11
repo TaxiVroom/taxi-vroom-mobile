@@ -337,7 +337,6 @@ class App extends StatelessWidget {
     );
     final loadDriverHomeUseCase = LoadDriverHomeUseCase(
       locationRepository: locationRepo,
-      driverBookingRepository: driverBookingRepo,
     );
 
     // Chauffeur.

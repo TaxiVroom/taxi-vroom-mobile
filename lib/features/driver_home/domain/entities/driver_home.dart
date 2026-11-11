@@ -1,15 +1,10 @@
 import 'package:equatable/equatable.dart';
 import 'package:mobile/core/domain/entities/coordinates.dart';
-import 'package:mobile/features/driver_home/domain/entities/driver_booking.dart';
 
 // Everything the driver home screen shows, offline and online. Its figures
 // load apart: DriverActivity.
 class DriverHome extends Equatable {
-  const DriverHome({
-    required this.position,
-    this.isOnline = false,
-    this.nextBooking,
-  });
+  const DriverHome({required this.position, this.isOnline = false});
 
   final Coordinates position;
 
@@ -17,15 +12,9 @@ class DriverHome extends Equatable {
   // always starts offline: only this phone knows it, not the API.
   final bool isOnline;
 
-  // The next accepted booking, if any.
-  final DriverBooking? nextBooking;
-
-  DriverHome withOnline({required bool isOnline}) => DriverHome(
-    position: position,
-    isOnline: isOnline,
-    nextBooking: nextBooking,
-  );
+  DriverHome withOnline({required bool isOnline}) =>
+      DriverHome(position: position, isOnline: isOnline);
 
   @override
-  List<Object?> get props => [position, isOnline, nextBooking];
+  List<Object?> get props => [position, isOnline];
 }

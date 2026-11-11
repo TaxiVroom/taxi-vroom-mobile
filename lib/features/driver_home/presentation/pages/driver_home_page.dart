@@ -836,7 +836,6 @@ class _DriveTab extends StatelessWidget {
         BlocBuilder<DriverActivityBloc, DriverActivityState>(
           builder: (context, activityState) => OfflinePanel(
             activityState: activityState,
-            nextBooking: state.home.nextBooking,
             isSwitching: state.isSwitchingOnline,
             failureMessage: state.switchFailureMessage,
             onGoOnlinePressed: () => context.read<DriverHomeBloc>().add(
