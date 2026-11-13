@@ -58,13 +58,13 @@ class _FakeDriverRideRepository implements DriverRideRepository {
 
 void main() {
   group('CompleteRideUseCase', () {
-    const bulkyLuggage = FareSupplement(
-      id: 'bulky-luggage',
-      label: 'Bagage encombrant',
+    const extraSupplement = FareSupplement(
+      id: 'extra',
+      label: 'Supplément',
       amountCents: 200,
     );
     const checkout = RideCheckout(
-      supplements: [bulkyLuggage],
+      supplements: [extraSupplement],
     );
 
     test('refuses to end the ride before the meter amount is typed', () async {
@@ -86,7 +86,7 @@ void main() {
     test('sends the typed meter amount and the supplements added', () async {
       // Arrange
       final server = _FakeDriverRideRepository();
-      final typed = checkout.withMeterCents(1840).withCount(bulkyLuggage, 2);
+      final typed = checkout.withMeterCents(1840).withCount(extraSupplement, 2);
 
       // Act
       final result = await CompleteRideUseCase(server)(
@@ -98,7 +98,7 @@ void main() {
       // Assert
       expect(result, isA<Ok<void>>());
       expect(server.sentMeterCents, 1840);
-      expect(server.sentSupplements, [(bulkyLuggage, 2)]);
+      expect(server.sentSupplements, [(extraSupplement, 2)]);
     });
   });
 }

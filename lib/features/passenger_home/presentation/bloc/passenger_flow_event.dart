@@ -116,6 +116,17 @@ final class PassengerPickupTimeChanged extends PassengerFlowEvent {
   List<Object?> get props => [scheduledPickup];
 }
 
+// The passenger chose how many people travel, from 1 to 8, on the taxi
+// choice.
+final class PassengerCountChanged extends PassengerFlowEvent {
+  const PassengerCountChanged({required this.passengerCount});
+
+  final int passengerCount;
+
+  @override
+  List<Object?> get props => [passengerCount];
+}
+
 final class PassengerPickupPlaceChanged extends PassengerFlowEvent {
   const PassengerPickupPlaceChanged({this.pickupPlace});
 

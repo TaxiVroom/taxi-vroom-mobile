@@ -224,5 +224,59 @@ void main() {
         expect(await centers.toList(), [passenger, moved800mNorth]);
       });
     });
+
+    // A ride refused while taxis were free (too few seats for the
+    // passengers) must not be estimated again for the same taxis, or the
+    // screen would load forever. Spec taxi-vroom-api/docs/specs/nombre-de-passagers.md,
+    // situation 4.
+    group('hasNewTaxi', () {
+      test('is false when every taxi was already free at the estimate', () {
+        // Arrange
+        const taxis = [taxi1KmNorth, taxi2KmNorth];
+        const known = {'taxi-1km', 'taxi-2km'};
+
+        // Act
+        final hasNew = WatchNearbyTaxisUseCase.hasNewTaxi(taxis, known: known);
+
+        // Assert
+        expect(hasNew, isFalse);
+      });
+
+      test('is true when a taxi was not free at the estimate', () {
+        // Arrange
+        const taxis = [taxi1KmNorth, taxi2KmNorth];
+        const known = {'taxi-1km'};
+
+        // Act
+        final hasNew = WatchNearbyTaxisUseCase.hasNewTaxi(taxis, known: known);
+
+        // Assert
+        expect(hasNew, isTrue);
+      });
+
+      test('is true for the first taxi when none was free before', () {
+        // Arrange
+        const taxis = [taxi3KmNorth];
+        const known = <String>{};
+
+        // Act
+        final hasNew = WatchNearbyTaxisUseCase.hasNewTaxi(taxis, known: known);
+
+        // Assert
+        expect(hasNew, isTrue);
+      });
+
+      test('is false when no taxi is free', () {
+        // Arrange
+        const taxis = <NearbyTaxi>[];
+        const known = {'taxi-1km'};
+
+        // Act
+        final hasNew = WatchNearbyTaxisUseCase.hasNewTaxi(taxis, known: known);
+
+        // Assert
+        expect(hasNew, isFalse);
+      });
+    });
   });
 }

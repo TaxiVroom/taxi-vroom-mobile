@@ -37,6 +37,7 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
     on<PassengerPickupTimeSheetOpened>(_onPickupTimeSheetOpened);
     on<PassengerPickupTimeChanged>(_onPickupTimeChanged);
     on<PassengerPickupPlaceChanged>(_onPickupPlaceChanged);
+    on<PassengerCountChanged>(_onPassengerCountChanged);
     on<PassengerFlowBackPressed>(_onBackPressed);
   }
 
@@ -108,6 +109,7 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
       PassengerFlowDestinationSearch(
         scheduledPickup: state.scheduledPickup,
         pickupPlace: state.pickupPlace,
+        passengerCount: state.passengerCount,
       ),
     );
   }
@@ -121,6 +123,7 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
         destination: event.destination,
         scheduledPickup: state.scheduledPickup,
         pickupPlace: state.pickupPlace,
+        passengerCount: state.passengerCount,
       ),
     );
   }
@@ -136,6 +139,7 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
         fromAccount: event.fromAccount,
         scheduledPickup: state.scheduledPickup,
         pickupPlace: state.pickupPlace,
+        passengerCount: state.passengerCount,
       ),
     );
   }
@@ -157,6 +161,7 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
         destination: event.place.toDestination(),
         scheduledPickup: state.scheduledPickup,
         pickupPlace: state.pickupPlace,
+        passengerCount: state.passengerCount,
       ),
     );
   }
@@ -170,7 +175,8 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
 
   // The home no longer shows the pickup time: back to "Maintenant", so the
   // next destination never opens on a forgotten time (user's decision, spec
-  // heure-de-prise-en-charge.md). The pickup place is kept.
+  // heure-de-prise-en-charge.md). The passengers go back to 1 the same way,
+  // spec nombre-de-passagers.md. The pickup place is kept.
   PassengerFlowHome _home() =>
       PassengerFlowHome(pickupPlace: state.pickupPlace);
 
@@ -236,6 +242,24 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
     );
   }
 
+  // Only the taxi choice shows the passengers: another screen has nothing to
+  // change.
+  void _onPassengerCountChanged(
+    PassengerCountChanged event,
+    Emitter<PassengerFlowState> emit,
+  ) {
+    final current = state;
+    if (current is! PassengerFlowTaxiChoice) return;
+    emit(
+      PassengerFlowTaxiChoice(
+        destination: current.destination,
+        scheduledPickup: current.scheduledPickup,
+        pickupPlace: current.pickupPlace,
+        passengerCount: event.passengerCount,
+      ),
+    );
+  }
+
   void _onBackPressed(
     PassengerFlowBackPressed event,
     Emitter<PassengerFlowState> emit,
@@ -245,6 +269,7 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
         PassengerFlowTaxiChoice() => PassengerFlowDestinationSearch(
           scheduledPickup: state.scheduledPickup,
           pickupPlace: state.pickupPlace,
+          passengerCount: state.passengerCount,
         ),
         // Leaving an ordered ride goes through "Annuler la course" only; the
         // start ends on its own.
@@ -264,17 +289,20 @@ class PassengerFlowBloc extends Bloc<PassengerFlowEvent, PassengerFlowState> {
       scheduledPickup: scheduledPickup,
       pickupDays: pickupDays,
       pickupPlace: pickupPlace,
+      passengerCount: state.passengerCount,
     ),
     PassengerFlowDestinationSearch() => PassengerFlowDestinationSearch(
       scheduledPickup: scheduledPickup,
       pickupDays: pickupDays,
       pickupPlace: pickupPlace,
+      passengerCount: state.passengerCount,
     ),
     PassengerFlowTaxiChoice(:final destination) => PassengerFlowTaxiChoice(
       destination: destination,
       scheduledPickup: scheduledPickup,
       pickupDays: pickupDays,
       pickupPlace: pickupPlace,
+      passengerCount: state.passengerCount,
     ),
     // The pickup of an ordered ride can't change anymore; nothing to change
     // while starting, nor on a saved place's screen.

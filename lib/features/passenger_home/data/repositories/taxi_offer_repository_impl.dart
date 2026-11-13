@@ -30,6 +30,7 @@ class TaxiOfferRepositoryImpl implements TaxiOfferRepository {
   Future<Result<List<TaxiOffer>>> getOffers({
     required Coordinates from,
     required Place to,
+    required int passengerCount,
     String? fromName,
     DateTime? scheduledPickup,
   }) async {
@@ -41,6 +42,7 @@ class TaxiOfferRepositoryImpl implements TaxiOfferRepository {
         toLatitude: to.coordinates.latitude,
         toLongitude: to.coordinates.longitude,
         destinationName: to.name,
+        passengerCount: passengerCount,
         scheduledPickup: scheduledPickup,
       );
       return Result.ok(models.map((m) => m.toDomain()).toList());

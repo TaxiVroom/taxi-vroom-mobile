@@ -65,11 +65,6 @@ class DriverRideRemoteDataSourceFake
     return RideCheckoutModel.fromJson({
       'supplements': [
         {
-          'id': 'bulky-luggage',
-          'label': 'Bagage encombrant',
-          'amountCents': 200,
-        },
-        {
           'id': 'fifth-passenger',
           'label': '5e passager et plus',
           'amountCents': 400,

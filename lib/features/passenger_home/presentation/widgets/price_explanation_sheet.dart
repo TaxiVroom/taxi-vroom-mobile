@@ -42,8 +42,8 @@ class PriceExplanationSheet extends StatelessWidget {
               'Nuit de ${_clock(tariff.nightStartMinute)} à '
               '${_clock(tariff.nightEndMinute)}, et toute la journée les '
               'dimanches et jours fériés. La fourchette va du taxi qui repart '
-              'avec un client (A, B) au taxi qui repart à vide (C, D). Hors '
-              'suppléments (bagages, 5e passager) et péages. '
+              'avec un client (A, B) au taxi qui repart à vide (C, D). Le '
+              'supplément du 5e passager est inclus, les péages non. '
               'Source : ${tariff.decree}.',
               style: _mutedStyle,
             ),

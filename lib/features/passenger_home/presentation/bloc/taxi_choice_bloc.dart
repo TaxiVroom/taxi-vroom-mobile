@@ -56,6 +56,9 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
   // Null for a taxi now; otherwise the ride is priced for it and booked.
   // Set by each TaxiChoiceStarted: the passenger may change it on screen.
   DateTime? _scheduledPickup;
+
+  // How many people travel; set by each TaxiChoiceStarted, like the time.
+  int _passengerCount = 1;
   final LoadTaxiChoiceUseCase _loadTaxiChoiceUseCase;
   final RequestRideUseCase _requestRideUseCase;
   final BookRideUseCase _bookRideUseCase;
@@ -70,6 +73,7 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
     Emitter<TaxiChoiceState> emit,
   ) async {
     _scheduledPickup = event.scheduledPickup;
+    _passengerCount = event.passengerCount;
     emit(const TaxiChoiceLoading());
     await _load(emit);
   }
@@ -85,6 +89,7 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
       from: _origin,
       pickupPlace: _pickupPlace,
       to: _destination,
+      passengerCount: _passengerCount,
       scheduledPickup: _scheduledPickup,
     )) {
       case Ok(:final value):
@@ -105,10 +110,24 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
 
   // No taxi free for a ride now: the first one free around the pickup
   // brings the estimate, without the passenger touching anything. Spec
-  // heure-de-prise-en-charge.md, "Un taxi qui se libère".
+  // heure-de-prise-en-charge.md, "Un taxi qui se libère". The taxis already
+  // free at the first answer could not take the ride (too few seats for the
+  // passengers): only another taxi brings a new estimate, or the screen would
+  // estimate again for ever. Spec nombre-de-passagers.md, situation 4.
   void _watchFreeTaxis() {
+    final known = <String>{};
+    var isFirstAnswer = true;
     _freeTaxis = _watchNearbyTaxisUseCase(around: _origin).listen((result) {
-      if (result case Ok(value: [_, ...])) add(const _TaxiChoiceFreeTaxiSeen());
+      if (result is! Ok<List<NearbyTaxi>>) return;
+      final taxis = result.value;
+      if (isFirstAnswer) {
+        isFirstAnswer = false;
+        known.addAll(taxis.map((taxi) => taxi.id));
+        return;
+      }
+      if (WatchNearbyTaxisUseCase.hasNewTaxi(taxis, known: known)) {
+        add(const _TaxiChoiceFreeTaxiSeen());
+      }
     });
   }
 
@@ -244,6 +263,7 @@ class TaxiChoiceBloc extends Bloc<TaxiChoiceEvent, TaxiChoiceState> {
       pricedFrom: _origin,
       pickup: pickup,
       destination: _destination,
+      passengerCount: _passengerCount,
       scheduledPickup: _scheduledPickup,
     );
     if (result case Ok(:final value) when value != shown) {

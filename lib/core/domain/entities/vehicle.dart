@@ -10,6 +10,7 @@ class Vehicle extends Equatable {
     required this.plate,
     required this.adsNumber,
     required this.communeName,
+    this.passengerSeats,
   });
 
   // Make and model, e.g. "Renault Austral".
@@ -23,6 +24,10 @@ class Vehicle extends Equatable {
   final String adsNumber;
   final String communeName;
 
+  // From 1 to 8. Only the driver's own account knows it: the passenger never
+  // sees it. Spec taxi-vroom-api/docs/specs/nombre-de-passagers.md.
+  final int? passengerSeats;
+
   // "Renault Austral grise"; the model alone when the color says nothing.
   String get description => switch (color.adjective) {
     final adjective? => '$model $adjective',
@@ -33,5 +38,12 @@ class Vehicle extends Equatable {
   String get licence => 'Taxi n° $adsNumber, $communeName';
 
   @override
-  List<Object?> get props => [model, color, plate, adsNumber, communeName];
+  List<Object?> get props => [
+    model,
+    color,
+    plate,
+    adsNumber,
+    communeName,
+    passengerSeats,
+  ];
 }

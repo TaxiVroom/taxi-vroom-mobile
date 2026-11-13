@@ -50,6 +50,11 @@ class _DriverVehicleViewState extends State<_DriverVehicleView> {
   VehicleColor? _color;
   Commune? _commune;
 
+  // The passenger seats, from 1 to 8: a taxi has eight seats at most (article
+  // L3121-1 du code des transports). Null until one is chosen.
+  int? _passengerSeats;
+  static const _maxPassengerSeats = 8;
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +71,7 @@ class _DriverVehicleViewState extends State<_DriverVehicleView> {
     _plateController.text = vehicle.plate;
     _adsNumberController.text = vehicle.adsNumber;
     _color = vehicle.color;
+    _passengerSeats = vehicle.passengerSeats;
     _commune = Commune(
       code: vehicle.communeCode,
       name: vehicle.communeName,
@@ -87,9 +93,11 @@ class _DriverVehicleViewState extends State<_DriverVehicleView> {
     final plate = RegistrationVehicle.formatPlate(_plateController.text);
     final color = _color;
     final commune = _commune;
+    final passengerSeats = _passengerSeats;
     final model = _modelController.text.trim();
     final adsNumber = _adsNumberController.text.trim();
     if (plate == null || color == null || commune == null) return null;
+    if (passengerSeats == null) return null;
     if (model.length < 2 || adsNumber.isEmpty) return null;
     return RegistrationVehicle(
       model: model,
@@ -98,6 +106,7 @@ class _DriverVehicleViewState extends State<_DriverVehicleView> {
       adsNumber: adsNumber,
       communeCode: commune.code,
       communeName: commune.name,
+      passengerSeats: passengerSeats,
     );
   }
 
@@ -165,6 +174,9 @@ class _DriverVehicleViewState extends State<_DriverVehicleView> {
                   const SizedBox(height: 16),
                   _buildLabel('Commune de rattachement'),
                   _buildCommune(),
+                  const SizedBox(height: 16),
+                  _buildLabel('Places passagers'),
+                  _buildPassengerSeats(),
                   if (_otherFailure(vehicleState) case final failure?) ...[
                     const SizedBox(height: 16),
                     Text(
@@ -198,6 +210,24 @@ class _DriverVehicleViewState extends State<_DriverVehicleView> {
             label: color.label,
             isSelected: color == _color,
             onPressed: () => setState(() => _color = color),
+          ),
+      ],
+    );
+  }
+
+  // Eight buttons like the colors: one tap, every choice in sight. Only
+  // taxis with as many seats as passengers get a ride. Spec
+  // taxi-vroom-api/docs/specs/nombre-de-passagers.md.
+  Widget _buildPassengerSeats() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (var seats = 1; seats <= _maxPassengerSeats; seats++)
+          ChoiceButton(
+            label: '$seats',
+            isSelected: seats == _passengerSeats,
+            onPressed: () => setState(() => _passengerSeats = seats),
           ),
       ],
     );

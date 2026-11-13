@@ -12,7 +12,6 @@ class DriverBooking extends Equatable {
     required this.maxPriceCents,
     required this.customerFirstName,
     required this.passengerCount,
-    required this.luggageCount,
     this.canDepart = false,
     this.requirement,
   });
@@ -29,7 +28,6 @@ class DriverBooking extends Equatable {
 
   final String customerFirstName;
   final int passengerCount;
-  final int luggageCount;
 
   // Its deadline passed and it is the driver's: "Je pars" replaces
   // "Se désister".
@@ -49,7 +47,6 @@ class DriverBooking extends Equatable {
     maxPriceCents,
     customerFirstName,
     passengerCount,
-    luggageCount,
     canDepart,
     requirement,
   ];

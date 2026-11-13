@@ -40,6 +40,7 @@ class _FakeTaxiOfferRepository implements TaxiOfferRepository {
   Future<Result<List<TaxiOffer>>> getOffers({
     required Coordinates from,
     required Place to,
+    required int passengerCount,
     String? fromName,
     DateTime? scheduledPickup,
   }) async {
@@ -104,7 +105,7 @@ void main() {
         );
 
         // Act
-        final result = await useCase(from: from, to: to);
+        final result = await useCase(from: from, to: to, passengerCount: 1);
 
         // Assert
         expect(
@@ -128,7 +129,7 @@ void main() {
       );
 
       // Act
-      final result = await useCase(from: from, to: to);
+      final result = await useCase(from: from, to: to, passengerCount: 1);
 
       // Assert
       expect(
@@ -147,7 +148,7 @@ void main() {
       );
 
       // Act
-      await useCase(from: from, to: to);
+      await useCase(from: from, to: to, passengerCount: 1);
 
       // Assert
       expect(offers.sentName, '4 Rue de la Magel, 67000 Strasbourg, France');
@@ -160,7 +161,12 @@ void main() {
       final useCase = useCaseWith(offers: offers, addresses: addresses);
 
       // Act
-      await useCase(from: from, pickupPlace: street, to: to);
+      await useCase(
+        from: from,
+        pickupPlace: street,
+        to: to,
+        passengerCount: 1,
+      );
 
       // Assert
       expect(offers.sentName, '4 Rue de la Magel, 67000 Strasbourg, France');
@@ -175,7 +181,7 @@ void main() {
         final useCase = useCaseWith(offers: offers);
 
         // Act
-        await useCase(from: from, to: to);
+        await useCase(from: from, to: to, passengerCount: 1);
 
         // Assert
         expect(offers.sentName, isNull);

@@ -330,7 +330,9 @@ class DriverCheckoutPage extends StatelessWidget {
           SecondaryButton(
             density: ButtonDensity.icon,
             shape: ButtonShape.circle,
-            onPressed: () => changeCount(count + 1),
+            onPressed: checkout.canAdd(supplement)
+                ? () => changeCount(count + 1)
+                : null,
             child: const Icon(Icons.add, size: 18),
           ),
         ],

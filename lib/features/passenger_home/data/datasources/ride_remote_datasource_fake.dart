@@ -122,6 +122,7 @@ class RideRemoteDataSourceFake
     required double toLatitude,
     required double toLongitude,
     required String destinationName,
+    required int passengerCount,
     String? fromName,
     DateTime? scheduledPickup,
   }) async {

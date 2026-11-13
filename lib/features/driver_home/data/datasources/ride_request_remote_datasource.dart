@@ -35,8 +35,6 @@ class RideRequestRemoteDataSourceImpl implements RideRequestRemoteDataSource {
 
   // Unknown to the backend yet.
   static const _customerRating = 5.0;
-  static const _passengerCount = 1;
-  static const _luggageCount = 0;
 
   String get _uid {
     final uid = _firebaseAuth.currentUser?.uid;
@@ -99,8 +97,8 @@ class RideRequestRemoteDataSourceImpl implements RideRequestRemoteDataSource {
         'firstName': offer.child('passengerFirstName').value! as String,
         'rating': _customerRating,
       },
-      'passengerCount': _passengerCount,
-      'luggageCount': _luggageCount,
+      // Written by the API with the offer, from the ride's passengers.
+      'passengerCount': offer.child('passengerCount').value! as int,
       'scheduledPickup': pickupAt == null
           ? null
           : DateTime.fromMillisecondsSinceEpoch(pickupAt).toIso8601String(),

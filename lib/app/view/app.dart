@@ -54,8 +54,8 @@ import 'package:mobile/features/driver_home/data/datasources/driver_document_rem
 import 'package:mobile/features/driver_home/data/datasources/driver_document_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_presence_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource.dart';
-import 'package:mobile/features/driver_home/data/datasources/driver_ride_remote_datasource_fake.dart';
 import 'package:mobile/features/driver_home/data/datasources/earnings_remote_datasource.dart';
+import 'package:mobile/features/driver_home/data/datasources/ride_checkout_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/datasources/ride_request_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/repositories/device_driving_position_repository.dart';
 import 'package:mobile/features/driver_home/data/repositories/driver_account_repository_impl.dart';
@@ -297,13 +297,14 @@ class App extends StatelessWidget {
         dio,
       ),
     );
-    // Étapes de la course par l'API ; suppléments et note du client encore
-    // simulés. Le paiement se fait à bord, hors de l'app. Pour tout simuler (code de montée « 4817 »), passer
-    // driverRideFake en premier argument aussi.
-    final driverRideFake = DriverRideRemoteDataSourceFake();
+    // Étapes de la course par l'API ; « 5e passager et plus » par l'API aussi
+    // (spec taxi-vroom-api/docs/specs/nombre-de-passagers.md), les autres
+    // suppléments et la note du client encore simulés. Le paiement se fait à
+    // bord, hors de l'app. Pour tout simuler (code de montée « 4817 »),
+    // passer DriverRideRemoteDataSourceFake() aux deux arguments.
     final driverRideRepo = DriverRideRepositoryImpl(
       DriverRideRemoteDataSourceImpl(realtimeDatabase, dio),
-      driverRideFake,
+      RideCheckoutRemoteDataSourceImpl(dio),
     );
     // Réservations chauffeur, via l'API : une seule instance, partagée par
     // l'accueil (prochaine réservation) et l'onglet Réservations. Pour

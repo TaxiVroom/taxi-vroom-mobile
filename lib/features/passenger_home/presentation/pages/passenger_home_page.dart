@@ -231,6 +231,7 @@ class PassengerHomePage extends StatelessWidget {
         :final destination,
         :final scheduledPickup,
         :final pickupPlace,
+        :final passengerCount,
       ) =>
         [
           tabsPage,
@@ -249,6 +250,7 @@ class PassengerHomePage extends StatelessWidget {
               watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
               pickupPlace: pickupPlace,
               scheduledPickup: scheduledPickup,
+              passengerCount: passengerCount,
             ),
           ),
         ],

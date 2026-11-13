@@ -181,9 +181,6 @@ class RideRequestSheet extends StatelessWidget {
     final passengers = request.passengerCount > 1
         ? '${request.passengerCount} passagers'
         : '${request.passengerCount} passager';
-    final luggage = request.luggageCount > 1
-        ? '${request.luggageCount} bagages'
-        : '${request.luggageCount} bagage';
     return Wrap(
       spacing: 6,
       runSpacing: 6,
@@ -194,7 +191,6 @@ class RideRequestSheet extends StatelessWidget {
           icon: Icons.star,
         ),
         _buildChip(passengers),
-        _buildChip(luggage),
       ],
     );
   }

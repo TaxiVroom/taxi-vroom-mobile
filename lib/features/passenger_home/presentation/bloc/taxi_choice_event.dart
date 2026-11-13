@@ -8,15 +8,18 @@ sealed class TaxiChoiceEvent extends Equatable {
 }
 
 // The screen is shown, the passenger taps "Réessayer", or changes the pickup
-// time: a new estimate for it.
+// time or the passengers: a new estimate for them.
 final class TaxiChoiceStarted extends TaxiChoiceEvent {
-  const TaxiChoiceStarted({this.scheduledPickup});
+  const TaxiChoiceStarted({required this.passengerCount, this.scheduledPickup});
 
   // Null for a taxi now.
   final DateTime? scheduledPickup;
 
+  // How many people travel, from 1 to 8.
+  final int passengerCount;
+
   @override
-  List<Object?> get props => [scheduledPickup];
+  List<Object?> get props => [scheduledPickup, passengerCount];
 }
 
 // The passenger taps "Commander le taxi", then confirms the [pickup], with

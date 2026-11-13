@@ -3,7 +3,7 @@ import 'package:mobile/core/domain/entities/vehicle_color.dart';
 
 // "vehicle" of GET /v1/drivers/me/account, e.g. {"model":"Renault Austral",
 // "color":"GREY","plate":"AB-123-CD","adsNumber":"118",
-// "communeCode":"67482","communeName":"Strasbourg"}.
+// "communeCode":"67482","communeName":"Strasbourg","passengerSeats":4}.
 class DriverVehicleModel {
   const DriverVehicleModel({
     required this.model,
@@ -11,6 +11,7 @@ class DriverVehicleModel {
     required this.plate,
     required this.adsNumber,
     required this.communeName,
+    required this.passengerSeats,
   });
 
   factory DriverVehicleModel.fromJson(Map<String, dynamic> json) =>
@@ -20,6 +21,7 @@ class DriverVehicleModel {
         plate: json['plate'] as String,
         adsNumber: json['adsNumber'] as String,
         communeName: json['communeName'] as String,
+        passengerSeats: json['passengerSeats'] as int,
       );
 
   final String model;
@@ -27,6 +29,7 @@ class DriverVehicleModel {
   final String plate;
   final String adsNumber;
   final String communeName;
+  final int passengerSeats;
 
   Vehicle toDomain() => Vehicle(
     model: model,
@@ -34,5 +37,6 @@ class DriverVehicleModel {
     plate: plate,
     adsNumber: adsNumber,
     communeName: communeName,
+    passengerSeats: passengerSeats,
   );
 }

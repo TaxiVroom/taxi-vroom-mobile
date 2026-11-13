@@ -11,6 +11,7 @@ class RegistrationVehicleModel {
     required this.adsNumber,
     required this.communeCode,
     required this.communeName,
+    required this.passengerSeats,
   });
 
   factory RegistrationVehicleModel.fromJson(Map<String, dynamic> json) =>
@@ -21,6 +22,7 @@ class RegistrationVehicleModel {
         adsNumber: json['adsNumber'] as String,
         communeCode: json['communeCode'] as String,
         communeName: json['communeName'] as String,
+        passengerSeats: json['passengerSeats'] as int,
       );
 
   factory RegistrationVehicleModel.fromDomain(RegistrationVehicle vehicle) =>
@@ -31,6 +33,7 @@ class RegistrationVehicleModel {
         adsNumber: vehicle.adsNumber,
         communeCode: vehicle.communeCode,
         communeName: vehicle.communeName,
+        passengerSeats: vehicle.passengerSeats,
       );
 
   final String model;
@@ -39,6 +42,7 @@ class RegistrationVehicleModel {
   final String adsNumber;
   final String communeCode;
   final String communeName;
+  final int passengerSeats;
 
   Map<String, dynamic> toJson() => {
     'model': model,
@@ -47,6 +51,7 @@ class RegistrationVehicleModel {
     'adsNumber': adsNumber,
     'communeCode': communeCode,
     'communeName': communeName,
+    'passengerSeats': passengerSeats,
   };
 
   RegistrationVehicle toDomain() => RegistrationVehicle(
@@ -56,5 +61,6 @@ class RegistrationVehicleModel {
     adsNumber: adsNumber,
     communeCode: communeCode,
     communeName: communeName,
+    passengerSeats: passengerSeats,
   );
 }

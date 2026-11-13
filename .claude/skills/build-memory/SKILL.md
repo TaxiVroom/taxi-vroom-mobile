@@ -5,7 +5,7 @@ description: Maintains the versioned .aimemory/ knowledge base of this repo, wit
 
 # Build Memory
 
-Per-repo memory in `.aimemory/`, committed with the code. Dense line format. Destructive compression on fluff. Graph links over pasted code. The lifecycle (when to read, when to write) is in the `Memory lifecycle` section of `CLAUDE.md`.
+Per-repo memory in `.aimemory/`, committed with the code. Dense line format. Destructive compression on fluff. Graph links over pasted code. The lifecycle (when to read, when to write) is in the `lifecycleStart` and `lifecycleEnd` lines of `.aimemory/INDEX.md`.
 
 ## Context budget (~256K)
 

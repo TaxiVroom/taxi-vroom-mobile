@@ -22,6 +22,7 @@ class OfferFromPickupUseCase {
     required Coordinates pricedFrom,
     required Place pickup,
     required Place destination,
+    required int passengerCount,
     DateTime? scheduledPickup,
   }) async {
     if (pricedFrom.distanceTo(pickup.coordinates) <= _movedMeters) {
@@ -32,6 +33,7 @@ class OfferFromPickupUseCase {
       from: pickup.coordinates,
       fromName: FindPlaceAtUseCase.knownAddress(pickup),
       to: destination,
+      passengerCount: passengerCount,
       scheduledPickup: scheduledPickup,
     );
     return switch (priced) {

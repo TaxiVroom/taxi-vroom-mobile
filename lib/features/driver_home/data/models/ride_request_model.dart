@@ -17,7 +17,6 @@ class RideRequestModel {
     required this.customerFirstName,
     required this.customerRating,
     required this.passengerCount,
-    required this.luggageCount,
     required this.scheduledPickup,
   });
 
@@ -41,7 +40,6 @@ class RideRequestModel {
       customerFirstName: customer['firstName'] as String,
       customerRating: (customer['rating'] as num).toDouble(),
       passengerCount: json['passengerCount'] as int,
-      luggageCount: json['luggageCount'] as int,
       scheduledPickup: scheduledPickup == null
           ? null
           : DateTime.parse(scheduledPickup),
@@ -62,7 +60,6 @@ class RideRequestModel {
   final String customerFirstName;
   final double customerRating;
   final int passengerCount;
-  final int luggageCount;
 
   // Only for a booking.
   final DateTime? scheduledPickup;
@@ -83,7 +80,6 @@ class RideRequestModel {
     customerFirstName: customerFirstName,
     customerRating: customerRating,
     passengerCount: passengerCount,
-    luggageCount: luggageCount,
     scheduledPickup: scheduledPickup,
   );
 }

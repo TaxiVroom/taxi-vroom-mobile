@@ -21,6 +21,7 @@ class _FakeTaxiOfferRepository implements TaxiOfferRepository {
   Future<Result<List<TaxiOffer>>> getOffers({
     required Coordinates from,
     required Place to,
+    required int passengerCount,
     String? fromName,
     DateTime? scheduledPickup,
   }) async {
@@ -81,6 +82,7 @@ void main() {
         pricedFrom: pricedFrom,
         pickup: pickup,
         destination: destination,
+        passengerCount: 1,
       );
 
       // Assert
@@ -106,6 +108,7 @@ void main() {
         pricedFrom: pricedFrom,
         pickup: pickup,
         destination: destination,
+        passengerCount: 1,
       );
 
       // Assert
@@ -134,6 +137,7 @@ void main() {
           pricedFrom: pricedFrom,
           pickup: pickup,
           destination: destination,
+          passengerCount: 1,
         );
 
         // Assert
@@ -160,6 +164,7 @@ void main() {
         pricedFrom: pricedFrom,
         pickup: pickup,
         destination: destination,
+        passengerCount: 1,
       );
 
       // Assert

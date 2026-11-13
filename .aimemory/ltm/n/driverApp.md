@@ -34,7 +34,7 @@ start: 4-digit code, a 422 means refused; attemptsLeft 0 locks at once without a
 no-show: available after 5 min at the pickup
 checkout: meterCents typed by the driver from the legal meter, supplements simulated; "Reprendre la course" undoes a mistaken end, nothing was sent yet; payment on board
 guidance uses the device GPS; DrivingPositionDataSourceFake simulates a drive without moving
-values the API does not send yet: customer rating 5.0, 1 passenger, 0 luggage
+values the API does not send yet: customer rating 5.0 (the passenger count is real since 2026-11-13, and luggage no longer exists)
 earnings: EarningsBloc keeps the chosen EarningsPeriod in every state, shows its loader on each request and drops a late answer for another period; Earnings.axisTopCents rounds the axis to 10, 20, 25, 50… € steps; GET /v1/drivers/me/earnings, the API computes the period's Paris days
 documents loaders: "Passer en ligne" refused emits DriverFlowCheckingDocuments(isOverHome: true), a full-screen loader over the tabs until "Vos documents"; a refresh on notification or resume sets isRefreshing on the documents states, the page shows a loader instead of the cards
 activity: DriverActivityBloc (GET /v1/drivers/me/activity) loads the pill and the three cards apart from DriverHomeBloc, at start, on each "Conduire" tab and back from a ride; a failure shows "–", never blocks going online; isOnline lives in DriverHome, the app always starts offline; the rating comes from the passenger after the ride end, so it shows at the next reload

@@ -149,18 +149,12 @@ class _DriverBookingsTabState extends State<DriverBookingsTab> {
   }) {
     final bloc = context.read<DriverBookingsBloc>();
     final requirement = booking.requirement;
-    final luggage = switch (booking.luggageCount) {
-      0 => null,
-      1 => '1 bagage',
-      final count => '$count bagages',
-    };
     final passengers = booking.passengerCount > 1
         ? '${booking.passengerCount} passagers'
         : '${booking.passengerCount} passager';
     final details = [
       formatDistanceKm(booking.distanceKm),
       requirement ?? passengers,
-      if (requirement == null && luggage != null) luggage,
     ].join(', ');
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

@@ -59,6 +59,14 @@ class WatchNearbyTaxisUseCase {
     }
   }
 
+  // A taxi free now that was not among the [known] ones, e.g. those free when
+  // the estimate was refused: the same taxis would be refused again (too few
+  // seats for the passengers), so only a new one is worth a new estimate.
+  static bool hasNewTaxi(
+    List<NearbyTaxi> taxis, {
+    required Set<String> known,
+  }) => taxis.any((taxi) => !known.contains(taxi.id));
+
   static List<NearbyTaxi> reachableClosestFirst(
     List<NearbyTaxi> taxis, {
     required Coordinates around,

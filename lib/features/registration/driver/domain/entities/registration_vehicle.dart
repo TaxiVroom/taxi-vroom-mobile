@@ -11,6 +11,7 @@ class RegistrationVehicle extends Equatable {
     required this.adsNumber,
     required this.communeCode,
     required this.communeName,
+    required this.passengerSeats,
   });
 
   // Make and model in one, e.g. "Renault Austral".
@@ -26,6 +27,11 @@ class RegistrationVehicle extends Equatable {
   // The commune de rattachement: its INSEE code and its name.
   final String communeCode;
   final String communeName;
+
+  // The passenger seats of the taxi, from 1 to 8: a taxi has eight seats at
+  // most. Only taxis with as many seats as passengers get a ride. Spec
+  // taxi-vroom-api/docs/specs/nombre-de-passagers.md.
+  final int passengerSeats;
 
   // The current French plates: two letters, three digits, two letters,
   // whatever the spaces, dashes or case typed. Null otherwise.
@@ -44,5 +50,6 @@ class RegistrationVehicle extends Equatable {
     adsNumber,
     communeCode,
     communeName,
+    passengerSeats,
   ];
 }

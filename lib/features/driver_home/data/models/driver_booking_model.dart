@@ -11,6 +11,7 @@ class DriverBookingModel {
     required this.minPriceCents,
     required this.maxPriceCents,
     required this.customerFirstName,
+    required this.passengerCount,
     required this.canDepart,
   });
 
@@ -24,12 +25,9 @@ class DriverBookingModel {
         minPriceCents: json['estimatedPriceMinCents'] as int,
         maxPriceCents: json['estimatedPriceMaxCents'] as int,
         customerFirstName: json['passengerFirstName'] as String,
+        passengerCount: json['passengerCount'] as int,
         canDepart: json['canDepart'] as bool,
       );
-
-  // What the API does not know yet, as for a ride offer.
-  static const _passengerCount = 1;
-  static const _luggageCount = 0;
 
   final String id;
   final DateTime scheduledPickup;
@@ -39,6 +37,7 @@ class DriverBookingModel {
   final int minPriceCents;
   final int maxPriceCents;
   final String customerFirstName;
+  final int passengerCount;
   final bool canDepart;
 
   DriverBooking toDomain() => DriverBooking(
@@ -50,8 +49,7 @@ class DriverBookingModel {
     minPriceCents: minPriceCents,
     maxPriceCents: maxPriceCents,
     customerFirstName: customerFirstName,
-    passengerCount: _passengerCount,
-    luggageCount: _luggageCount,
+    passengerCount: passengerCount,
     canDepart: canDepart,
   );
 }

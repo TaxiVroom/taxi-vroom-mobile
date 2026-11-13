@@ -17,11 +17,18 @@ class RideCheckout extends Equatable {
   // The supplements the city allows.
   final List<FareSupplement> supplements;
 
-  // How many of each supplement, by id. Missing means 0.
+  // How many of each supplement, by id, once the driver changed it. Missing
+  // means the supplement's initial count.
   final Map<String, int> supplementCounts;
 
   int countOf(FareSupplement supplement) =>
-      supplementCounts[supplement.id] ?? 0;
+      supplementCounts[supplement.id] ?? supplement.initialCount;
+
+  // False once the supplement's maximum is reached: the "+" is off.
+  bool canAdd(FareSupplement supplement) {
+    final max = supplement.maxCount;
+    return max == null || countOf(supplement) < max;
+  }
 
   // The supplements added at least once, with their count.
   List<(FareSupplement, int)> get addedSupplements => [
@@ -46,15 +53,23 @@ class RideCheckout extends Equatable {
     supplementCounts: supplementCounts,
   );
 
-  // Never below 0.
+  // Never below 0, nor above the supplement's maximum.
   RideCheckout withCount(FareSupplement supplement, int count) => RideCheckout(
     meterCents: meterCents,
     supplements: supplements,
     supplementCounts: {
       ...supplementCounts,
-      supplement.id: count < 0 ? 0 : count,
+      supplement.id: _bounded(supplement, count),
     },
   );
+
+  int _bounded(FareSupplement supplement, int count) {
+    final capped = switch (supplement.maxCount) {
+      final max? when count > max => max,
+      _ => count,
+    };
+    return capped < 0 ? 0 : capped;
+  }
 
   @override
   List<Object?> get props => [meterCents, supplements, supplementCounts];

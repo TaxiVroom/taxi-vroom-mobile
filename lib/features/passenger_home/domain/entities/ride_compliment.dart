@@ -1,8 +1,7 @@
 // What the passenger can praise when rating a driver.
 enum RideCompliment {
   smoothDriving('SMOOTH_DRIVING', 'Conduite douce'),
-  punctual('PUNCTUAL', 'Ponctuel'),
-  luggageHelp('LUGGAGE_HELP', 'Aide bagages');
+  punctual('PUNCTUAL', 'Ponctuel');
 
   const RideCompliment(this.code, this.label);
 

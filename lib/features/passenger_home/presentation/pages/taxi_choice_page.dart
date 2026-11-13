@@ -25,6 +25,7 @@ import 'package:mobile/features/passenger_home/presentation/bloc/arrival_pickup_
 import 'package:mobile/features/passenger_home/presentation/bloc/passenger_flow_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/ride_history_bloc.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/taxi_choice_bloc.dart';
+import 'package:mobile/features/passenger_home/presentation/widgets/passenger_count_chip.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/pickup_time_chip.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/place_picker_sheet.dart';
 import 'package:mobile/features/passenger_home/presentation/widgets/price_explanation_sheet.dart';
@@ -47,6 +48,7 @@ class TaxiChoicePage extends StatelessWidget {
     required this.watchNearbyTaxisUseCase,
     this.pickupPlace,
     this.scheduledPickup,
+    this.passengerCount = 1,
     super.key,
   });
 
@@ -67,6 +69,9 @@ class TaxiChoicePage extends StatelessWidget {
   // Null means "as soon as possible".
   final DateTime? scheduledPickup;
 
+  // How many people travel, from 1 to 8.
+  final int passengerCount;
+
   // Room kept for the bottom panel when framing the route on the map.
   static const _panelHeight = 440.0;
 
@@ -75,16 +80,22 @@ class TaxiChoicePage extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => TaxiChoiceBloc(
-            origin: origin,
-            pickupPlace: pickupPlace,
-            destination: destination,
-            loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
-            requestRideUseCase: requestRideUseCase,
-            bookRideUseCase: bookRideUseCase,
-            offerFromPickupUseCase: offerFromPickupUseCase,
-            watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
-          )..add(TaxiChoiceStarted(scheduledPickup: scheduledPickup)),
+          create: (_) =>
+              TaxiChoiceBloc(
+                origin: origin,
+                pickupPlace: pickupPlace,
+                destination: destination,
+                loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
+                requestRideUseCase: requestRideUseCase,
+                bookRideUseCase: bookRideUseCase,
+                offerFromPickupUseCase: offerFromPickupUseCase,
+                watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
+              )..add(
+                TaxiChoiceStarted(
+                  scheduledPickup: scheduledPickup,
+                  passengerCount: passengerCount,
+                ),
+              ),
         ),
         BlocProvider(
           create: (_) => ArrivalPickupBloc(
@@ -105,12 +116,18 @@ class TaxiChoicePage extends StatelessWidget {
             ),
           ),
           // Another pickup time is another price: the tariff of its hour.
+          // Other passengers too: the supplement from the fifth, and the
+          // taxis with enough seats.
           BlocListener<PassengerFlowBloc, PassengerFlowState>(
             listenWhen: (previous, current) =>
                 current is PassengerFlowTaxiChoice &&
-                previous.scheduledPickup != current.scheduledPickup,
+                (previous.scheduledPickup != current.scheduledPickup ||
+                    previous.passengerCount != current.passengerCount),
             listener: (context, state) => context.read<TaxiChoiceBloc>().add(
-              TaxiChoiceStarted(scheduledPickup: state.scheduledPickup),
+              TaxiChoiceStarted(
+                scheduledPickup: state.scheduledPickup,
+                passengerCount: state.passengerCount,
+              ),
             ),
           ),
         ],
@@ -152,7 +169,10 @@ class TaxiChoicePage extends StatelessWidget {
       TaxiChoiceFailure(:final message) => RetryMessage(
         message: message,
         onRetry: () => context.read<TaxiChoiceBloc>().add(
-          TaxiChoiceStarted(scheduledPickup: scheduledPickup),
+          TaxiChoiceStarted(
+            scheduledPickup: scheduledPickup,
+            passengerCount: passengerCount,
+          ),
         ),
       ),
       TaxiChoiceReady(:final choice, :final selectedOfferId) => Stack(
@@ -268,7 +288,9 @@ class TaxiChoicePage extends StatelessWidget {
 
   // No free taxi for a ride now: the "Taxi" card greyed, without a price;
   // "Commander" stays disabled (no offer selected) and the pickup time below
-  // still books for later. Spec heure-de-prise-en-charge.md.
+  // still books for later. With several passengers, it says how many seats
+  // were needed: smaller taxis may be free. Specs heure-de-prise-en-charge.md
+  // and nombre-de-passagers.md.
   Widget _buildNoFreeTaxi() {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -278,20 +300,22 @@ class TaxiChoicePage extends StatelessWidget {
         border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Taxi',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: AppColors.muted,
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
-            'Aucun taxi libre pour le moment',
-            style: TextStyle(fontSize: 13, color: AppColors.muted),
+            passengerCount > 1
+                ? 'Aucun taxi libre de $passengerCount places pour le moment'
+                : 'Aucun taxi libre pour le moment',
+            style: const TextStyle(fontSize: 13, color: AppColors.muted),
           ),
         ],
       ),
@@ -383,17 +407,12 @@ class TaxiChoicePage extends StatelessWidget {
     flowBloc.add(const PassengerRideBooked());
   }
 
-  // The passenger count is not built yet.
   Widget _buildOptions() {
-    return Row(
+    return const Row(
       children: [
-        const PickupTimeChip(canChooseArrival: true),
-        const SizedBox(width: 8),
-        OutlineButton(
-          onPressed: () {},
-          leading: const Icon(Icons.person_outline, size: 16),
-          child: const Text('1 passager'),
-        ),
+        PickupTimeChip(canChooseArrival: true),
+        SizedBox(width: 8),
+        PassengerCountChip(),
       ],
     );
   }

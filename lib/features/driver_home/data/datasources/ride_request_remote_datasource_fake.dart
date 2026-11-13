@@ -64,7 +64,6 @@ class RideRequestRemoteDataSourceFake implements RideRequestRemoteDataSource {
         'note': 'Je suis devant la pharmacie.',
       },
       'passengerCount': 1,
-      'luggageCount': 1,
     };
   }
 

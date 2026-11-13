@@ -29,6 +29,7 @@ class LoadTaxiChoiceUseCase {
   Future<Result<TaxiChoice>> call({
     required Coordinates from,
     required Place to,
+    required int passengerCount,
     Place? pickupPlace,
     DateTime? scheduledPickup,
   }) async {
@@ -48,6 +49,7 @@ class LoadTaxiChoiceUseCase {
       from: from,
       fromName: FindPlaceAtUseCase.knownAddress(pickup),
       to: to,
+      passengerCount: passengerCount,
       scheduledPickup: scheduledPickup,
     )) {
       Ok(:final value) => Result.ok(TaxiChoice(route: route, offers: value)),

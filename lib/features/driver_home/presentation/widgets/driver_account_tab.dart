@@ -113,6 +113,14 @@ class DriverAccountTab extends StatelessWidget {
                 vehicle.licence,
                 style: const TextStyle(fontSize: 13, color: AppColors.muted),
               ),
+              // So the driver knows why the large groups are not offered.
+              if (vehicle.passengerSeats case final seats?)
+                Text(
+                  seats > 1
+                      ? '$seats places passagers'
+                      : '$seats place passagère',
+                  style: const TextStyle(fontSize: 13, color: AppColors.muted),
+                ),
             ],
           ),
         ),

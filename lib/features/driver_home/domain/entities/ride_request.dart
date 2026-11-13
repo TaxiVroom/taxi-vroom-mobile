@@ -17,7 +17,6 @@ class RideRequest extends Equatable {
     required this.customerFirstName,
     required this.customerRating,
     required this.passengerCount,
-    required this.luggageCount,
     this.scheduledPickup,
   });
 
@@ -41,7 +40,6 @@ class RideRequest extends Equatable {
   final String customerFirstName;
   final double customerRating;
   final int passengerCount;
-  final int luggageCount;
 
   // Only for a booking: when the passenger waits for the taxi.
   final DateTime? scheduledPickup;
@@ -69,7 +67,6 @@ class RideRequest extends Equatable {
     customerFirstName,
     customerRating,
     passengerCount,
-    luggageCount,
     scheduledPickup,
   ];
 }

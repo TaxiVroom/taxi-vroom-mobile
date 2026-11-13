@@ -64,7 +64,6 @@ void main() {
       customerFirstName: 'Camille',
       customerRating: 4.8,
       passengerCount: 1,
-      luggageCount: 1,
     );
 
     late _FakeRideRequestRepository requests;
