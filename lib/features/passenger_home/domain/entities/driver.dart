@@ -4,16 +4,18 @@ import 'package:equatable/equatable.dart';
 class Driver extends Equatable {
   const Driver({
     required this.name,
+    required this.phone,
     required this.rating,
     required this.completedRides,
   });
 
   final String name;
+  final String phone;
 
   // The average of all their ratings: null until they get one.
   final double? rating;
   final int completedRides;
 
   @override
-  List<Object?> get props => [name, rating, completedRides];
+  List<Object?> get props => [name, phone, rating, completedRides];
 }

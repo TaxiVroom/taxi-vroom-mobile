@@ -1,12 +1,20 @@
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-/// "⚠ Connexion perdue." followed by what it means for the user. Firebase
-/// reconnects by itself, so the banner goes away on its own.
+/// "⚠ Connexion perdue." (or the [title] given) followed by what it means for
+/// the user. Firebase reconnects by itself, so the banner goes away on its
+/// own.
 class ConnectionLostBanner extends StatelessWidget {
-  const ConnectionLostBanner({required this.consequence, super.key});
+  const ConnectionLostBanner({
+    required this.title,
+    required this.consequence,
+    super.key,
+  });
 
-  // E.g. "Vous n'êtes plus visible des passagers."
+  // E.g. "Connexion perdue." or "Votre chauffeur a perdu la connexion."
+  final String title;
+
+  // E.g. "Les informations affichées ne sont peut-être plus à jour."
   final String consequence;
 
   @override
@@ -26,9 +34,9 @@ class ConnectionLostBanner extends StatelessWidget {
             child: Text.rich(
               TextSpan(
                 children: [
-                  const TextSpan(
-                    text: 'Connexion perdue. ',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  TextSpan(
+                    text: '$title ',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   TextSpan(text: '$consequence Reconnexion automatique…'),
                 ],

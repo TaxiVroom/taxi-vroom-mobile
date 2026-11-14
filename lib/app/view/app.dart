@@ -22,10 +22,12 @@ import 'package:mobile/core/data/repositories/notification_permission_repository
 import 'package:mobile/core/data/repositories/push_registration_repository_impl.dart';
 import 'package:mobile/core/data/repositories/route_repository_impl.dart';
 import 'package:mobile/core/domain/usecases/call_enterprise_usecase.dart';
+import 'package:mobile/core/domain/usecases/call_phone_usecase.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/core/domain/usecases/enable_notifications_usecase.dart';
 import 'package:mobile/core/domain/usecases/ensure_notification_permission_usecase.dart';
 import 'package:mobile/core/domain/usecases/load_notification_permission_usecase.dart';
+import 'package:mobile/core/domain/usecases/message_phone_usecase.dart';
 import 'package:mobile/core/domain/usecases/open_navigation_usecase.dart';
 import 'package:mobile/core/domain/usecases/open_notification_settings_usecase.dart';
 import 'package:mobile/core/domain/usecases/register_push_token_usecase.dart';
@@ -34,9 +36,11 @@ import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_push_token_refresh_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
 import 'package:mobile/core/network/auth_interceptor.dart';
+import 'package:mobile/core/presentation/bloc/connectivity_bloc.dart';
 import 'package:mobile/core/presentation/bloc/contact_us_bloc.dart';
 import 'package:mobile/core/presentation/bloc/navigation_bloc.dart';
 import 'package:mobile/core/presentation/bloc/notification_permission_bloc.dart';
+import 'package:mobile/core/presentation/bloc/ride_contact_bloc.dart';
 import 'package:mobile/env/app_config.dart';
 import 'package:mobile/features/authentication/data/datasources/auth_remote_datasource.dart';
 import 'package:mobile/features/authentication/data/repositories/auth_repository_impl.dart';
@@ -72,9 +76,11 @@ import 'package:mobile/features/driver_home/domain/usecases/arrive_at_pickup_use
 import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/depart_for_booking_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_accepted_bookings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_available_bookings_page_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_available_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/load_driver_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_documents_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/submit_driver_document_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_document_notifications_usecase.dart';
@@ -119,10 +125,11 @@ import 'package:mobile/features/passenger_home/domain/usecases/find_place_at_use
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_account_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_bookings_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_current_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_past_rides_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_recent_destinations_usecase.dart';
-import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/offer_from_pickup_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
@@ -240,7 +247,7 @@ class App extends StatelessWidget {
     );
 
     // Position GPS, partagée par les accueils passager et chauffeur.
-    const locationRepo = LocationRepositoryImpl(DeviceLocationDataSourceImpl());
+    final locationRepo = LocationRepositoryImpl(DeviceLocationDataSourceImpl());
 
     // Firebase Realtime Database, hors États-Unis, donc ouverte avec son URL.
     // Partagée par la présence des chauffeurs, les taxis autour du passager et
@@ -369,6 +376,25 @@ class App extends StatelessWidget {
               ),
             ),
           ),
+          // The connection to Firebase, for the banner of the signed-in app:
+          // it starts watching when the banner is first built.
+          BlocProvider(
+            create: (_) => ConnectivityBloc(
+              watchConnectionUseCase: watchConnectionUseCase,
+            )..add(const ConnectivityWatchStarted()),
+          ),
+          // "Appeler" and "Écrire" during a ride, on both sides: the other
+          // person's number comes with the ride.
+          BlocProvider(
+            create: (_) => RideContactBloc(
+              callPhoneUseCase: const CallPhoneUseCase(
+                NavigationRepositoryImpl(),
+              ),
+              messagePhoneUseCase: const MessagePhoneUseCase(
+                NavigationRepositoryImpl(),
+              ),
+            ),
+          ),
           // "Nous contacter" in both "Compte" tabs: the number comes from
           // the API. Spec taxi-vroom-api/docs/specs/aide-chauffeur.md.
           BlocProvider(
@@ -437,7 +463,6 @@ class App extends StatelessWidget {
                 CompletePassengerRegistrationUseCase(registrationRepo),
             loadPassengerHomeUseCase: loadPassengerHomeUseCase,
             watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
-            watchConnectionUseCase: watchConnectionUseCase,
             suggestDestinationsUseCase: SuggestDestinationsUseCase(
               placeSearchRepo,
             ),
@@ -465,7 +490,8 @@ class App extends StatelessWidget {
             rateRideUseCase: RateRideUseCase(rideRepo),
             bookRideUseCase: BookRideUseCase(rideRepo),
             getPickupForArrivalUseCase: GetPickupForArrivalUseCase(routeRepo),
-            loadRideHistoryUseCase: LoadRideHistoryUseCase(rideRepo),
+            loadBookingsUseCase: LoadBookingsUseCase(rideRepo),
+            loadPastRidesUseCase: LoadPastRidesUseCase(rideRepo),
             cancelBookingUseCase: CancelBookingUseCase(rideRepo),
             loadAccountUseCase: LoadAccountUseCase(
               accountRepository: accountRepo,
@@ -527,7 +553,7 @@ class App extends StatelessWidget {
               // Position réelle du téléphone. Pour simuler un trajet sans
               // rouler : DrivingPositionRepositoryImpl(
               // DrivingPositionDataSourceFake()).
-              drivingPositionRepository: const DeviceDrivingPositionRepository(
+              drivingPositionRepository: DeviceDrivingPositionRepository(
                 locationRepo,
               ),
             ),
@@ -539,9 +565,15 @@ class App extends StatelessWidget {
                 WatchPassengerCancellationUseCase(driverRideRepo),
             loadRideCheckoutUseCase: LoadRideCheckoutUseCase(driverRideRepo),
             completeRideUseCase: CompleteRideUseCase(driverRideRepo),
-            loadDriverBookingsUseCase: LoadDriverBookingsUseCase(
+            loadAvailableBookingsUseCase: LoadAvailableBookingsUseCase(
               driverBookingRepository: driverBookingRepo,
               locationRepository: locationRepo,
+            ),
+            loadAvailableBookingsPageUseCase: LoadAvailableBookingsPageUseCase(
+              driverBookingRepo,
+            ),
+            loadAcceptedBookingsUseCase: LoadAcceptedBookingsUseCase(
+              driverBookingRepo,
             ),
             acceptBookingUseCase: AcceptBookingUseCase(driverBookingRepo),
             withdrawFromBookingUseCase: WithdrawFromBookingUseCase(

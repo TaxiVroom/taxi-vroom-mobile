@@ -1,10 +1,12 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/entities/guidance.dart';
+import 'package:mobile/core/presentation/bloc/ride_contact_bloc.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/widgets/bottom_panel.dart';
 import 'package:mobile/core/widgets/itinerary_button.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
+import 'package:mobile/core/widgets/ride_contact_listener.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_guidance_usecase.dart';
 import 'package:mobile/features/driver_home/presentation/bloc/guidance_bloc.dart';
@@ -70,7 +72,7 @@ class DriverPickupPage extends StatelessWidget {
                   ),
                   Align(
                     alignment: Alignment.bottomCenter,
-                    child: _buildPanel(guidance),
+                    child: _buildPanel(context, guidance),
                   ),
                 ],
               );
@@ -100,7 +102,7 @@ class DriverPickupPage extends StatelessWidget {
     };
   }
 
-  Widget _buildPanel(Guidance? guidance) {
+  Widget _buildPanel(BuildContext context, Guidance? guidance) {
     final note = ride.customerNote;
     final failureMessage = this.failureMessage;
     return BottomPanel(
@@ -110,7 +112,7 @@ class DriverPickupPage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildCustomer(guidance),
+            _buildCustomer(context, guidance),
             if (note != null) ...[
               const SizedBox(height: 14),
               _buildNote(note),
@@ -160,52 +162,57 @@ class DriverPickupPage extends StatelessWidget {
     );
   }
 
-  // Messages and calls are not built yet.
-  Widget _buildCustomer(Guidance? guidance) {
+  Widget _buildCustomer(BuildContext context, Guidance? guidance) {
     final distance = guidance == null
         ? ''
         : ', ${formatDistanceMeters(guidance.metersLeft)}';
-    return Row(
-      children: [
-        Avatar(
-          initials: Avatar.getInitials(ride.customerFullName),
-          size: 48,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${ride.customerFirstName} vous attend',
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                '${ride.pickupName}$distance',
-                style: const TextStyle(fontSize: 12, color: AppColors.muted),
-              ),
-            ],
+    return RideContactListener(
+      child: Row(
+        children: [
+          Avatar(
+            initials: Avatar.getInitials(ride.customerFullName),
+            size: 48,
           ),
-        ),
-        SecondaryButton(
-          density: ButtonDensity.icon,
-          shape: ButtonShape.circle,
-          onPressed: () {},
-          child: const Icon(Icons.chat_bubble_outline),
-        ),
-        const SizedBox(width: 8),
-        SecondaryButton(
-          density: ButtonDensity.icon,
-          shape: ButtonShape.circle,
-          onPressed: () {},
-          child: const Icon(Icons.phone_outlined),
-        ),
-        const SizedBox(width: 8),
-        ItineraryButton(target: ride.pickup),
-      ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${ride.customerFirstName} vous attend',
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '${ride.pickupName}$distance',
+                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                ),
+              ],
+            ),
+          ),
+          SecondaryButton(
+            density: ButtonDensity.icon,
+            shape: ButtonShape.circle,
+            onPressed: () => context.read<RideContactBloc>().add(
+              RideContactMessaged(phone: ride.customerPhone),
+            ),
+            child: const Icon(Icons.chat_bubble_outline),
+          ),
+          const SizedBox(width: 8),
+          SecondaryButton(
+            density: ButtonDensity.icon,
+            shape: ButtonShape.circle,
+            onPressed: () => context.read<RideContactBloc>().add(
+              RideContactCalled(phone: ride.customerPhone),
+            ),
+            child: const Icon(Icons.phone_outlined),
+          ),
+          const SizedBox(width: 8),
+          ItineraryButton(target: ride.pickup),
+        ],
+      ),
     );
   }
 

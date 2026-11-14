@@ -1,15 +1,21 @@
 import 'package:dio/dio.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:mobile/core/constants/app_constants.dart';
+import 'package:mobile/core/data/models/paged_list_model.dart';
 import 'package:mobile/features/driver_home/data/models/driver_booking_model.dart';
 import 'package:mobile/features/driver_home/data/models/driver_ride_model.dart';
 
 abstract class DriverBookingRemoteDataSource {
-  Future<List<DriverBookingModel>> getAcceptedBookings();
+  // One page, the first one is 0.
+  Future<PagedListModel<DriverBookingModel>> getAcceptedBookings({
+    required int page,
+  });
 
-  // Those without a driver around this position.
-  Future<List<DriverBookingModel>> getAvailableBookings({
+  // One page of those without a driver around this position.
+  Future<PagedListModel<DriverBookingModel>> getAvailableBookings({
     required double latitude,
     required double longitude,
+    required int page,
   });
 
   Future<void> acceptBooking(String bookingId);
@@ -31,15 +37,18 @@ class DriverBookingRemoteDataSourceImpl
   final FirebaseDatabase _database;
 
   @override
-  Future<List<DriverBookingModel>> getAcceptedBookings() =>
-      _getBookings('/v1/bookings/accepted');
+  Future<PagedListModel<DriverBookingModel>> getAcceptedBookings({
+    required int page,
+  }) => _getBookings('/v1/bookings/accepted', page: page);
 
   @override
-  Future<List<DriverBookingModel>> getAvailableBookings({
+  Future<PagedListModel<DriverBookingModel>> getAvailableBookings({
     required double latitude,
     required double longitude,
+    required int page,
   }) => _getBookings(
     '/v1/bookings/available',
+    page: page,
     queryParameters: {'latitude': latitude, 'longitude': longitude},
   );
 
@@ -65,19 +74,19 @@ class DriverBookingRemoteDataSourceImpl
     return DriverRideModel.fromSnapshot(bookingId, ride);
   }
 
-  Future<List<DriverBookingModel>> _getBookings(
+  Future<PagedListModel<DriverBookingModel>> _getBookings(
     String path, {
+    required int page,
     Map<String, dynamic>? queryParameters,
   }) async {
-    final response = await _dio.get<List<dynamic>>(
+    final response = await _dio.get<Map<String, dynamic>>(
       path,
-      queryParameters: queryParameters,
+      queryParameters: {
+        ...?queryParameters,
+        'limit': AppConstants.listPageSize,
+        'page': page,
+      },
     );
-    return response.data!
-        .map(
-          (booking) =>
-              DriverBookingModel.fromJson(booking as Map<String, dynamic>),
-        )
-        .toList();
+    return PagedListModel.fromJson(response.data!, DriverBookingModel.fromJson);
   }
 }

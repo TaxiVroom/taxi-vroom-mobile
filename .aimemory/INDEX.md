@@ -29,4 +29,6 @@ homeWork: "Maison" and "Travail" shortcuts and "Compte" rows real, "Gare" remove
 recentDestinations: real, in "Votre trajet" only (3 last), spec taxi-vroom-api/docs/specs/destinations-recentes.md
 pickupTime: chosen on the taxi choice only, reset when back to the home, spec taxi-vroom-api/docs/specs/heure-de-prise-en-charge.md
 passengerCount: the passenger chooses 1 to 8 on the taxi choice, the driver gives the seats at registration, the end of ride has a "5e passager et plus" line, coded not tested, spec taxi-vroom-api/docs/specs/nombre-de-passagers.md
+ridesByPages: "Mes courses" loads 20 cards at a time, infinite scroll with a loader under the last card, coded not tested, spec taxi-vroom-api/docs/specs/mes-courses-par-pages.md
+driverBookingsByPages: the driver's "Réservations" the same way, one fetch per tap on "Disponibles" or "Acceptées", coded not tested, spec taxi-vroom-api/docs/specs/reservations-chauffeur-par-pages.md
 next: to choose with the user; ideas noted for later in taxi-vroom-api/docs/a-faire.md

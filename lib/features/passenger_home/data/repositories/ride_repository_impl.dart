@@ -2,16 +2,16 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:mobile/core/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/entities/paged_list.dart';
 import 'package:mobile/core/errors/dio_exception_failure.dart';
 import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_booking_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource.dart';
-import 'package:mobile/features/passenger_home/domain/entities/place.dart';
+import 'package:mobile/features/passenger_home/domain/entities/booked_ride.dart';
+import 'package:mobile/features/passenger_home/domain/entities/past_ride.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride_compliment.dart';
-import 'package:mobile/features/passenger_home/domain/entities/ride_history.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_offer.dart';
 import 'package:mobile/features/passenger_home/domain/repositories/ride_repository.dart';
 
@@ -125,16 +125,24 @@ class RideRepositoryImpl implements RideRepository {
   }
 
   @override
-  Future<Result<RideHistory>> getRideHistory() async {
+  Future<Result<PagedList<BookedRide>>> getBookings({
+    required int page,
+  }) async {
     try {
-      final bookings = await _bookingDataSource.getBookings();
-      final pastRides = await _dataSource.getPastRides();
-      return Result.ok(
-        RideHistory(
-          upcoming: [for (final ride in bookings) ride.toDomain()],
-          past: [for (final ride in pastRides) ride.toDomain()],
-        ),
-      );
+      final bookings = await _bookingDataSource.getBookings(page: page);
+      return Result.ok(bookings.toDomain((ride) => ride.toDomain()));
+    } on DioException catch (e) {
+      return Result.error(e.toFailure());
+    }
+  }
+
+  @override
+  Future<Result<PagedList<PastRide>>> getPastRides({
+    required int page,
+  }) async {
+    try {
+      final pastRides = await _dataSource.getPastRides(page: page);
+      return Result.ok(pastRides.toDomain((ride) => ride.toDomain()));
     } on DioException catch (e) {
       return Result.error(e.toFailure());
     }

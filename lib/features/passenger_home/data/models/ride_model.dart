@@ -72,6 +72,7 @@ final class DriverApproachingRideModel extends RideModel {
     // Known later, from the driver's road to the pickup.
     etaMinutes: _json['etaMinutes'] as int?,
     boardingCode: _json['boardingCode'] as String,
+    isDriverConnected: _json['isDriverConnected'] as bool? ?? true,
   );
 }
 
@@ -87,6 +88,7 @@ final class DriverArrivedRideModel extends RideModel {
     vehicle: _vehicleFromJson(_json['vehicle']),
     driverPosition: _coordinatesFromJson(_json['driverPosition']),
     boardingCode: _json['boardingCode'] as String,
+    isDriverConnected: _json['isDriverConnected'] as bool? ?? true,
   );
 }
 
@@ -104,6 +106,7 @@ final class InProgressRideModel extends RideModel {
     destination: _coordinatesFromJson(_json['destination']),
     minPriceCents: _json['estimatedPriceMinCents'] as int,
     maxPriceCents: _json['estimatedPriceMaxCents'] as int,
+    isDriverConnected: _json['isDriverConnected'] as bool? ?? true,
   );
 }
 
@@ -135,6 +138,7 @@ Driver _driverFromJson(Object? json) {
   final driver = json! as Map<String, dynamic>;
   return Driver(
     name: driver['name'] as String,
+    phone: driver['phone'] as String,
     rating: (driver['rating'] as num?)?.toDouble(),
     completedRides: driver['completedRides'] as int,
   );

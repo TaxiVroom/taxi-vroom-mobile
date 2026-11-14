@@ -31,13 +31,3 @@ final class DriverOnlineToggled extends DriverHomeEvent {
 final class _DriverTakenOfflineForDocuments extends DriverHomeEvent {
   const _DriverTakenOfflineForDocuments();
 }
-
-// While online, the device lost or got back its connection.
-final class DriverConnectionChanged extends DriverHomeEvent {
-  const DriverConnectionChanged({required this.isConnected});
-
-  final bool isConnected;
-
-  @override
-  List<Object?> get props => [isConnected];
-}

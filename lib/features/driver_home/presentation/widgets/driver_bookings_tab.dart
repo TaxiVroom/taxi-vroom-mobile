@@ -5,6 +5,7 @@ import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
 import 'package:mobile/core/widgets/choice_button.dart';
 import 'package:mobile/core/widgets/message_toast.dart';
+import 'package:mobile/core/widgets/paged_list_view.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_booking.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_document.dart';
@@ -14,42 +15,95 @@ import 'package:mobile/features/driver_home/presentation/widgets/trip_stops.dart
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Mockup screen 9: rides booked in advance, to pick or already accepted.
-class DriverBookingsTab extends StatefulWidget {
+/// Each list loads when its button is tapped, then page by page while the
+/// driver scrolls (spec
+/// taxi-vroom-api/docs/specs/reservations-chauffeur-par-pages.md).
+class DriverBookingsTab extends StatelessWidget {
   const DriverBookingsTab({super.key});
-
-  @override
-  State<DriverBookingsTab> createState() => _DriverBookingsTabState();
-}
-
-class _DriverBookingsTabState extends State<DriverBookingsTab> {
-  // Which list is shown: a display choice only, it stays in the widget.
-  bool _showsAccepted = false;
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: BlocConsumer<DriverBookingsBloc, DriverBookingsState>(
-        // A failed answer: the same message at the bottom as elsewhere.
-        listenWhen: (_, current) =>
-            current is DriverBookingsReady && current.failureMessage != null,
-        listener: (context, state) => showMessageToast(
-          context,
-          title: 'Action impossible',
-          message: (state as DriverBookingsReady).failureMessage!,
-        ),
-        builder: (context, state) => switch (state) {
-          // Departed: the pickup screen opens, the lists reload meanwhile.
-          DriverBookingsLoading() || DriverBookingsDeparted() => const Center(
-            child: CircularProgressIndicator(),
-          ),
-          DriverBookingsFailure(:final message) => RetryMessage(
-            message: message,
-            onRetry: () => context.read<DriverBookingsBloc>().add(
-              const DriverBookingsRequested(),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Réservations',
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
             ),
-          ),
-          DriverBookingsReady() => _buildReady(context, state),
-        },
+            const SizedBox(height: 14),
+            BlocBuilder<DriverBookingsBloc, DriverBookingsState>(
+              buildWhen: (previous, current) => previous.shown != current.shown,
+              builder: (context, state) => Row(
+                children: [
+                  Expanded(
+                    child: ChoiceButton(
+                      label: 'Disponibles',
+                      isSelected: state.shown == DriverBookingsList.available,
+                      onPressed: () => context.read<DriverBookingsBloc>().add(
+                        const DriverBookingsListSelected(
+                          DriverBookingsList.available,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ChoiceButton(
+                      label: 'Acceptées',
+                      isSelected: state.shown == DriverBookingsList.accepted,
+                      onPressed: () => context.read<DriverBookingsBloc>().add(
+                        const DriverBookingsListSelected(
+                          DriverBookingsList.accepted,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Expanded(
+              child: BlocConsumer<DriverBookingsBloc, DriverBookingsState>(
+                // A failed answer or page: the same message at the bottom as
+                // elsewhere.
+                listenWhen: (_, current) =>
+                    current is DriverBookingsReady &&
+                    (current.failureMessage != null ||
+                        current.nextPageFailureMessage != null),
+                listener: (context, state) {
+                  final ready = state as DriverBookingsReady;
+                  final answerMessage = ready.failureMessage;
+                  showMessageToast(
+                    context,
+                    title: answerMessage == null
+                        ? 'Chargement impossible'
+                        : 'Action impossible',
+                    message: answerMessage ?? ready.nextPageFailureMessage!,
+                  );
+                },
+                builder: (context, state) => switch (state) {
+                  // Accepted or departed: the list reloads meanwhile, the
+                  // pickup screen opens on a departure.
+                  DriverBookingsLoading() ||
+                  DriverBookingsAccepted() ||
+                  DriverBookingsDeparted() => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  DriverBookingsFailure(:final message) => RetryMessage(
+                    message: message,
+                    onRetry: () => context.read<DriverBookingsBloc>().add(
+                      const DriverBookingsRequested(),
+                    ),
+                  ),
+                  DriverBookingsReady() => _buildReady(context, state),
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -87,54 +141,47 @@ class _DriverBookingsTabState extends State<DriverBookingsTab> {
     return 'à partir du ${formatDateWithYear(requiredFrom.toLocal())}';
   }
 
+  Widget _buildEmpty(String message) {
+    return Text(message, style: const TextStyle(color: AppColors.muted));
+  }
+
+  // "Disponibles" starts with the notice of the documents, which scrolls with
+  // the cards.
   Widget _buildReady(BuildContext context, DriverBookingsReady state) {
-    final bookings = state.bookings;
-    final shown = _showsAccepted ? bookings.accepted : bookings.available;
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        const Text(
-          'Réservations',
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: ChoiceButton(
-                label: 'Disponibles',
-                isSelected: !_showsAccepted,
-                onPressed: () => setState(() => _showsAccepted = false),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ChoiceButton(
-                label: 'Acceptées (${bookings.accepted.length})',
-                isSelected: _showsAccepted,
-                onPressed: () => setState(() => _showsAccepted = true),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        if (!_showsAccepted) _buildHiddenByDocuments(context),
-        if (shown.isEmpty)
-          Text(
-            _showsAccepted
-                ? 'Aucune réservation acceptée.'
-                : 'Aucune réservation dans votre zone pour l’instant.',
-            style: const TextStyle(color: AppColors.muted),
-          ),
-        for (final booking in shown)
-          _buildBooking(
-            context,
-            booking,
-            isAnswering: state.answeringId == booking.id,
-            isRefusing: state.isRefusing,
-            canAnswer: state.answeringId == null,
-          ),
-      ],
+    final isAccepted = state.shown == DriverBookingsList.accepted;
+    final bookings = state.bookings.items;
+    if (isAccepted && bookings.isEmpty) {
+      return _buildEmpty('Aucune réservation acceptée.');
+    }
+    final noticeCount = isAccepted ? 0 : 1;
+    return PagedListView(
+      itemCount: bookings.length + noticeCount,
+      isLoadingNextPage: state.isLoadingNextPage,
+      onNextPage: () => context.read<DriverBookingsBloc>().add(
+        const DriverBookingsNextPageRequested(),
+      ),
+      itemBuilder: (context, index) {
+        if (!isAccepted && index == 0) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHiddenByDocuments(context),
+              if (bookings.isEmpty)
+                _buildEmpty(
+                  'Aucune réservation dans votre zone pour l’instant.',
+                ),
+            ],
+          );
+        }
+        return _buildBooking(
+          context,
+          bookings[index - noticeCount],
+          isAccepted: isAccepted,
+          isAnswering: state.answeringId == bookings[index - noticeCount].id,
+          isRefusing: state.isRefusing,
+          canAnswer: state.answeringId == null,
+        );
+      },
     );
   }
 
@@ -143,6 +190,7 @@ class _DriverBookingsTabState extends State<DriverBookingsTab> {
   Widget _buildBooking(
     BuildContext context,
     DriverBooking booking, {
+    required bool isAccepted,
     required bool isAnswering,
     required bool isRefusing,
     required bool canAnswer,
@@ -187,7 +235,7 @@ class _DriverBookingsTabState extends State<DriverBookingsTab> {
             style: const TextStyle(fontSize: 12, color: AppColors.muted),
           ),
           const SizedBox(height: 10),
-          if (_showsAccepted && booking.canDepart)
+          if (isAccepted && booking.canDepart)
             PrimaryButton(
               onPressed: canAnswer
                   ? () => bloc.add(DriverBookingDeparted(bookingId: booking.id))
@@ -196,7 +244,7 @@ class _DriverBookingsTabState extends State<DriverBookingsTab> {
               trailing: isAnswering ? _loader(onSurface: true) : null,
               child: const Text('Je pars'),
             )
-          else if (_showsAccepted)
+          else if (isAccepted)
             OutlineButton(
               onPressed: canAnswer
                   ? () =>

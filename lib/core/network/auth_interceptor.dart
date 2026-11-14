@@ -28,10 +28,23 @@ class AuthInterceptor extends Interceptor {
   ) async {
     final user = _firebaseAuth.currentUser;
     if (user != null) {
-      // Pas de forceRefresh ici : Firebase retourne le token en cache
-      // s'il est encore valide, évitant un appel réseau inutile à chaque requête.
-      final token = await user.getIdToken();
-      options.headers['Authorization'] = 'Bearer $token';
+      try {
+        // Pas de forceRefresh ici : Firebase retourne le token en cache
+        // s'il est encore valide, évitant un appel réseau inutile à chaque requête.
+        final token = await user.getIdToken();
+        options.headers['Authorization'] = 'Bearer $token';
+      } on FirebaseAuthException catch (error) {
+        // Offline with an expired token, Firebase cannot renew it. Reject the
+        // request, or it never ends and the screen loads for ever.
+        // Docs: https://pub.dev/documentation/dio/5.9.2/dio/RequestInterceptorHandler/reject.html
+        return handler.reject(
+          DioException.connectionError(
+            requestOptions: options,
+            reason: error.message ?? error.code,
+            error: error,
+          ),
+        );
+      }
     }
     handler.next(options);
   }

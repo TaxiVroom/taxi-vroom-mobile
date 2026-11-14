@@ -90,21 +90,6 @@ class DriverCheckoutPage extends StatelessWidget {
                 _buildSupplements(context, checkout),
                 const SizedBox(height: 14),
                 _buildPaidOnBoard(),
-                const SizedBox(height: 10),
-                const Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.receipt_long, size: 16, color: AppColors.muted),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Plus de 25 € : la note de course est envoyée '
-                        'automatiquement au client.',
-                        style: TextStyle(fontSize: 12, color: AppColors.muted),
-                      ),
-                    ),
-                  ],
-                ),
                 const SizedBox(height: 14),
                 _buildRating(context, state),
               ],

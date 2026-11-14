@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform;
 import 'package:geolocator/geolocator.dart';
+import 'package:mobile/core/data/datasources/shared_position_stream.dart';
 
 // Refused for good: Android or iOS no longer shows its window, only the
 // settings can allow it now.
@@ -21,7 +22,11 @@ abstract class DeviceLocationDataSource {
 }
 
 class DeviceLocationDataSourceImpl implements DeviceLocationDataSource {
-  const DeviceLocationDataSourceImpl();
+  DeviceLocationDataSourceImpl();
+
+  // Every screen shares one stream of the phone, which goes to the background
+  // mode as soon as one listener needs it.
+  late final _positions = SharedPositionStream(_openPositionStream);
 
   // Long enough for a first GPS fix outdoors; never an endless wait.
   // https://github.com/baseflow/flutter-geolocator/blob/main/geolocator/README.md
@@ -58,12 +63,18 @@ class DeviceLocationDataSourceImpl implements DeviceLocationDataSource {
   Future<void> openAppSettings() => Geolocator.openAppSettings();
 
   @override
-  Stream<Position> watchPosition({bool inBackground = false}) async* {
-    await _ensurePermission();
-    yield* Geolocator.getPositionStream(
-      locationSettings: _locationSettings(inBackground: inBackground),
-    );
-  }
+  Stream<Position> watchPosition({bool inBackground = false}) =>
+      _positions.watch(inBackground: inBackground);
+
+  // Not an async* generator: cancelling one only takes effect at its next
+  // position, so the plugin would keep the old stream (and its settings)
+  // when the stream is reopened right after.
+  Stream<Position> _openPositionStream({required bool inBackground}) =>
+      Stream.fromFuture(_ensurePermission()).asyncExpand(
+        (_) => Geolocator.getPositionStream(
+          locationSettings: _locationSettings(inBackground: inBackground),
+        ),
+      );
 
   // Docs: https://github.com/baseflow/flutter-geolocator/blob/main/geolocator/README.md
   LocationSettings _locationSettings({required bool inBackground}) =>

@@ -30,13 +30,3 @@ final class PassengerSavedPlaceRemoved extends PassengerHomeEvent {
   @override
   List<Object?> get props => [kind];
 }
-
-// The device lost or got back its connection.
-final class PassengerConnectionChanged extends PassengerHomeEvent {
-  const PassengerConnectionChanged({required this.isConnected});
-
-  final bool isConnected;
-
-  @override
-  List<Object?> get props => [isConnected];
-}

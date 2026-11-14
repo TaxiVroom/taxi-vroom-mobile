@@ -2,15 +2,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/entities/coordinates.dart';
 import 'package:mobile/core/domain/entities/ride_route.dart';
 import 'package:mobile/core/domain/entities/vehicle.dart';
+import 'package:mobile/core/presentation/bloc/ride_contact_bloc.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
 import 'package:mobile/core/widgets/bottom_panel.dart';
+import 'package:mobile/core/widgets/connection_lost_banner.dart';
 import 'package:mobile/core/widgets/license_plate.dart';
 import 'package:mobile/core/widgets/map_pill.dart';
 import 'package:mobile/core/widgets/message_toast.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
+import 'package:mobile/core/widgets/ride_contact_listener.dart';
 import 'package:mobile/core/widgets/ride_map.dart';
 import 'package:mobile/features/passenger_home/domain/entities/driver.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
@@ -171,6 +174,17 @@ class RidePage extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (!ride.isDriverConnected) ...[
+                  // The position, and the time shown, stopped moving: the
+                  // passenger must not think the driver stopped.
+                  const ConnectionLostBanner(
+                    title: 'Votre chauffeur a perdu la connexion.',
+                    consequence:
+                        'Sa position et l’heure d’arrivée ne sont plus à '
+                        'jour, mais il est peut-être toujours en route.',
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 switch (ride) {
                   RideSearchingDriver() => _buildSearching(),
                   RideNoDriverFound() => _buildStopped(
@@ -192,8 +206,9 @@ class RidePage extends StatelessWidget {
                         'Il vous a attendu au point de prise en charge, '
                         'puis a dû repartir.',
                   ),
-                  RideDriverApproaching() => _buildApproaching(ride),
+                  RideDriverApproaching() => _buildApproaching(context, ride),
                   RideDriverArrived() => _buildDriverComing(
+                    context,
                     title:
                         '${_firstName(ride.driver)} vous attend au point '
                         'de prise en charge',
@@ -279,10 +294,11 @@ class RidePage extends StatelessWidget {
 
   String _firstName(Driver driver) => driver.name.split(' ').first;
 
-  Widget _buildApproaching(RideDriverApproaching ride) {
+  Widget _buildApproaching(BuildContext context, RideDriverApproaching ride) {
     final firstName = _firstName(ride.driver);
     final etaMinutes = ride.etaMinutes;
     return _buildDriverComing(
+      context,
       title: etaMinutes == null
           ? '$firstName est en route'
           : '$firstName arrive dans $etaMinutes min',
@@ -294,7 +310,8 @@ class RidePage extends StatelessWidget {
 
   // The taxi to look for, and the code to give its driver. Without a vehicle
   // (a driver registered before "Votre taxi"), nothing made up is shown.
-  Widget _buildDriverComing({
+  Widget _buildDriverComing(
+    BuildContext context, {
     required String title,
     required Driver driver,
     required Vehicle? vehicle,
@@ -320,12 +337,24 @@ class RidePage extends StatelessWidget {
         const SizedBox(height: 12),
         _buildBoardingCode(boardingCode),
         const SizedBox(height: 12),
-        // Calling, messaging and sharing the ride are not built yet.
-        _buildActions(const [
-          (Icons.phone_outlined, 'Appeler'),
-          (Icons.chat_bubble_outline, 'Écrire'),
-          (Icons.ios_share, 'Partager'),
-        ]),
+        RideContactListener(
+          child: _buildActions([
+            (
+              Icons.phone_outlined,
+              'Appeler',
+              () => context.read<RideContactBloc>().add(
+                RideContactCalled(phone: driver.phone),
+              ),
+            ),
+            (
+              Icons.chat_bubble_outline,
+              'Écrire',
+              () => context.read<RideContactBloc>().add(
+                RideContactMessaged(phone: driver.phone),
+              ),
+            ),
+          ]),
+        ),
       ],
     );
   }
@@ -350,12 +379,6 @@ class RidePage extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         DriverSummary(driver: ride.driver, vehicle: ride.vehicle),
-        const SizedBox(height: 12),
-        // Sharing the trip and the safety tools are not built yet.
-        _buildActions(const [
-          (Icons.ios_share, 'Partager le trajet'),
-          (Icons.shield_outlined, 'Sécurité'),
-        ]),
       ],
     );
   }
@@ -407,14 +430,14 @@ class RidePage extends StatelessWidget {
     );
   }
 
-  Widget _buildActions(List<(IconData, String)> actions) {
+  Widget _buildActions(List<(IconData, String, VoidCallback)> actions) {
     return Row(
       children: [
-        for (final (index, (icon, label)) in actions.indexed) ...[
+        for (final (index, (icon, label, onPressed)) in actions.indexed) ...[
           if (index > 0) const SizedBox(width: 8),
           Expanded(
             child: OutlineButton(
-              onPressed: () {},
+              onPressed: onPressed,
               alignment: Alignment.center,
               child: Column(
                 mainAxisSize: MainAxisSize.min,

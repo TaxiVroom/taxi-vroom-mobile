@@ -4,23 +4,18 @@ import 'package:mobile/core/utils/price_formatter.dart';
 import 'package:mobile/core/utils/time_formatter.dart';
 import 'package:mobile/core/widgets/choice_button.dart';
 import 'package:mobile/core/widgets/message_toast.dart';
-import 'package:mobile/core/widgets/place_list_tile.dart';
+import 'package:mobile/core/widgets/paged_list_view.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/passenger_home/domain/entities/booked_ride.dart';
 import 'package:mobile/features/passenger_home/domain/entities/past_ride.dart';
 import 'package:mobile/features/passenger_home/presentation/bloc/ride_history_bloc.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-/// Mockup screen 10: booked rides first, then the past ones.
-class RideHistoryTab extends StatefulWidget {
+/// Mockup screen 10: booked rides first, then the past ones. Each list loads
+/// page by page while the passenger scrolls (spec
+/// taxi-vroom-api/docs/specs/mes-courses-par-pages.md).
+class RideHistoryTab extends StatelessWidget {
   const RideHistoryTab({super.key});
-
-  @override
-  State<RideHistoryTab> createState() => _RideHistoryTabState();
-}
-
-class _RideHistoryTabState extends State<RideHistoryTab> {
-  bool _showsUpcoming = true;
 
   @override
   Widget build(BuildContext context) {
@@ -35,38 +30,52 @@ class _RideHistoryTabState extends State<RideHistoryTab> {
               style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ChoiceButton(
-                    label: 'À venir',
-                    isSelected: _showsUpcoming,
-                    onPressed: () => setState(() => _showsUpcoming = true),
+            BlocBuilder<RideHistoryBloc, RideHistoryState>(
+              buildWhen: (previous, current) => previous.shown != current.shown,
+              builder: (context, state) => Row(
+                children: [
+                  Expanded(
+                    child: ChoiceButton(
+                      label: 'À venir',
+                      isSelected: state.shown == RideHistoryList.upcoming,
+                      onPressed: () => context.read<RideHistoryBloc>().add(
+                        const RideHistoryListSelected(RideHistoryList.upcoming),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ChoiceButton(
-                    label: 'Passées',
-                    isSelected: !_showsUpcoming,
-                    onPressed: () => setState(() => _showsUpcoming = false),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ChoiceButton(
+                      label: 'Passées',
+                      isSelected: state.shown == RideHistoryList.past,
+                      onPressed: () => context.read<RideHistoryBloc>().add(
+                        const RideHistoryListSelected(RideHistoryList.past),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             Expanded(
               child: BlocConsumer<RideHistoryBloc, RideHistoryState>(
-                // A failed cancellation: the same message at the bottom as
-                // elsewhere.
+                // A failed cancellation or page: the same message at the
+                // bottom as elsewhere.
                 listenWhen: (_, current) =>
                     current is RideHistoryReady &&
-                    current.failureMessage != null,
-                listener: (context, state) => showMessageToast(
-                  context,
-                  title: 'Annulation impossible',
-                  message: (state as RideHistoryReady).failureMessage!,
-                ),
+                    (current.failureMessage != null ||
+                        current.nextPageFailureMessage != null),
+                listener: (context, state) {
+                  final ready = state as RideHistoryReady;
+                  final cancelMessage = ready.failureMessage;
+                  showMessageToast(
+                    context,
+                    title: cancelMessage == null
+                        ? 'Chargement impossible'
+                        : 'Annulation impossible',
+                    message: cancelMessage ?? ready.nextPageFailureMessage!,
+                  );
+                },
                 builder: (context, state) => switch (state) {
                   RideHistoryLoading() => const Center(
                     child: CircularProgressIndicator(),
@@ -77,7 +86,7 @@ class _RideHistoryTabState extends State<RideHistoryTab> {
                       const RideHistoryRequested(),
                     ),
                   ),
-                  RideHistoryReady() => _buildHistory(state),
+                  RideHistoryReady() => _buildHistory(context, state),
                 },
               ),
             ),
@@ -87,31 +96,59 @@ class _RideHistoryTabState extends State<RideHistoryTab> {
     );
   }
 
-  Widget _buildHistory(RideHistoryReady state) {
-    final history = state.history;
-    if (_showsUpcoming) {
-      return ListView(
-        children: [
-          if (history.upcoming.isEmpty)
-            _buildEmpty('Aucune course réservée.')
-          else
-            for (final ride in history.upcoming)
-              _buildBookedRide(
-                ride,
-                isCancelling: state.cancellingId == ride.id,
-                canCancel: state.cancellingId == null,
-              ),
-        ],
-      );
+  // A list not opened yet shows the loader until its first page comes.
+  Widget _buildHistory(BuildContext context, RideHistoryReady state) {
+    switch (state.shown) {
+      case RideHistoryList.upcoming:
+        final upcoming = state.upcoming;
+        if (upcoming == null) return _buildLoader();
+        if (upcoming.items.isEmpty) {
+          return _buildEmpty('Aucune course réservée.');
+        }
+        return _buildPages(
+          context,
+          state,
+          itemCount: upcoming.items.length,
+          itemBuilder: (context, index) {
+            final ride = upcoming.items[index];
+            return _buildBookedRide(
+              context,
+              ride,
+              isCancelling: state.cancellingId == ride.id,
+              canCancel: state.cancellingId == null,
+            );
+          },
+        );
+      case RideHistoryList.past:
+        final past = state.past;
+        if (past == null) return _buildLoader();
+        if (past.items.isEmpty) {
+          return _buildEmpty('Aucune course pour l’instant.');
+        }
+        return _buildPages(
+          context,
+          state,
+          itemCount: past.items.length,
+          itemBuilder: (context, index) => _buildPastRide(past.items[index]),
+        );
     }
-    return history.past.isEmpty
-        ? _buildEmpty('Aucune course pour l’instant.')
-        : ListView(
-            children: [
-              for (final ride in history.past) _buildPastRide(ride),
-            ],
-          );
   }
+
+  Widget _buildLoader() => const Center(child: CircularProgressIndicator());
+
+  Widget _buildPages(
+    BuildContext context,
+    RideHistoryReady state, {
+    required int itemCount,
+    required NullableIndexedWidgetBuilder itemBuilder,
+  }) => PagedListView(
+    itemCount: itemCount,
+    itemBuilder: itemBuilder,
+    isLoadingNextPage: state.isLoadingNextPage,
+    onNextPage: () => context.read<RideHistoryBloc>().add(
+      const RideHistoryNextPageRequested(),
+    ),
+  );
 
   Widget _buildEmpty(String message) {
     return Text(message, style: const TextStyle(color: AppColors.muted));
@@ -126,20 +163,15 @@ class _RideHistoryTabState extends State<RideHistoryTab> {
             'départ.';
 
   Widget _buildBookedRide(
+    BuildContext context,
     BookedRide ride, {
     required bool isCancelling,
     required bool canCancel,
   }) {
     final pickup = formatPickupTime(ride.scheduledPickup, now: DateTime.now());
     final estimate = formatEuroRange(ride.minPriceCents, ride.maxPriceCents);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
+    return _buildCard(
+      Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
@@ -209,26 +241,53 @@ class _RideHistoryTabState extends State<RideHistoryTab> {
     );
   }
 
-  // Downloading the ride receipt is not built yet.
+  // Both addresses are written in full, wrapped on as many lines as needed.
   Widget _buildPastRide(PastRide ride) {
-    return PlaceListTile(
-      icon: Icons.local_taxi_outlined,
-      title: '${ride.originName} → ${ride.destinationName}',
-      subtitle: formatShortDateTime(ride.startedAt),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
+    return _buildCard(
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  formatShortDateTime(ride.startedAt),
+                  style: const TextStyle(color: AppColors.muted),
+                ),
+              ),
+              Text(
+                formatEuro(ride.totalCents),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           Text(
-            formatEuro(ride.totalCents),
+            'Destination : ${ride.destinationName}',
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
-          GhostButton(
-            density: ButtonDensity.icon,
-            onPressed: () {},
-            child: const Icon(Icons.download_outlined, size: 18),
+          const SizedBox(height: 2),
+          Text(
+            'Départ : ${ride.originName}',
+            style: const TextStyle(fontSize: 13, color: AppColors.muted),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCard(Widget child) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: child,
     );
   }
 }

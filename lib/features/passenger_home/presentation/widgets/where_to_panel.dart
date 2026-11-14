@@ -1,6 +1,5 @@
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/widgets/bottom_panel.dart';
-import 'package:mobile/core/widgets/connection_lost_banner.dart';
 import 'package:mobile/features/passenger_home/domain/entities/saved_place.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -8,16 +7,12 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 class WhereToPanel extends StatelessWidget {
   const WhereToPanel({
     required this.nearbyTaxiCount,
-    required this.isConnected,
     required this.onWhereToPressed,
     required this.onShortcutPressed,
     super.key,
   });
 
   final int nearbyTaxiCount;
-
-  // Without connection, the taxis shown may no longer be where they are.
-  final bool isConnected;
   final VoidCallback onWhereToPressed;
 
   // "Maison" or "Travail".
@@ -30,12 +25,6 @@ class WhereToPanel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (!isConnected) ...[
-            const ConnectionLostBanner(
-              consequence: 'Les taxis affichés ne sont peut-être plus à jour.',
-            ),
-            const SizedBox(height: 12),
-          ],
           _buildWhereToButton(),
           const SizedBox(height: 12),
           _buildShortcuts(),

@@ -3,6 +3,7 @@
 const Map<String, Map<String, Object>> simulatedDriverAndVehicleJson = {
   'driver': {
     'name': 'Luc S.',
+    'phone': '+33700000001',
     'rating': 4.9,
     'completedRides': 2340,
   },

@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/usecases/check_email_availability_usecase.dart';
 import 'package:mobile/core/domain/usecases/ensure_notification_permission_usecase.dart';
-import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
+import 'package:mobile/core/widgets/connectivity_banner.dart';
 import 'package:mobile/features/authentication/domain/entities/registration_flow_entity.dart';
 import 'package:mobile/features/authentication/domain/entities/user_role.dart';
 import 'package:mobile/features/authentication/presentation/bloc/auth_bloc.dart';
@@ -17,9 +17,11 @@ import 'package:mobile/features/driver_home/domain/usecases/arrive_at_pickup_use
 import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/depart_for_booking_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_accepted_bookings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_available_bookings_page_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_available_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/load_driver_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_documents_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/submit_driver_document_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_document_notifications_usecase.dart';
@@ -50,10 +52,11 @@ import 'package:mobile/features/passenger_home/domain/usecases/find_place_at_use
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_account_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_bookings_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_current_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_past_rides_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_recent_destinations_usecase.dart';
-import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/offer_from_pickup_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
@@ -115,7 +118,8 @@ class AuthNavigator extends StatelessWidget {
     required this.rateRideUseCase,
     required this.bookRideUseCase,
     required this.getPickupForArrivalUseCase,
-    required this.loadRideHistoryUseCase,
+    required this.loadBookingsUseCase,
+    required this.loadPastRidesUseCase,
     required this.cancelBookingUseCase,
     required this.loadAccountUseCase,
     required this.addSavedPlaceUseCase,
@@ -131,7 +135,6 @@ class AuthNavigator extends StatelessWidget {
     required this.loadDriverActivityUseCase,
     required this.setOnlineUseCase,
     required this.shareDriverPositionUseCase,
-    required this.watchConnectionUseCase,
     required this.watchRideRequestsUseCase,
     required this.acceptRideRequestUseCase,
     required this.declineRideRequestUseCase,
@@ -143,7 +146,9 @@ class AuthNavigator extends StatelessWidget {
     required this.watchPassengerCancellationUseCase,
     required this.loadRideCheckoutUseCase,
     required this.completeRideUseCase,
-    required this.loadDriverBookingsUseCase,
+    required this.loadAvailableBookingsUseCase,
+    required this.loadAvailableBookingsPageUseCase,
+    required this.loadAcceptedBookingsUseCase,
     required this.acceptBookingUseCase,
     required this.withdrawFromBookingUseCase,
     required this.refuseBookingUseCase,
@@ -198,7 +203,8 @@ class AuthNavigator extends StatelessWidget {
   final RateRideUseCase rateRideUseCase;
   final BookRideUseCase bookRideUseCase;
   final GetPickupForArrivalUseCase getPickupForArrivalUseCase;
-  final LoadRideHistoryUseCase loadRideHistoryUseCase;
+  final LoadBookingsUseCase loadBookingsUseCase;
+  final LoadPastRidesUseCase loadPastRidesUseCase;
   final CancelBookingUseCase cancelBookingUseCase;
   final LoadAccountUseCase loadAccountUseCase;
   final AddSavedPlaceUseCase addSavedPlaceUseCase;
@@ -219,7 +225,6 @@ class AuthNavigator extends StatelessWidget {
 
   // Partagé entre passager et chauffeur : prévient quand la connexion est
   // perdue.
-  final WatchConnectionUseCase watchConnectionUseCase;
   final WatchRideRequestsUseCase watchRideRequestsUseCase;
   final AcceptRideRequestUseCase acceptRideRequestUseCase;
   final DeclineRideRequestUseCase declineRideRequestUseCase;
@@ -231,7 +236,9 @@ class AuthNavigator extends StatelessWidget {
   final WatchPassengerCancellationUseCase watchPassengerCancellationUseCase;
   final LoadRideCheckoutUseCase loadRideCheckoutUseCase;
   final CompleteRideUseCase completeRideUseCase;
-  final LoadDriverBookingsUseCase loadDriverBookingsUseCase;
+  final LoadAvailableBookingsUseCase loadAvailableBookingsUseCase;
+  final LoadAvailableBookingsPageUseCase loadAvailableBookingsPageUseCase;
+  final LoadAcceptedBookingsUseCase loadAcceptedBookingsUseCase;
   final AcceptBookingUseCase acceptBookingUseCase;
   final WithdrawFromBookingUseCase withdrawFromBookingUseCase;
   final RefuseBookingUseCase refuseBookingUseCase;
@@ -348,74 +355,80 @@ class AuthNavigator extends StatelessWidget {
       AuthAuthenticated(role: UserRole.passenger) => [
         MaterialPage<void>(
           key: const ValueKey('passenger-home'),
-          child: PassengerHomePage(
-            loadPassengerHomeUseCase: loadPassengerHomeUseCase,
-            watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
-            watchConnectionUseCase: watchConnectionUseCase,
-            suggestDestinationsUseCase: suggestDestinationsUseCase,
-            selectDestinationUseCase: selectDestinationUseCase,
-            findPlaceAtUseCase: findPlaceAtUseCase,
-            offerFromPickupUseCase: offerFromPickupUseCase,
-            loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
-            getPickupDaysUseCase: getPickupDaysUseCase,
-            requestRideUseCase: requestRideUseCase,
-            loadCurrentRideUseCase: loadCurrentRideUseCase,
-            watchPushedRidesUseCase: watchPushedRidesUseCase,
-            watchRideUseCase: watchRideUseCase,
-            cancelRideUseCase: cancelRideUseCase,
-            rateRideUseCase: rateRideUseCase,
-            bookRideUseCase: bookRideUseCase,
-            getPickupForArrivalUseCase: getPickupForArrivalUseCase,
-            loadRideHistoryUseCase: loadRideHistoryUseCase,
-            cancelBookingUseCase: cancelBookingUseCase,
-            loadAccountUseCase: loadAccountUseCase,
-            addSavedPlaceUseCase: addSavedPlaceUseCase,
-            changeSavedPlaceUseCase: changeSavedPlaceUseCase,
-            deleteSavedPlaceUseCase: deleteSavedPlaceUseCase,
-            loadRecentDestinationsUseCase: loadRecentDestinationsUseCase,
-            onSignOutRequested: () =>
-                context.read<AuthBloc>().add(const AuthSignOutRequested()),
+          child: ConnectivityBanner(
+            child: PassengerHomePage(
+              loadPassengerHomeUseCase: loadPassengerHomeUseCase,
+              watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
+              suggestDestinationsUseCase: suggestDestinationsUseCase,
+              selectDestinationUseCase: selectDestinationUseCase,
+              findPlaceAtUseCase: findPlaceAtUseCase,
+              offerFromPickupUseCase: offerFromPickupUseCase,
+              loadTaxiChoiceUseCase: loadTaxiChoiceUseCase,
+              getPickupDaysUseCase: getPickupDaysUseCase,
+              requestRideUseCase: requestRideUseCase,
+              loadCurrentRideUseCase: loadCurrentRideUseCase,
+              watchPushedRidesUseCase: watchPushedRidesUseCase,
+              watchRideUseCase: watchRideUseCase,
+              cancelRideUseCase: cancelRideUseCase,
+              rateRideUseCase: rateRideUseCase,
+              bookRideUseCase: bookRideUseCase,
+              getPickupForArrivalUseCase: getPickupForArrivalUseCase,
+              loadBookingsUseCase: loadBookingsUseCase,
+              loadPastRidesUseCase: loadPastRidesUseCase,
+              cancelBookingUseCase: cancelBookingUseCase,
+              loadAccountUseCase: loadAccountUseCase,
+              addSavedPlaceUseCase: addSavedPlaceUseCase,
+              changeSavedPlaceUseCase: changeSavedPlaceUseCase,
+              deleteSavedPlaceUseCase: deleteSavedPlaceUseCase,
+              loadRecentDestinationsUseCase: loadRecentDestinationsUseCase,
+              onSignOutRequested: () =>
+                  context.read<AuthBloc>().add(const AuthSignOutRequested()),
+            ),
           ),
         ),
       ],
       AuthAuthenticated(role: UserRole.driver) => [
         MaterialPage<void>(
           key: const ValueKey('driver-home'),
-          child: DriverHomePage(
-            loadCurrentDriverRideUseCase: loadCurrentDriverRideUseCase,
-            loadDriverDocumentsUseCase: loadDriverDocumentsUseCase,
-            submitDriverDocumentUseCase: submitDriverDocumentUseCase,
-            watchDocumentNotificationsUseCase:
-                watchDocumentNotificationsUseCase,
-            watchOnlineAllowedUseCase: watchOnlineAllowedUseCase,
-            openLocationSettingsUseCase: openLocationSettingsUseCase,
-            loadDriverHomeUseCase: loadDriverHomeUseCase,
-            loadDriverActivityUseCase: loadDriverActivityUseCase,
-            setOnlineUseCase: setOnlineUseCase,
-            shareDriverPositionUseCase: shareDriverPositionUseCase,
-            watchConnectionUseCase: watchConnectionUseCase,
-            watchRideRequestsUseCase: watchRideRequestsUseCase,
-            acceptRideRequestUseCase: acceptRideRequestUseCase,
-            declineRideRequestUseCase: declineRideRequestUseCase,
-            watchGuidanceUseCase: watchGuidanceUseCase,
-            arriveAtPickupUseCase: arriveAtPickupUseCase,
-            startRideUseCase: startRideUseCase,
-            reportNoShowUseCase: reportNoShowUseCase,
-            withdrawFromRideUseCase: withdrawFromRideUseCase,
-            watchPassengerCancellationUseCase:
-                watchPassengerCancellationUseCase,
-            loadRideCheckoutUseCase: loadRideCheckoutUseCase,
-            completeRideUseCase: completeRideUseCase,
-            loadDriverBookingsUseCase: loadDriverBookingsUseCase,
-            acceptBookingUseCase: acceptBookingUseCase,
-            withdrawFromBookingUseCase: withdrawFromBookingUseCase,
-            refuseBookingUseCase: refuseBookingUseCase,
-            departForBookingUseCase: departForBookingUseCase,
-            watchPushedRidesUseCase: watchPushedRidesUseCase,
-            loadEarningsUseCase: loadEarningsUseCase,
-            loadDriverAccountUseCase: loadDriverAccountUseCase,
-            onSignOutRequested: () =>
-                context.read<AuthBloc>().add(const AuthSignOutRequested()),
+          child: ConnectivityBanner(
+            child: DriverHomePage(
+              loadCurrentDriverRideUseCase: loadCurrentDriverRideUseCase,
+              loadDriverDocumentsUseCase: loadDriverDocumentsUseCase,
+              submitDriverDocumentUseCase: submitDriverDocumentUseCase,
+              watchDocumentNotificationsUseCase:
+                  watchDocumentNotificationsUseCase,
+              watchOnlineAllowedUseCase: watchOnlineAllowedUseCase,
+              openLocationSettingsUseCase: openLocationSettingsUseCase,
+              loadDriverHomeUseCase: loadDriverHomeUseCase,
+              loadDriverActivityUseCase: loadDriverActivityUseCase,
+              setOnlineUseCase: setOnlineUseCase,
+              shareDriverPositionUseCase: shareDriverPositionUseCase,
+              watchRideRequestsUseCase: watchRideRequestsUseCase,
+              acceptRideRequestUseCase: acceptRideRequestUseCase,
+              declineRideRequestUseCase: declineRideRequestUseCase,
+              watchGuidanceUseCase: watchGuidanceUseCase,
+              arriveAtPickupUseCase: arriveAtPickupUseCase,
+              startRideUseCase: startRideUseCase,
+              reportNoShowUseCase: reportNoShowUseCase,
+              withdrawFromRideUseCase: withdrawFromRideUseCase,
+              watchPassengerCancellationUseCase:
+                  watchPassengerCancellationUseCase,
+              loadRideCheckoutUseCase: loadRideCheckoutUseCase,
+              completeRideUseCase: completeRideUseCase,
+              loadAvailableBookingsUseCase: loadAvailableBookingsUseCase,
+              loadAvailableBookingsPageUseCase:
+                  loadAvailableBookingsPageUseCase,
+              loadAcceptedBookingsUseCase: loadAcceptedBookingsUseCase,
+              acceptBookingUseCase: acceptBookingUseCase,
+              withdrawFromBookingUseCase: withdrawFromBookingUseCase,
+              refuseBookingUseCase: refuseBookingUseCase,
+              departForBookingUseCase: departForBookingUseCase,
+              watchPushedRidesUseCase: watchPushedRidesUseCase,
+              loadEarningsUseCase: loadEarningsUseCase,
+              loadDriverAccountUseCase: loadDriverAccountUseCase,
+              onSignOutRequested: () =>
+                  context.read<AuthBloc>().add(const AuthSignOutRequested()),
+            ),
           ),
         ),
       ],

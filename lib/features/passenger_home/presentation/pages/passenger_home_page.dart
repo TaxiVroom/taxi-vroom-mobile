@@ -1,6 +1,5 @@
 import 'package:flow_builder/flow_builder.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/authentication/presentation/navigator/auth_navigator.dart'
@@ -16,10 +15,11 @@ import 'package:mobile/features/passenger_home/domain/usecases/find_place_at_use
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_days_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/get_pickup_for_arrival_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_account_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_bookings_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_current_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_passenger_home_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/load_past_rides_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_recent_destinations_usecase.dart';
-import 'package:mobile/features/passenger_home/domain/usecases/load_ride_history_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/offer_from_pickup_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
@@ -48,7 +48,6 @@ class PassengerHomePage extends StatelessWidget {
   const PassengerHomePage({
     required this.loadPassengerHomeUseCase,
     required this.watchNearbyTaxisUseCase,
-    required this.watchConnectionUseCase,
     required this.suggestDestinationsUseCase,
     required this.selectDestinationUseCase,
     required this.findPlaceAtUseCase,
@@ -63,7 +62,8 @@ class PassengerHomePage extends StatelessWidget {
     required this.rateRideUseCase,
     required this.bookRideUseCase,
     required this.getPickupForArrivalUseCase,
-    required this.loadRideHistoryUseCase,
+    required this.loadBookingsUseCase,
+    required this.loadPastRidesUseCase,
     required this.cancelBookingUseCase,
     required this.loadAccountUseCase,
     required this.addSavedPlaceUseCase,
@@ -76,7 +76,6 @@ class PassengerHomePage extends StatelessWidget {
 
   final LoadPassengerHomeUseCase loadPassengerHomeUseCase;
   final WatchNearbyTaxisUseCase watchNearbyTaxisUseCase;
-  final WatchConnectionUseCase watchConnectionUseCase;
   final SuggestDestinationsUseCase suggestDestinationsUseCase;
   final SelectDestinationUseCase selectDestinationUseCase;
   final FindPlaceAtUseCase findPlaceAtUseCase;
@@ -91,7 +90,8 @@ class PassengerHomePage extends StatelessWidget {
   final RateRideUseCase rateRideUseCase;
   final BookRideUseCase bookRideUseCase;
   final GetPickupForArrivalUseCase getPickupForArrivalUseCase;
-  final LoadRideHistoryUseCase loadRideHistoryUseCase;
+  final LoadBookingsUseCase loadBookingsUseCase;
+  final LoadPastRidesUseCase loadPastRidesUseCase;
   final CancelBookingUseCase cancelBookingUseCase;
   final LoadAccountUseCase loadAccountUseCase;
   final AddSavedPlaceUseCase addSavedPlaceUseCase;
@@ -111,7 +111,6 @@ class PassengerHomePage extends StatelessWidget {
           create: (_) => PassengerHomeBloc(
             loadPassengerHomeUseCase: loadPassengerHomeUseCase,
             watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
-            watchConnectionUseCase: watchConnectionUseCase,
           )..add(const PassengerHomeStarted()),
         ),
         BlocProvider(
@@ -124,7 +123,8 @@ class PassengerHomePage extends StatelessWidget {
         BlocProvider(
           create: (_) =>
               RideHistoryBloc(
-                  loadRideHistoryUseCase: loadRideHistoryUseCase,
+                  loadBookingsUseCase: loadBookingsUseCase,
+                  loadPastRidesUseCase: loadPastRidesUseCase,
                   cancelBookingUseCase: cancelBookingUseCase,
                   watchPushedRidesUseCase: watchPushedRidesUseCase,
                 )
@@ -378,37 +378,31 @@ class _HomeTab extends StatelessWidget {
             const PassengerHomeStarted(),
           ),
         ),
-        PassengerHomeReady(
-          :final home,
-          :final nearbyTaxis,
-          :final isConnected,
-        ) =>
-          Stack(
-            children: [
-              Positioned.fill(
-                child: PassengerHomeMap(
-                  position: home.position,
-                  nearbyTaxis: nearbyTaxis,
-                  bottomPadding: _panelHeight,
+        PassengerHomeReady(:final home, :final nearbyTaxis) => Stack(
+          children: [
+            Positioned.fill(
+              child: PassengerHomeMap(
+                position: home.position,
+                nearbyTaxis: nearbyTaxis,
+                bottomPadding: _panelHeight,
+              ),
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: WhereToPanel(
+                nearbyTaxiCount: nearbyTaxis.length,
+                onWhereToPressed: () => context.read<PassengerFlowBloc>().add(
+                  const PassengerDestinationSearchOpened(),
+                ),
+                onShortcutPressed: (kind) => _onShortcutPressed(
+                  context,
+                  home.savedPlaceOf(kind),
+                  kind,
                 ),
               ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: WhereToPanel(
-                  nearbyTaxiCount: nearbyTaxis.length,
-                  isConnected: isConnected,
-                  onWhereToPressed: () => context.read<PassengerFlowBloc>().add(
-                    const PassengerDestinationSearchOpened(),
-                  ),
-                  onShortcutPressed: (kind) => _onShortcutPressed(
-                    context,
-                    home.savedPlaceOf(kind),
-                    kind,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
+        ),
       },
     );
   }

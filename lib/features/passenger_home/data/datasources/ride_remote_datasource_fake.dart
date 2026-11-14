@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:mobile/core/data/models/paged_list_model.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_booking_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/ride_remote_datasource.dart';
 import 'package:mobile/features/passenger_home/data/datasources/taxi_offer_remote_datasource.dart';
@@ -247,7 +248,9 @@ class RideRemoteDataSourceFake
   }
 
   @override
-  Future<List<BookedRideModel>> getBookings() async {
+  Future<PagedListModel<BookedRideModel>> getBookings({
+    required int page,
+  }) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     final upcoming = [..._bookings]
       ..sort(
@@ -255,16 +258,24 @@ class RideRemoteDataSourceFake
           b['pickupAt'] as String,
         ),
       );
-    return upcoming.map(BookedRideModel.fromJson).toList();
+    return PagedListModel.pageOf(
+      upcoming.map(BookedRideModel.fromJson).toList(),
+      page: page,
+    );
   }
 
   @override
   Future<String?> getCurrentRideId() async => null;
 
   @override
-  Future<List<PastRideModel>> getPastRides() async {
+  Future<PagedListModel<PastRideModel>> getPastRides({
+    required int page,
+  }) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
-    return _pastRides.map(PastRideModel.fromJson).toList();
+    return PagedListModel.pageOf(
+      _pastRides.map(PastRideModel.fromJson).toList(),
+      page: page,
+    );
   }
 
   Map<String, dynamic> _pastRideJson(

@@ -10,6 +10,10 @@ sealed class Ride extends Equatable {
   const Ride({required this.id});
 
   final String id;
+
+  // False once the driver lost the connection: the position shown is the
+  // last one received. Always true without a driver on the road.
+  bool get isDriverConnected => true;
 }
 
 final class RideSearchingDriver extends Ride {
@@ -53,7 +57,11 @@ final class RideDriverApproaching extends Ride {
     required this.driverPosition,
     required this.boardingCode,
     this.etaMinutes,
+    this.isDriverConnected = true,
   });
+
+  @override
+  final bool isDriverConnected;
 
   final Driver driver;
 
@@ -78,6 +86,7 @@ final class RideDriverApproaching extends Ride {
     driverPosition: driverPosition,
     boardingCode: boardingCode,
     etaMinutes: etaMinutes,
+    isDriverConnected: isDriverConnected,
   );
 
   @override
@@ -89,6 +98,7 @@ final class RideDriverApproaching extends Ride {
     driverPosition,
     etaMinutes,
     boardingCode,
+    isDriverConnected,
   ];
 }
 
@@ -100,7 +110,11 @@ final class RideDriverArrived extends Ride {
     required this.vehicle,
     required this.driverPosition,
     required this.boardingCode,
+    this.isDriverConnected = true,
   });
+
+  @override
+  final bool isDriverConnected;
 
   final Driver driver;
 
@@ -116,6 +130,7 @@ final class RideDriverArrived extends Ride {
     vehicle,
     driverPosition,
     boardingCode,
+    isDriverConnected,
   ];
 }
 
@@ -131,7 +146,11 @@ final class RideInProgress extends Ride {
     required this.minPriceCents,
     required this.maxPriceCents,
     this.estimatedArrival,
+    this.isDriverConnected = true,
   });
+
+  @override
+  final bool isDriverConnected;
 
   final Driver driver;
 
@@ -155,6 +174,7 @@ final class RideInProgress extends Ride {
         minPriceCents: minPriceCents,
         maxPriceCents: maxPriceCents,
         estimatedArrival: estimatedArrival,
+        isDriverConnected: isDriverConnected,
       );
 
   @override
@@ -167,6 +187,7 @@ final class RideInProgress extends Ride {
     minPriceCents,
     maxPriceCents,
     estimatedArrival,
+    isDriverConnected,
   ];
 }
 

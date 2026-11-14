@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:mobile/core/constants/app_constants.dart';
+import 'package:mobile/core/data/models/paged_list_model.dart';
 import 'package:mobile/features/passenger_home/data/models/past_ride_model.dart';
 import 'package:mobile/features/passenger_home/data/models/ride_model.dart';
 import 'package:stream_transform/stream_transform.dart';
@@ -18,8 +22,8 @@ abstract class RideRemoteDataSource {
     required List<String> compliments,
   });
 
-  // Most recent first.
-  Future<List<PastRideModel>> getPastRides();
+  // One page, most recent first. The first page is 0.
+  Future<PagedListModel<PastRideModel>> getPastRides({required int page});
 
   // Null without a ride to come back to.
   Future<String?> getCurrentRideId();
@@ -33,8 +37,6 @@ abstract class RideRemoteDataSource {
 // Docs: https://firebase.google.com/docs/database/flutter/read-and-write
 class RideRemoteDataSourceImpl implements RideRemoteDataSource {
   const RideRemoteDataSourceImpl(this._database, this._dio);
-
-  static const _pastRidesLimit = 50;
 
   final FirebaseDatabase _database;
   final Dio _dio;
@@ -80,10 +82,11 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
         },
       ),
       'IN_PROGRESS' => _driverPositions(ride).map(
-        (position) => RideModel.fromJson(
+        (driverPosition) => RideModel.fromJson(
           _withDriverJson(rideId, ride, {
             'status': 'IN_PROGRESS',
-            'taxiPosition': _coordinates(position),
+            'isDriverConnected': driverPosition.isConnected,
+            'taxiPosition': _coordinates(driverPosition.position),
             'destination': _coordinates(ride.child('destination')),
             'estimatedPriceMinCents': ride
                 .child('estimatedPriceMinCents')
@@ -144,8 +147,11 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
     json,
   ) => _driverPositions(ride).combineLatest(
     Stream.fromFuture(_boardingCode(rideId)),
-    (position, boardingCode) => RideModel.fromJson(
-      _withDriverJson(rideId, ride, json(position, boardingCode)),
+    (driverPosition, boardingCode) => RideModel.fromJson(
+      _withDriverJson(rideId, ride, {
+        ...json(driverPosition.position, boardingCode),
+        'isDriverConnected': driverPosition.isConnected,
+      }),
     ),
   );
 
@@ -156,14 +162,38 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
     return response.data!['code'] as String;
   }
 
-  Stream<DataSnapshot> _driverPositions(DataSnapshot ride) {
+  // The server removes the driver's entry when they disconnect; their app
+  // writes it back on reconnection. Without entry, keeps the last position,
+  // flagged as not connected.
+  // Not an async* with await for: its cancel would wait for the next update,
+  // which does not come while the taxi is stopped, and switchMap would never
+  // reach the next status.
+  // Docs: https://firebase.google.com/docs/database/flutter/offline-capabilities
+  Stream<({DataSnapshot position, bool isConnected})> _driverPositions(
+    DataSnapshot ride,
+  ) {
     final driverId = ride.child('driverId').value! as String;
+    DataSnapshot? lastPosition;
     return _database
         .ref('drivers/$driverId')
         .onValue
-        // Gone when the driver loses the connection: the last one stays.
-        .where((event) => event.snapshot.value != null)
-        .map((event) => event.snapshot);
+        .transform(
+          StreamTransformer<
+            DatabaseEvent,
+            ({DataSnapshot position, bool isConnected})
+          >.fromHandlers(
+            handleData: (event, sink) {
+              final snapshot = event.snapshot;
+              final last = lastPosition;
+              if (snapshot.value != null) {
+                lastPosition = snapshot;
+                sink.add((position: snapshot, isConnected: true));
+              } else if (last != null) {
+                sink.add((position: last, isConnected: false));
+              }
+            },
+          ),
+        );
   }
 
   Map<String, dynamic> _withDriverJson(
@@ -178,6 +208,7 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
       ...json,
       'driver': {
         'name': '${driver.child('firstName').value} ${lastName[0]}.',
+        'phone': driver.child('phone').value,
         'rating': driver.child('rating').value,
         'completedRides': driver.child('completedRides').value,
       },
@@ -218,14 +249,14 @@ class RideRemoteDataSourceImpl implements RideRemoteDataSource {
   );
 
   @override
-  Future<List<PastRideModel>> getPastRides() async {
+  Future<PagedListModel<PastRideModel>> getPastRides({
+    required int page,
+  }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/v1/rides',
-      queryParameters: {'limit': _pastRidesLimit},
+      queryParameters: {'limit': AppConstants.listPageSize, 'page': page},
     );
-    return (response.data!['data'] as List<dynamic>)
-        .map((ride) => PastRideModel.fromJson(ride as Map<String, dynamic>))
-        .toList();
+    return PagedListModel.fromJson(response.data!, PastRideModel.fromJson);
   }
 
   @override

@@ -15,7 +15,6 @@ final class PassengerHomeReady extends PassengerHomeState {
   const PassengerHomeReady({
     required this.home,
     this.nearbyTaxis = const [],
-    this.isConnected = true,
   });
 
   final PassengerHome home;
@@ -23,11 +22,8 @@ final class PassengerHomeReady extends PassengerHomeState {
   // The free taxis the passenger can order, closest first.
   final List<NearbyTaxi> nearbyTaxis;
 
-  // Without connection, the taxis shown are the last ones received.
-  final bool isConnected;
-
   @override
-  List<Object?> get props => [home, nearbyTaxis, isConnected];
+  List<Object?> get props => [home, nearbyTaxis];
 }
 
 final class PassengerHomeFailure extends PassengerHomeState {

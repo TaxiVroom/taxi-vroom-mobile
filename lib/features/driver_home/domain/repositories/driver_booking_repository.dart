@@ -1,15 +1,21 @@
 import 'package:mobile/core/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/entities/paged_list.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_booking.dart';
-import 'package:mobile/features/driver_home/domain/entities/driver_bookings.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
 
 abstract class DriverBookingRepository {
-  // Sorted by pickup time, the next one first.
-  Future<Result<List<DriverBooking>>> getAcceptedBookings();
+  // One page, sorted by pickup time, the next one first. The first page is 0.
+  Future<Result<PagedList<DriverBooking>>> getAcceptedBookings({
+    required int page,
+  });
 
-  // The available ones are around the driver's position.
-  Future<Result<DriverBookings>> getBookings({required Coordinates around});
+  // One page, the available ones around the driver's position, sorted by
+  // pickup time.
+  Future<Result<PagedList<DriverBooking>>> getAvailableBookings({
+    required Coordinates around,
+    required int page,
+  });
 
   // The booking leaves the available ones for the accepted ones.
   Future<Result<void>> acceptBooking(String bookingId);

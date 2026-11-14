@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:mobile/core/constants/app_constants.dart';
+import 'package:mobile/core/data/models/paged_list_model.dart';
 import 'package:mobile/features/passenger_home/data/models/booked_ride_model.dart';
 
 // Rides booked in advance.
@@ -8,8 +10,8 @@ abstract class RideBookingRemoteDataSource {
 
   Future<void> cancelBooking(String bookingId);
 
-  // Soonest first.
-  Future<List<BookedRideModel>> getBookings();
+  // One page, soonest first. The first page is 0.
+  Future<PagedListModel<BookedRideModel>> getBookings({required int page});
 }
 
 // The booking is the estimated ride itself: booking only sends its id, the
@@ -29,13 +31,13 @@ class RideBookingRemoteDataSourceImpl implements RideBookingRemoteDataSource {
       _dio.post<void>('/v1/rides/$bookingId/cancel');
 
   @override
-  Future<List<BookedRideModel>> getBookings() async {
-    final response = await _dio.get<List<dynamic>>('/v1/rides/booked');
-    return response.data!
-        .map(
-          (booking) =>
-              BookedRideModel.fromJson(booking as Map<String, dynamic>),
-        )
-        .toList();
+  Future<PagedListModel<BookedRideModel>> getBookings({
+    required int page,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/v1/rides/booked',
+      queryParameters: {'limit': AppConstants.listPageSize, 'page': page},
+    );
+    return PagedListModel.fromJson(response.data!, BookedRideModel.fromJson);
   }
 }

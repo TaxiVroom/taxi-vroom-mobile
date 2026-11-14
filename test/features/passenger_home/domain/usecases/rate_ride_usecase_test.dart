@@ -1,9 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/domain/entities/paged_list.dart';
 import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/features/passenger_home/domain/entities/booked_ride.dart';
+import 'package:mobile/features/passenger_home/domain/entities/past_ride.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride_compliment.dart';
-import 'package:mobile/features/passenger_home/domain/entities/ride_history.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_offer.dart';
 import 'package:mobile/features/passenger_home/domain/repositories/ride_repository.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
@@ -48,7 +50,12 @@ class _FakeRideRepository implements RideRepository {
       throw UnimplementedError();
 
   @override
-  Future<Result<RideHistory>> getRideHistory() => throw UnimplementedError();
+  Future<Result<PagedList<BookedRide>>> getBookings({required int page}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<Result<PagedList<PastRide>>> getPastRides({required int page}) =>
+      throw UnimplementedError();
 }
 
 void main() {

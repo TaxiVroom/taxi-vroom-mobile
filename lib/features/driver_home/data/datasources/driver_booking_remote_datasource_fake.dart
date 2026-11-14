@@ -1,3 +1,4 @@
+import 'package:mobile/core/data/models/paged_list_model.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_booking_remote_datasource.dart';
 import 'package:mobile/features/driver_home/data/models/driver_booking_model.dart';
 import 'package:mobile/features/driver_home/data/models/driver_ride_model.dart';
@@ -62,18 +63,21 @@ class DriverBookingRemoteDataSourceFake
   final _accepted = <Map<String, dynamic>>[];
 
   @override
-  Future<List<DriverBookingModel>> getAcceptedBookings() async {
+  Future<PagedListModel<DriverBookingModel>> getAcceptedBookings({
+    required int page,
+  }) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
-    return _sorted(_accepted);
+    return PagedListModel.pageOf(_sorted(_accepted), page: page);
   }
 
   @override
-  Future<List<DriverBookingModel>> getAvailableBookings({
+  Future<PagedListModel<DriverBookingModel>> getAvailableBookings({
     required double latitude,
     required double longitude,
+    required int page,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
-    return _sorted(_available);
+    return PagedListModel.pageOf(_sorted(_available), page: page);
   }
 
   @override

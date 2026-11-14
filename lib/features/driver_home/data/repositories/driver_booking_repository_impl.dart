@@ -1,12 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:mobile/core/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/entities/paged_list.dart';
 import 'package:mobile/core/errors/dio_exception_failure.dart';
 import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/driver_home/data/datasources/driver_booking_remote_datasource.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_booking.dart';
-import 'package:mobile/features/driver_home/domain/entities/driver_bookings.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
 import 'package:mobile/features/driver_home/domain/repositories/driver_booking_repository.dart';
 
@@ -34,31 +34,29 @@ class DriverBookingRepositoryImpl implements DriverBookingRepository {
   );
 
   @override
-  Future<Result<List<DriverBooking>>> getAcceptedBookings() async {
+  Future<Result<PagedList<DriverBooking>>> getAcceptedBookings({
+    required int page,
+  }) async {
     try {
-      final models = await _dataSource.getAcceptedBookings();
-      return Result.ok(models.map((m) => m.toDomain()).toList());
+      final models = await _dataSource.getAcceptedBookings(page: page);
+      return Result.ok(models.toDomain((booking) => booking.toDomain()));
     } on DioException catch (e) {
       return Result.error(e.toFailure());
     }
   }
 
   @override
-  Future<Result<DriverBookings>> getBookings({
+  Future<Result<PagedList<DriverBooking>>> getAvailableBookings({
     required Coordinates around,
+    required int page,
   }) async {
     try {
-      final available = await _dataSource.getAvailableBookings(
+      final models = await _dataSource.getAvailableBookings(
         latitude: around.latitude,
         longitude: around.longitude,
+        page: page,
       );
-      final accepted = await _dataSource.getAcceptedBookings();
-      return Result.ok(
-        DriverBookings(
-          available: available.map((m) => m.toDomain()).toList(),
-          accepted: accepted.map((m) => m.toDomain()).toList(),
-        ),
-      );
+      return Result.ok(models.toDomain((booking) => booking.toDomain()));
     } on DioException catch (e) {
       return Result.error(e.toFailure());
     }

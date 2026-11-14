@@ -7,9 +7,26 @@ sealed class DriverBookingsEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-// The tab is shown, or the driver taps "Réessayer".
+// The tab is shown, a notification came or the driver taps "Réessayer": the
+// list shown is loaded again from its first page.
 final class DriverBookingsRequested extends DriverBookingsEvent {
   const DriverBookingsRequested();
+}
+
+// "Disponibles" or "Acceptées" is tapped: that list is loaded from its first
+// page, even if it is the one shown (decision of the user, 2026-11-14).
+final class DriverBookingsListSelected extends DriverBookingsEvent {
+  const DriverBookingsListSelected(this.list);
+
+  final DriverBookingsList list;
+
+  @override
+  List<Object?> get props => [list];
+}
+
+// The driver scrolled near the last card of the list shown.
+final class DriverBookingsNextPageRequested extends DriverBookingsEvent {
+  const DriverBookingsNextPageRequested();
 }
 
 // The driver home is shown: each notification received on screen or touched

@@ -1,9 +1,9 @@
-import 'package:mobile/core/domain/entities/coordinates.dart';
+import 'package:mobile/core/domain/entities/paged_list.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/features/passenger_home/domain/entities/place.dart';
+import 'package:mobile/features/passenger_home/domain/entities/booked_ride.dart';
+import 'package:mobile/features/passenger_home/domain/entities/past_ride.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride.dart';
 import 'package:mobile/features/passenger_home/domain/entities/ride_compliment.dart';
-import 'package:mobile/features/passenger_home/domain/entities/ride_history.dart';
 import 'package:mobile/features/passenger_home/domain/entities/taxi_offer.dart';
 
 abstract class RideRepository {
@@ -33,5 +33,9 @@ abstract class RideRepository {
 
   Future<Result<void>> cancelBooking(String bookingId);
 
-  Future<Result<RideHistory>> getRideHistory();
+  // One page of the booked rides, the soonest first. The first page is 0.
+  Future<Result<PagedList<BookedRide>>> getBookings({required int page});
+
+  // One page of the finished rides, the most recent first.
+  Future<Result<PagedList<PastRide>>> getPastRides({required int page});
 }

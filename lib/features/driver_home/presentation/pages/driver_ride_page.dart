@@ -105,36 +105,6 @@ class DriverRidePage extends StatelessWidget {
           children: [
             _buildTrip(guidance),
             const SizedBox(height: 12),
-            // Supplements and the safety tools are not built yet.
-            Row(
-              children: [
-                Expanded(
-                  child: SecondaryButton(
-                    onPressed: () {},
-                    alignment: Alignment.center,
-                    leading: const Icon(Icons.add, size: 18),
-                    child: const Text('Supplément'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: SecondaryButton(
-                    onPressed: () {},
-                    alignment: Alignment.center,
-                    leading: const Icon(
-                      Icons.shield_outlined,
-                      size: 18,
-                      color: AppColors.danger,
-                    ),
-                    child: const Text(
-                      'Sécurité',
-                      style: TextStyle(color: AppColors.danger),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
             // Slid, not tapped: ending the ride by mistake right after the
             // pickup must not happen.
             SwipeButton(label: 'Terminer la course', onSwiped: onFinished),

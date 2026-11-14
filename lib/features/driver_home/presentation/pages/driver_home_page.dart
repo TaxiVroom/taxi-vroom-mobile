@@ -1,6 +1,5 @@
 import 'package:flow_builder/flow_builder.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/core/domain/usecases/watch_connection_usecase.dart';
 import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
 import 'package:mobile/core/presentation/bloc/notification_permission_bloc.dart';
 import 'package:mobile/core/theme/app_colors.dart';
@@ -18,9 +17,11 @@ import 'package:mobile/features/driver_home/domain/usecases/arrive_at_pickup_use
 import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/depart_for_booking_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_accepted_bookings_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_available_bookings_page_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/load_available_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_current_driver_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_account_usecase.dart';
-import 'package:mobile/features/driver_home/domain/usecases/load_driver_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_documents_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/submit_driver_document_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_document_notifications_usecase.dart';
@@ -78,7 +79,6 @@ class DriverHomePage extends StatelessWidget {
     required this.loadDriverActivityUseCase,
     required this.setOnlineUseCase,
     required this.shareDriverPositionUseCase,
-    required this.watchConnectionUseCase,
     required this.watchRideRequestsUseCase,
     required this.acceptRideRequestUseCase,
     required this.declineRideRequestUseCase,
@@ -90,7 +90,9 @@ class DriverHomePage extends StatelessWidget {
     required this.watchPassengerCancellationUseCase,
     required this.loadRideCheckoutUseCase,
     required this.completeRideUseCase,
-    required this.loadDriverBookingsUseCase,
+    required this.loadAvailableBookingsUseCase,
+    required this.loadAvailableBookingsPageUseCase,
+    required this.loadAcceptedBookingsUseCase,
     required this.acceptBookingUseCase,
     required this.withdrawFromBookingUseCase,
     required this.refuseBookingUseCase,
@@ -112,7 +114,6 @@ class DriverHomePage extends StatelessWidget {
   final LoadDriverActivityUseCase loadDriverActivityUseCase;
   final SetOnlineUseCase setOnlineUseCase;
   final ShareDriverPositionUseCase shareDriverPositionUseCase;
-  final WatchConnectionUseCase watchConnectionUseCase;
   final WatchRideRequestsUseCase watchRideRequestsUseCase;
   final AcceptRideRequestUseCase acceptRideRequestUseCase;
   final DeclineRideRequestUseCase declineRideRequestUseCase;
@@ -124,7 +125,9 @@ class DriverHomePage extends StatelessWidget {
   final WatchPassengerCancellationUseCase watchPassengerCancellationUseCase;
   final LoadRideCheckoutUseCase loadRideCheckoutUseCase;
   final CompleteRideUseCase completeRideUseCase;
-  final LoadDriverBookingsUseCase loadDriverBookingsUseCase;
+  final LoadAvailableBookingsUseCase loadAvailableBookingsUseCase;
+  final LoadAvailableBookingsPageUseCase loadAvailableBookingsPageUseCase;
+  final LoadAcceptedBookingsUseCase loadAcceptedBookingsUseCase;
   final AcceptBookingUseCase acceptBookingUseCase;
   final WithdrawFromBookingUseCase withdrawFromBookingUseCase;
   final RefuseBookingUseCase refuseBookingUseCase;
@@ -162,7 +165,6 @@ class DriverHomePage extends StatelessWidget {
             loadDriverHomeUseCase: loadDriverHomeUseCase,
             setOnlineUseCase: setOnlineUseCase,
             shareDriverPositionUseCase: shareDriverPositionUseCase,
-            watchConnectionUseCase: watchConnectionUseCase,
             watchOnlineAllowedUseCase: watchOnlineAllowedUseCase,
             openLocationSettingsUseCase: openLocationSettingsUseCase,
           )..add(const DriverHomeStarted()),
@@ -185,7 +187,10 @@ class DriverHomePage extends StatelessWidget {
         BlocProvider(
           create: (_) =>
               DriverBookingsBloc(
-                  loadDriverBookingsUseCase: loadDriverBookingsUseCase,
+                  loadAvailableBookingsUseCase: loadAvailableBookingsUseCase,
+                  loadAvailableBookingsPageUseCase:
+                      loadAvailableBookingsPageUseCase,
+                  loadAcceptedBookingsUseCase: loadAcceptedBookingsUseCase,
                   acceptBookingUseCase: acceptBookingUseCase,
                   withdrawFromBookingUseCase: withdrawFromBookingUseCase,
                   refuseBookingUseCase: refuseBookingUseCase,
@@ -625,7 +630,7 @@ class _DriveTab extends StatelessWidget {
         ),
         // "Accepter": the booking's reminder comes by notification.
         BlocListener<DriverBookingsBloc, DriverBookingsState>(
-          listenWhen: _isBookingAccepted,
+          listenWhen: (_, current) => current is DriverBookingsAccepted,
           listener: (context, _) => _checkNotifications(
             context,
             NotificationNeed.bookingReminder,
@@ -711,25 +716,6 @@ class _DriveTab extends StatelessWidget {
     RideRequestOffered(:final offer) => offer,
     _ => null,
   };
-
-  // The answer sent was "Accepter", and the booking is now an accepted one.
-  bool _isBookingAccepted(
-    DriverBookingsState previous,
-    DriverBookingsState current,
-  ) {
-    if (previous is! DriverBookingsReady || current is! DriverBookingsReady) {
-      return false;
-    }
-    final bookingId = previous.answeringId;
-    if (bookingId == null || previous.isRefusing) return false;
-    final wasAvailable = previous.bookings.available.any(
-      (booking) => booking.id == bookingId,
-    );
-    final isAccepted = current.bookings.accepted.any(
-      (booking) => booking.id == bookingId,
-    );
-    return wasAvailable && isAccepted;
-  }
 
   void _checkNotifications(BuildContext context, NotificationNeed need) =>
       context.read<NotificationPermissionBloc>().add(
@@ -849,7 +835,6 @@ class _DriveTab extends StatelessWidget {
 
   Widget _buildOnlinePanel(BuildContext context, DriverHomeReady state) {
     return OnlinePanel(
-      isConnected: state.isConnected,
       isSwitching: state.isSwitchingOnline,
       failureMessage: state.switchFailureMessage,
       onGoOfflinePressed: () => context.read<DriverHomeBloc>().add(

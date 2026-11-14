@@ -4,7 +4,7 @@
 
 #N id|kind|path|note
 FlowBloc|bloc|lib/features/passenger_home/presentation/bloc/passenger_flow_bloc.dart|states Home, DestinationSearch, TaxiChoice, Ride
-HomeBloc|bloc|lib/features/passenger_home/presentation/bloc/passenger_home_bloc.dart|position, nearby taxis, connection banner
+HomeBloc|bloc|lib/features/passenger_home/presentation/bloc/passenger_home_bloc.dart|position, nearby taxis (the connection banner is app-wide: ConnectivityBanner)
 TaxiChoiceBloc|bloc|lib/features/passenger_home/presentation/bloc/taxi_choice_bloc.dart|loads the choice, orders, reloads on an expired estimate
 RideBloc|bloc|lib/features/passenger_home/presentation/bloc/ride_bloc.dart|follows the ride, cancel, rating
 WatchRide|uc|lib/features/passenger_home/domain/usecases/watch_ride_usecase.dart|adds the road and the times to each update
@@ -27,7 +27,7 @@ ride subtypes: SearchingDriver, NoDriverFound, PassengerNoShow, DriverApproachin
 watchRide uses switchMap on status: DRIVER_EN_ROUTE is exposed as DRIVER_APPROACHING
 the driver name, rating and completed rides come from the API; "Nouveau" without a rating; taxi number, city, vehicle and plate are simulated
 rating: 0 star sends nothing; a failed send still ends the ride, with a message that the rating is lost (RideEnded.isRatingLost); spec taxi-vroom-api/docs/specs/notation-et-historique.md
-history: "À venir" is simulated, "Passées" comes from GET /v1/rides; reloaded each time the tab opens; last 50, no paging
+history: both lists are real and paged, 20 at a time (GET /v1/rides/booked and /v1/rides, { data, count, limit, page }); RideHistoryBloc keeps the shown list and each list's PagedList, the other list loads at its first tap; a notification, a cancellation or a return to the tab reloads the shown list from page 0 and forgets the other; spec taxi-vroom-api/docs/specs/mes-courses-par-pages.md
 the boarding code is read once from the API per status, it never goes through Firebase
 while the driver comes, each position asks Mapbox for the road and the ETA; in ride, the road to the destination and the arrival time; a failed route only removes the line
 in ride the passenger sees the estimated range: the meter is not connected
@@ -37,4 +37,4 @@ cancel: a 409 means too late to cancel
 bookings (simulated): pickup from now + 30 min, today + 30 days, slots of 15 min; "Arriver à" uses the driving profile with arrive_by
 taxi choice text: "Estimation, trajet du taxi jusqu'à vous inclus. Le prix final est celui du taximètre."
 legal copy of the range: formatEuroRange floors the low end and ceils the high end, never narrowing it
-home map shows free taxis within 5 km, closest first; a connection banner warns when they are no longer live
+home map shows free taxis within 5 km, closest first; the app-wide connection banner (ConnectivityBanner) warns when the connection is lost
