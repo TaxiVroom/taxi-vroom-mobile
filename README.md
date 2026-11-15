@@ -5,8 +5,7 @@ Flutter app of **Taxi Vroom**, a ride-hailing app for French licensed taxis. One
 Backend (NestJS, PostgreSQL, Firebase): [taxi-vroom-api](https://github.com/TaxiVroom/taxi-vroom-api)
 
 ## Demo
-
-[![Watch the demo](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](VIDEO_URL)
+https://github.com/user-attachments/assets/a5a6274a-ff3d-44c9-a1ac-9627ad9f8cf0
 
 ## Architecture
 
