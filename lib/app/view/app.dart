@@ -133,6 +133,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/load_recent_desti
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/offer_from_pickup_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/refresh_pickup_position_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
@@ -277,6 +278,11 @@ class App extends StatelessWidget {
     final loadPassengerHomeUseCase = LoadPassengerHomeUseCase(
       locationRepository: locationRepo,
       savedPlaceRepository: savedPlaceRepo,
+    );
+    // « Position actuelle » relue quand le passager quitte l'accueil pour
+    // commander.
+    final refreshPickupPositionUseCase = RefreshPickupPositionUseCase(
+      locationRepo,
     );
     // Taxis autour du passager : les chauffeurs en ligne dans Firebase. Pour
     // voir 6 taxis fake même sans chauffeur en ligne, remplacer la source par
@@ -462,6 +468,7 @@ class App extends StatelessWidget {
             completePassengerRegistrationUseCase:
                 CompletePassengerRegistrationUseCase(registrationRepo),
             loadPassengerHomeUseCase: loadPassengerHomeUseCase,
+            refreshPickupPositionUseCase: refreshPickupPositionUseCase,
             watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
             suggestDestinationsUseCase: SuggestDestinationsUseCase(
               placeSearchRepo,

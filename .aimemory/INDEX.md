@@ -19,7 +19,7 @@ fakes: list on the stillFake line of arch; app.dart comments say how to switch
 reuse: check @ltm:coreShared before writing a widget, a formatter or a stream
 push: shipped on Android, iOS waits for hardware, spec docs/specs/notifications-push.md in the API repo
 bookings: advance bookings shipped, spec taxi-vroom-api/docs/specs/reservations-a-l-avance.md
-pickupPlace: the passenger chooses and confirms the pickup, shipped, spec taxi-vroom-api/docs/specs/point-de-prise-en-charge.md
+pickupPlace: the passenger chooses and confirms the pickup, shipped; "Position actuelle" is read again on each tap leaving the home to order (since 2026-11-15, validated by the user), spec taxi-vroom-api/docs/specs/point-de-prise-en-charge.md
 navigation: "Itinéraire" opens Google Maps or Waze, shipped, spec taxi-vroom-api/docs/specs/navigation-externe.md
 documents: "Vos documents" real, opens on arrival when a document needs action, spec taxi-vroom-api/docs/specs/documents-du-chauffeur.md
 account: both "Compte" tabs real, one API call with a loader on each arrival, spec taxi-vroom-api/docs/specs/compte-a-jour.md

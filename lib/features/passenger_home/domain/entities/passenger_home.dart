@@ -16,6 +16,9 @@ class PassengerHome extends Equatable {
   // where the phone is.
   Coordinates pickupAt(Place? chosen) => chosen?.coordinates ?? position;
 
+  PassengerHome withPosition(Coordinates position) =>
+      PassengerHome(position: position, savedPlaces: savedPlaces);
+
   SavedPlace? savedPlaceOf(SavedPlaceKind kind) =>
       savedPlaces.where((place) => place.kind == kind).firstOrNull;
 

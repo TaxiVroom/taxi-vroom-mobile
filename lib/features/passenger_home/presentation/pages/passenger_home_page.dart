@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flow_builder/flow_builder.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/domain/usecases/watch_pushed_rides_usecase.dart';
+import 'package:mobile/core/widgets/message_toast.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/features/authentication/presentation/navigator/auth_navigator.dart'
     show AuthNavigator;
@@ -23,6 +26,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/load_recent_desti
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/offer_from_pickup_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/refresh_pickup_position_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
@@ -47,6 +51,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 class PassengerHomePage extends StatelessWidget {
   const PassengerHomePage({
     required this.loadPassengerHomeUseCase,
+    required this.refreshPickupPositionUseCase,
     required this.watchNearbyTaxisUseCase,
     required this.suggestDestinationsUseCase,
     required this.selectDestinationUseCase,
@@ -75,6 +80,7 @@ class PassengerHomePage extends StatelessWidget {
   });
 
   final LoadPassengerHomeUseCase loadPassengerHomeUseCase;
+  final RefreshPickupPositionUseCase refreshPickupPositionUseCase;
   final WatchNearbyTaxisUseCase watchNearbyTaxisUseCase;
   final SuggestDestinationsUseCase suggestDestinationsUseCase;
   final SelectDestinationUseCase selectDestinationUseCase;
@@ -111,6 +117,7 @@ class PassengerHomePage extends StatelessWidget {
           create: (_) => PassengerHomeBloc(
             loadPassengerHomeUseCase: loadPassengerHomeUseCase,
             watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
+            refreshPickupPositionUseCase: refreshPickupPositionUseCase,
           )..add(const PassengerHomeStarted()),
         ),
         BlocProvider(
@@ -358,10 +365,50 @@ class _HomeTab extends StatelessWidget {
     SavedPlace? saved,
     SavedPlaceKind kind,
   ) {
-    context.read<PassengerFlowBloc>().add(
-      saved == null
-          ? PassengerSavedPlaceEditOpened(kind: kind, fromAccount: false)
-          : PassengerDestinationSelected(destination: saved.toDestination()),
+    unawaited(
+      _openAfterLocating(
+        context,
+        saved == null
+            ? PassengerSavedPlaceEditOpened(kind: kind, fromAccount: false)
+            : PassengerDestinationSelected(destination: saved.toDestination()),
+      ),
+    );
+  }
+
+  // "Position actuelle" is where the phone is now, not where it was when the
+  // app opened: the position is read again (a loader meanwhile), then the
+  // next screen opens from it. Nothing opens if it cannot be read: a message
+  // with "Réessayer". A pickup the passenger chose is kept. Spec
+  // taxi-vroom-api/docs/specs/point-de-prise-en-charge.md, step 6.
+  Future<void> _openAfterLocating(
+    BuildContext context,
+    PassengerFlowEvent next,
+  ) async {
+    final homeBloc = context.read<PassengerHomeBloc>();
+    final flowBloc = context.read<PassengerFlowBloc>();
+    homeBloc.add(
+      PassengerPositionRefreshed(chosen: flowBloc.state.pickupPlace),
+    );
+    // Skips what was emitted before the reading started.
+    final located = await homeBloc.stream
+        .skipWhile((state) => state is! PassengerHomeReady || !state.isLocating)
+        .firstWhere(
+          (state) => state is PassengerHomeReady && !state.isLocating,
+          orElse: () => homeBloc.state,
+        );
+    if (!context.mounted || located is! PassengerHomeReady) return;
+
+    final failure = located.locationFailure;
+    if (failure == null) {
+      flowBloc.add(next);
+      return;
+    }
+    showMessageToast(
+      context,
+      title: 'Position introuvable',
+      message: failure.message,
+      actionLabel: 'Réessayer',
+      onAction: () => _openAfterLocating(context, next),
     );
   }
 
@@ -378,31 +425,44 @@ class _HomeTab extends StatelessWidget {
             const PassengerHomeStarted(),
           ),
         ),
-        PassengerHomeReady(:final home, :final nearbyTaxis) => Stack(
-          children: [
-            Positioned.fill(
-              child: PassengerHomeMap(
-                position: home.position,
-                nearbyTaxis: nearbyTaxis,
-                bottomPadding: _panelHeight,
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: WhereToPanel(
-                nearbyTaxiCount: nearbyTaxis.length,
-                onWhereToPressed: () => context.read<PassengerFlowBloc>().add(
-                  const PassengerDestinationSearchOpened(),
-                ),
-                onShortcutPressed: (kind) => _onShortcutPressed(
-                  context,
-                  home.savedPlaceOf(kind),
-                  kind,
+        PassengerHomeReady(
+          :final home,
+          :final nearbyTaxis,
+          :final isLocating,
+        ) =>
+          Stack(
+            children: [
+              Positioned.fill(
+                child: PassengerHomeMap(
+                  position: home.position,
+                  nearbyTaxis: nearbyTaxis,
+                  bottomPadding: _panelHeight,
                 ),
               ),
-            ),
-          ],
-        ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: WhereToPanel(
+                  nearbyTaxiCount: nearbyTaxis.length,
+                  onWhereToPressed: () => _openAfterLocating(
+                    context,
+                    const PassengerDestinationSearchOpened(),
+                  ),
+                  onShortcutPressed: (kind) => _onShortcutPressed(
+                    context,
+                    home.savedPlaceOf(kind),
+                    kind,
+                  ),
+                ),
+              ),
+              // The position is read again: no tap meanwhile, a loader.
+              if (isLocating)
+                const Positioned.fill(
+                  child: AbsorbPointer(
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                ),
+            ],
+          ),
       },
     );
   }

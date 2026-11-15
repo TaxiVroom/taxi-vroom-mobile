@@ -60,6 +60,7 @@ import 'package:mobile/features/passenger_home/domain/usecases/load_recent_desti
 import 'package:mobile/features/passenger_home/domain/usecases/load_taxi_choice_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/offer_from_pickup_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/rate_ride_usecase.dart';
+import 'package:mobile/features/passenger_home/domain/usecases/refresh_pickup_position_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/request_ride_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/select_destination_usecase.dart';
 import 'package:mobile/features/passenger_home/domain/usecases/suggest_destinations_usecase.dart';
@@ -102,6 +103,7 @@ class AuthNavigator extends StatelessWidget {
     required this.watchValidationNotificationOpenedUseCase,
     required this.sendRegistrationPushTokenUseCase,
     required this.loadPassengerHomeUseCase,
+    required this.refreshPickupPositionUseCase,
     required this.watchNearbyTaxisUseCase,
     required this.suggestDestinationsUseCase,
     required this.selectDestinationUseCase,
@@ -187,6 +189,7 @@ class AuthNavigator extends StatelessWidget {
 
   // Use cases de l'accueil passager, transmis à PassengerHomePage.
   final LoadPassengerHomeUseCase loadPassengerHomeUseCase;
+  final RefreshPickupPositionUseCase refreshPickupPositionUseCase;
   final WatchNearbyTaxisUseCase watchNearbyTaxisUseCase;
   final SuggestDestinationsUseCase suggestDestinationsUseCase;
   final SelectDestinationUseCase selectDestinationUseCase;
@@ -358,6 +361,7 @@ class AuthNavigator extends StatelessWidget {
           child: ConnectivityBanner(
             child: PassengerHomePage(
               loadPassengerHomeUseCase: loadPassengerHomeUseCase,
+              refreshPickupPositionUseCase: refreshPickupPositionUseCase,
               watchNearbyTaxisUseCase: watchNearbyTaxisUseCase,
               suggestDestinationsUseCase: suggestDestinationsUseCase,
               selectDestinationUseCase: selectDestinationUseCase,

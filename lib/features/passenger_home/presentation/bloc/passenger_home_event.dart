@@ -12,6 +12,17 @@ final class PassengerHomeStarted extends PassengerHomeEvent {
   const PassengerHomeStarted();
 }
 
+// The passenger is about to order from the home: "Position actuelle" is read
+// again, unless [chosen], the pickup they picked, replaces it.
+final class PassengerPositionRefreshed extends PassengerHomeEvent {
+  const PassengerPositionRefreshed({required this.chosen});
+
+  final Place? chosen;
+
+  @override
+  List<Object?> get props => [chosen];
+}
+
 // "Maison" or "Travail" was added or changed.
 final class PassengerSavedPlaceStored extends PassengerHomeEvent {
   const PassengerSavedPlaceStored({required this.place});
