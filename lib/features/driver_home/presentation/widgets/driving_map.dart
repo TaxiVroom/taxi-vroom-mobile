@@ -52,6 +52,7 @@ class _DrivingMapState extends State<DrivingMap> {
                 : widget.bottomPadding,
             topPadding: _bannerPadding,
             driverPosition: guidance?.position,
+            driverHeading: guidance?.heading,
             destination: widget.destination,
             remainingRoute: guidance?.remainingPath,
             following: _isFollowing ? guidance : null,

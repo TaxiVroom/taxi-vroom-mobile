@@ -17,9 +17,26 @@ final class DriverHomeReady extends DriverHomeState {
     this.isSwitchingOnline = false,
     this.switchFailureMessage,
     this.isBlockedByDocuments = false,
+    this.isRestoringPresence = false,
+    this.isSigningOut = false,
+    this.isReadyToSignOut = false,
+    this.signOutFailureMessage,
   });
 
   final DriverHome home;
+
+  // At start, the entry left in Firebase is being checked: a full-screen
+  // loader, nothing to tap.
+  final bool isRestoringPresence;
+
+  // "Se déconnecter" while online: going offline first.
+  final bool isSigningOut;
+
+  // Offline for good: the sign-out may go on. Once.
+  final bool isReadyToSignOut;
+
+  // Why "Se déconnecter" was refused (no network while online).
+  final String? signOutFailureMessage;
 
   // Going online or offline is in progress.
   final bool isSwitchingOnline;
@@ -38,6 +55,10 @@ final class DriverHomeReady extends DriverHomeState {
     isSwitchingOnline,
     switchFailureMessage,
     isBlockedByDocuments,
+    isRestoringPresence,
+    isSigningOut,
+    isReadyToSignOut,
+    signOutFailureMessage,
   ];
 }
 

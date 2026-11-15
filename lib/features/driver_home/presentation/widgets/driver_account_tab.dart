@@ -19,11 +19,15 @@ class DriverAccountTab extends StatelessWidget {
   const DriverAccountTab({
     required this.onDocumentsPressed,
     required this.onSignOutRequested,
+    this.isSigningOut = false,
     super.key,
   });
 
   final ValueChanged<DriverDocuments> onDocumentsPressed;
   final VoidCallback onSignOutRequested;
+
+  // Online, the driver goes offline first: a loader on the button meanwhile.
+  final bool isSigningOut;
 
   @override
   Widget build(BuildContext context) {
@@ -81,8 +85,14 @@ class DriverAccountTab extends StatelessWidget {
           ContactUsRow(knownPhone: account.contactPhone),
           const SizedBox(height: 24),
           DestructiveButton(
-            onPressed: onSignOutRequested,
+            onPressed: isSigningOut ? null : onSignOutRequested,
             alignment: Alignment.center,
+            leading: isSigningOut
+                ? const AspectRatio(
+                    aspectRatio: 1,
+                    child: CircularProgressIndicator(onSurface: true),
+                  )
+                : null,
             child: const Text('Se déconnecter'),
           ),
         ],

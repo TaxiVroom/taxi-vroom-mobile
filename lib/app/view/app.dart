@@ -76,6 +76,7 @@ import 'package:mobile/features/driver_home/domain/usecases/arrive_at_pickup_use
 import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/depart_for_booking_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/go_offline_to_sign_out_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_accepted_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_available_bookings_page_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_available_bookings_usecase.dart';
@@ -92,6 +93,7 @@ import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_u
 import 'package:mobile/features/driver_home/domain/usecases/load_earnings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/refuse_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/restore_driver_presence_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
@@ -268,11 +270,10 @@ class App extends StatelessWidget {
     );
     // Connexion à Firebase, pour prévenir chauffeur et passager quand elle est
     // perdue.
-    final watchConnectionUseCase = WatchConnectionUseCase(
-      ConnectionRepositoryImpl(
-        ConnectionRemoteDataSourceImpl(realtimeDatabase),
-      ),
+    final connectionRepo = ConnectionRepositoryImpl(
+      ConnectionRemoteDataSourceImpl(realtimeDatabase),
     );
+    final watchConnectionUseCase = WatchConnectionUseCase(connectionRepo);
 
     // Accueil passager : position, « Maison » et « Travail ».
     final loadPassengerHomeUseCase = LoadPassengerHomeUseCase(
@@ -351,6 +352,13 @@ class App extends StatelessWidget {
     );
     final loadDriverHomeUseCase = LoadDriverHomeUseCase(
       locationRepository: locationRepo,
+    );
+    // « Passer en ligne », et la remise en ligne au démarrage par le même
+    // chemin.
+    final setOnlineUseCase = SetOnlineUseCase(
+      locationRepository: locationRepo,
+      driverPresenceRepository: driverPresenceRepo,
+      driverDocumentRepository: driverDocumentRepo,
     );
 
     // Chauffeur.
@@ -533,11 +541,7 @@ class App extends StatelessWidget {
             loadDriverActivityUseCase: LoadDriverActivityUseCase(
               driverActivityRepo,
             ),
-            setOnlineUseCase: SetOnlineUseCase(
-              locationRepository: locationRepo,
-              driverPresenceRepository: driverPresenceRepo,
-              driverDocumentRepository: driverDocumentRepo,
-            ),
+            setOnlineUseCase: setOnlineUseCase,
             shareDriverPositionUseCase: ShareDriverPositionUseCase(
               locationRepository: locationRepo,
               driverPresenceRepository: driverPresenceRepo,
@@ -598,6 +602,17 @@ class App extends StatelessWidget {
             loadDriverAccountUseCase: LoadDriverAccountUseCase(
               driverAccountRepository: driverAccountRepo,
               enterpriseContactRepository: enterpriseContactRepo,
+            ),
+            // Présence au démarrage et à la déconnexion : spec
+            // presence-du-chauffeur-au-demarrage.md.
+            restoreDriverPresenceUseCase: RestoreDriverPresenceUseCase(
+              driverRideRepository: driverRideRepo,
+              driverPresenceRepository: driverPresenceRepo,
+              setOnlineUseCase: setOnlineUseCase,
+            ),
+            goOfflineToSignOutUseCase: GoOfflineToSignOutUseCase(
+              connectionRepository: connectionRepo,
+              driverPresenceRepository: driverPresenceRepo,
             ),
             driverUpdateRegistrationFlowUseCase: UpdateRegistrationFlowUseCase(
               driverRegistrationRepo,

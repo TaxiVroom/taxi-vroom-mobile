@@ -31,6 +31,37 @@ class DriverPresenceRepositoryImpl implements DriverPresenceRepository {
   @override
   Future<Result<void>> goOffline() => _run(_dataSource.goOffline);
 
+  @override
+  Future<Result<void>> goOfflineConfirmed() async {
+    try {
+      await _dataSource.goOfflineConfirmed();
+      return const Result.ok(null);
+    } on FirebaseException catch (e) {
+      return Result.error(
+        ServerFailure(e.message ?? 'Connexion au service impossible.'),
+      );
+    } on TimeoutException {
+      return const Result.error(_noConnection);
+    }
+  }
+
+  @override
+  Future<Result<bool>> hasPresence() async {
+    try {
+      return Result.ok(await _dataSource.hasPresence());
+    } on FirebaseException catch (e) {
+      return Result.error(
+        ServerFailure(e.message ?? 'Connexion au service impossible.'),
+      );
+    } on TimeoutException {
+      return const Result.error(_noConnection);
+    }
+  }
+
+  static const _noConnection = NetworkFailure(
+    'Pas de connexion. Vérifiez votre réseau puis réessayez.',
+  );
+
   // A read refused or failed counts as "still allowed": the dispatch keeps
   // a blocked driver out anyway.
   @override

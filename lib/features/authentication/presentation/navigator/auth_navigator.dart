@@ -17,6 +17,7 @@ import 'package:mobile/features/driver_home/domain/usecases/arrive_at_pickup_use
 import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/depart_for_booking_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/go_offline_to_sign_out_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_accepted_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_available_bookings_page_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_available_bookings_usecase.dart';
@@ -33,6 +34,7 @@ import 'package:mobile/features/driver_home/domain/usecases/load_earnings_usecas
 import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/refuse_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/restore_driver_presence_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
@@ -157,6 +159,8 @@ class AuthNavigator extends StatelessWidget {
     required this.departForBookingUseCase,
     required this.loadEarningsUseCase,
     required this.loadDriverAccountUseCase,
+    required this.restoreDriverPresenceUseCase,
+    required this.goOfflineToSignOutUseCase,
     super.key,
   });
 
@@ -248,6 +252,8 @@ class AuthNavigator extends StatelessWidget {
   final DepartForBookingUseCase departForBookingUseCase;
   final LoadEarningsUseCase loadEarningsUseCase;
   final LoadDriverAccountUseCase loadDriverAccountUseCase;
+  final RestoreDriverPresenceUseCase restoreDriverPresenceUseCase;
+  final GoOfflineToSignOutUseCase goOfflineToSignOutUseCase;
 
   @override
   Widget build(BuildContext context) {
@@ -430,6 +436,8 @@ class AuthNavigator extends StatelessWidget {
               watchPushedRidesUseCase: watchPushedRidesUseCase,
               loadEarningsUseCase: loadEarningsUseCase,
               loadDriverAccountUseCase: loadDriverAccountUseCase,
+              restoreDriverPresenceUseCase: restoreDriverPresenceUseCase,
+              goOfflineToSignOutUseCase: goOfflineToSignOutUseCase,
               onSignOutRequested: () =>
                   context.read<AuthBloc>().add(const AuthSignOutRequested()),
             ),

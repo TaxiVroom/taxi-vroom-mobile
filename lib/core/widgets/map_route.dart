@@ -19,17 +19,18 @@ PolylineAnnotationOptions routeLineOptions(List<Coordinates> path) =>
       lineWidth: 5,
     );
 
-/// Camera framing the whole [path] above a bottom panel of [bottomPadding],
-/// flat with the north up: fields left out would keep the map's current
-/// rotation and tilt.
+/// Camera framing the whole [path] between a top banner of [topPadding] and a
+/// bottom panel of [bottomPadding], flat with the north up: fields left out
+/// would keep the map's current rotation and tilt.
 Future<CameraOptions> cameraOnPath(
   MapboxMap map,
   List<Coordinates> path, {
   required double bottomPadding,
+  double topPadding = 96,
 }) => map.cameraForCoordinatesPadding(
   [for (final point in path) point.toPoint()],
   CameraOptions(bearing: 0, pitch: 0),
-  MbxEdgeInsets(top: 96, left: 48, bottom: bottomPadding, right: 48),
+  MbxEdgeInsets(top: topPadding, left: 48, bottom: bottomPadding, right: 48),
   16,
   null,
 );

@@ -5,6 +5,7 @@ import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/utils/distance_formatter.dart';
 import 'package:mobile/core/widgets/bottom_panel.dart';
 import 'package:mobile/core/widgets/itinerary_button.dart';
+import 'package:mobile/core/widgets/map_with_bottom_panel.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/core/widgets/ride_contact_listener.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_ride.dart';
@@ -34,9 +35,6 @@ class DriverPickupPage extends StatelessWidget {
   final bool isSubmitting;
   final String? failureMessage;
 
-  // Room kept for the bottom panel when framing the route on the map.
-  static const _panelHeight = 330.0;
-
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -54,27 +52,24 @@ class DriverPickupPage extends StatelessWidget {
                 GuidanceReady(:final guidance) => guidance,
                 _ => null,
               };
-              return Stack(
-                children: [
-                  Positioned.fill(
-                    child: DrivingMap(
-                      origin: ride.pickup,
-                      destination: ride.pickup,
-                      guidance: guidance,
-                      bottomPadding: _panelHeight,
-                    ),
-                  ),
+              // The map and its "Vue d'ensemble" button follow the panel's
+              // real height, measured.
+              return MapWithBottomPanel(
+                mapBuilder: (context, panelHeight) => DrivingMap(
+                  origin: ride.pickup,
+                  destination: ride.pickup,
+                  guidance: guidance,
+                  bottomPadding: panelHeight,
+                ),
+                overlays: [
                   Positioned(
                     top: 0,
                     left: 12,
                     right: 12,
                     child: SafeArea(child: _buildTop(context, state)),
                   ),
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: _buildPanel(context, guidance),
-                  ),
                 ],
+                panel: _buildPanel(context, guidance),
               );
             },
           ),

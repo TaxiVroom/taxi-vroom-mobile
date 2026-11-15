@@ -17,6 +17,7 @@ import 'package:mobile/features/driver_home/domain/usecases/arrive_at_pickup_use
 import 'package:mobile/features/driver_home/domain/usecases/complete_ride_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/decline_ride_request_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/depart_for_booking_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/go_offline_to_sign_out_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_accepted_bookings_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_available_bookings_page_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_available_bookings_usecase.dart';
@@ -33,6 +34,7 @@ import 'package:mobile/features/driver_home/domain/usecases/load_earnings_usecas
 import 'package:mobile/features/driver_home/domain/usecases/load_ride_checkout_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/refuse_booking_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/report_no_show_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/restore_driver_presence_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/start_ride_usecase.dart';
@@ -100,6 +102,8 @@ class DriverHomePage extends StatelessWidget {
     required this.watchPushedRidesUseCase,
     required this.loadEarningsUseCase,
     required this.loadDriverAccountUseCase,
+    required this.restoreDriverPresenceUseCase,
+    required this.goOfflineToSignOutUseCase,
     required this.onSignOutRequested,
     super.key,
   });
@@ -135,6 +139,8 @@ class DriverHomePage extends StatelessWidget {
   final WatchPushedRidesUseCase watchPushedRidesUseCase;
   final LoadEarningsUseCase loadEarningsUseCase;
   final LoadDriverAccountUseCase loadDriverAccountUseCase;
+  final RestoreDriverPresenceUseCase restoreDriverPresenceUseCase;
+  final GoOfflineToSignOutUseCase goOfflineToSignOutUseCase;
 
   /// Lets the parent ([AuthNavigator]) sign the driver out, without this
   /// widget knowing about authentication.
@@ -167,6 +173,8 @@ class DriverHomePage extends StatelessWidget {
             shareDriverPositionUseCase: shareDriverPositionUseCase,
             watchOnlineAllowedUseCase: watchOnlineAllowedUseCase,
             openLocationSettingsUseCase: openLocationSettingsUseCase,
+            restoreDriverPresenceUseCase: restoreDriverPresenceUseCase,
+            goOfflineToSignOutUseCase: goOfflineToSignOutUseCase,
           )..add(const DriverHomeStarted()),
         ),
         BlocProvider(
@@ -216,6 +224,38 @@ class DriverHomePage extends StatelessWidget {
             listenWhen: (previous, _) =>
                 previous is DriverFlowCheckingDocuments,
             listener: (context, _) => _goBackOnlineDuringRide(context),
+          ),
+          // The app's start only, not the documents check over the home
+          // after a refused "Passer en ligne".
+          BlocListener<DriverFlowBloc, DriverFlowState>(
+            listenWhen: (previous, _) =>
+                previous is DriverFlowCheckingDocuments && !previous.isOverHome,
+            listener: (context, _) => _restorePresenceAtStart(context),
+          ),
+          // The start waits for both the ride check and the home, whichever
+          // ends last. Listened to here, present before either ends (hyp
+          // lateListener).
+          BlocListener<DriverHomeBloc, DriverHomeState>(
+            listenWhen: (previous, current) =>
+                previous is DriverHomeLoading && current is! DriverHomeLoading,
+            listener: (context, _) => _restorePresenceAtStart(context),
+          ),
+          // Offline for good: the sign-out goes on.
+          BlocListener<DriverHomeBloc, DriverHomeState>(
+            listenWhen: (_, current) =>
+                current is DriverHomeReady && current.isReadyToSignOut,
+            listener: (_, _) => onSignOutRequested(),
+          ),
+          // "Se déconnecter" refused while online, without network.
+          BlocListener<DriverHomeBloc, DriverHomeState>(
+            listenWhen: (_, current) =>
+                current is DriverHomeReady &&
+                current.signOutFailureMessage != null,
+            listener: (context, state) => showMessageToast(
+              context,
+              title: 'Déconnexion impossible',
+              message: (state as DriverHomeReady).signOutFailureMessage!,
+            ),
           ),
           BlocListener<DriverHomeBloc, DriverHomeState>(
             listenWhen: (previous, current) =>
@@ -294,6 +334,19 @@ class DriverHomePage extends StatelessWidget {
         const DriverOnlineToggled(isOnline: true),
       );
     }
+  }
+
+  // Without a ride to resume (that one goes back online by itself), once the
+  // home is loaded or has failed. The bloc runs it once per app start. Spec
+  // taxi-vroom-api/docs/specs/presence-du-chauffeur-au-demarrage.md.
+  void _restorePresenceAtStart(BuildContext context) {
+    final isStartSettled = switch (context.read<DriverFlowBloc>().state) {
+      DriverFlowHome() || DriverFlowDocuments() => true,
+      _ => false,
+    };
+    if (!isStartSettled) return;
+    if (context.read<DriverHomeBloc>().state is DriverHomeLoading) return;
+    context.read<DriverHomeBloc>().add(const DriverPresenceRestored());
   }
 
   static bool _isOnRide(DriverFlowState state) =>
@@ -529,25 +582,59 @@ class _DriverTabsState extends State<_DriverTabs> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      footers: [_buildTabBar()],
-      // IndexedStack keeps the map alive when switching tabs.
-      child: IndexedStack(
-        index: _tabs.indexOf(_selectedTab),
+    return BlocBuilder<DriverHomeBloc, DriverHomeState>(
+      buildWhen: (previous, current) =>
+          _isRestoring(previous) != _isRestoring(current) ||
+          _isSigningOut(previous) != _isSigningOut(current),
+      builder: (context, homeState) => Stack(
         children: [
-          _DriveTab(onProfilePressed: () => _onTabSelected(_accountTab)),
-          const DriverBookingsTab(),
-          const EarningsTab(),
-          DriverAccountTab(
-            onDocumentsPressed: (documents) => context
-                .read<DriverFlowBloc>()
-                .add(DriverDocumentsOpened(documents: documents)),
-            onSignOutRequested: widget.onSignOutRequested,
+          Scaffold(
+            backgroundColor: Colors.white,
+            footers: [_buildTabBar()],
+            // IndexedStack keeps the map alive when switching tabs.
+            child: IndexedStack(
+              index: _tabs.indexOf(_selectedTab),
+              children: [
+                _DriveTab(onProfilePressed: () => _onTabSelected(_accountTab)),
+                const DriverBookingsTab(),
+                const EarningsTab(),
+                DriverAccountTab(
+                  onDocumentsPressed: (documents) => context
+                      .read<DriverFlowBloc>()
+                      .add(DriverDocumentsOpened(documents: documents)),
+                  onSignOutRequested: _onSignOutPressed,
+                  isSigningOut: _isSigningOut(homeState),
+                ),
+              ],
+            ),
           ),
+          // The app checks whether the driver was online: nothing to tap
+          // until it knows, the tabs stay below with their state.
+          if (_isRestoring(homeState))
+            const Positioned.fill(
+              child: ColoredBox(
+                color: Colors.white,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  static bool _isRestoring(DriverHomeState state) =>
+      state is DriverHomeReady && state.isRestoringPresence;
+
+  static bool _isSigningOut(DriverHomeState state) =>
+      state is DriverHomeReady && state.isSigningOut;
+
+  // Without a loaded home the driver cannot be online: signed out at once.
+  void _onSignOutPressed() {
+    if (context.read<DriverHomeBloc>().state is DriverHomeReady) {
+      context.read<DriverHomeBloc>().add(const DriverSignOutRequested());
+      return;
+    }
+    widget.onSignOutRequested();
   }
 
   void _onTabSelected(Key? key) {

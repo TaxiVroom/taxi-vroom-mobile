@@ -14,6 +14,13 @@ abstract class DriverPresenceRemoteDataSource {
 
   Future<void> goOffline();
 
+  // Throws TimeoutException when the server did not confirm in time.
+  Future<void> goOfflineConfirmed();
+
+  // Throws TimeoutException when neither the server nor the cache answers in
+  // time.
+  Future<bool> hasPresence();
+
   // onlineAllowed/<uid>, written by the server only: false once it takes
   // the driver offline for a document. Spec
   // taxi-vroom-api/docs/specs/documents-du-chauffeur.md, point 8.
@@ -99,6 +106,28 @@ class DriverPresenceRemoteDataSourceImpl
     driverRef.onDisconnect().cancel().ignore();
     driverRef.remove().ignore();
   }
+
+  // The doc gives no time limit: "If for some reason get() can't return the
+  // server value, the client will probe the local storage cache and return
+  // an error if the value is still not found."
+  // https://firebase.google.com/docs/database/flutter/read-and-write
+  static const _answerLimit = Duration(seconds: 10);
+
+  @override
+  Future<void> goOfflineConfirmed() async {
+    final driverRef = _driverRef;
+    _lastPosition = null;
+    await _connection?.cancel();
+    _connection = null;
+    // Awaited, unlike goOffline: the futures end once the server applied
+    // them.
+    await driverRef.onDisconnect().cancel().timeout(_answerLimit);
+    await driverRef.remove().timeout(_answerLimit);
+  }
+
+  @override
+  Future<bool> hasPresence() async =>
+      (await _driverRef.get().timeout(_answerLimit)).exists;
 
   @override
   Stream<bool> watchOnlineAllowed() => _database

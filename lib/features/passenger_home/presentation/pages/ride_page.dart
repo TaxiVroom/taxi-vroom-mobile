@@ -11,6 +11,7 @@ import 'package:mobile/core/widgets/bottom_panel.dart';
 import 'package:mobile/core/widgets/connection_lost_banner.dart';
 import 'package:mobile/core/widgets/license_plate.dart';
 import 'package:mobile/core/widgets/map_pill.dart';
+import 'package:mobile/core/widgets/map_with_bottom_panel.dart';
 import 'package:mobile/core/widgets/message_toast.dart';
 import 'package:mobile/core/widgets/retry_message.dart';
 import 'package:mobile/core/widgets/ride_contact_listener.dart';
@@ -44,9 +45,6 @@ class RidePage extends StatelessWidget {
   final WatchRideUseCase watchRideUseCase;
   final CancelRideUseCase cancelRideUseCase;
   final RateRideUseCase rateRideUseCase;
-
-  // Room kept for the bottom panel when framing the route on the map.
-  static const _panelHeight = 340.0;
 
   @override
   Widget build(BuildContext context) {
@@ -142,101 +140,97 @@ class RidePage extends StatelessWidget {
       RideDriverArrived() => true,
       _ => false,
     };
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: RideMap(
-            origin: origin,
-            bottomPadding: _panelHeight,
-            remainingRoute: remainingRoute?.path,
-            driverPosition: switch (ride) {
-              RideDriverApproaching(:final driverPosition) ||
-              RideDriverArrived(:final driverPosition) => driverPosition,
-              RideInProgress(:final taxiPosition) => taxiPosition,
-              _ => null,
-            },
-            destination: ride is RideInProgress ? ride.destination : null,
-            // In the taxi, the taxi marker alone shows where the passenger
-            // is: two GPS never quite agree.
-            showsDevicePosition: ride is! RideInProgress,
-          ),
-        ),
+    // The map frames the route above the panel's real height, measured.
+    return MapWithBottomPanel(
+      mapBuilder: (context, panelHeight) => RideMap(
+        origin: origin,
+        bottomPadding: panelHeight,
+        remainingRoute: remainingRoute?.path,
+        driverPosition: switch (ride) {
+          RideDriverApproaching(:final driverPosition) ||
+          RideDriverArrived(:final driverPosition) => driverPosition,
+          RideInProgress(:final taxiPosition) => taxiPosition,
+          _ => null,
+        },
+        destination: ride is RideInProgress ? ride.destination : null,
+        // In the taxi, the taxi marker alone shows where the passenger
+        // is: two GPS never quite agree.
+        showsDevicePosition: ride is! RideInProgress,
+      ),
+      overlays: [
         if (pill != null)
           Positioned(
             top: 0,
             left: 16,
             child: SafeArea(child: MapPill(text: pill)),
           ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: BottomPanel(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (!ride.isDriverConnected) ...[
-                  // The position, and the time shown, stopped moving: the
-                  // passenger must not think the driver stopped.
-                  const ConnectionLostBanner(
-                    title: 'Votre chauffeur a perdu la connexion.',
-                    consequence:
-                        'Sa position et l’heure d’arrivée ne sont plus à '
-                        'jour, mais il est peut-être toujours en route.',
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                switch (ride) {
-                  RideSearchingDriver() => _buildSearching(),
-                  RideNoDriverFound() => _buildStopped(
-                    context,
-                    title: 'Aucun taxi disponible',
-                    text:
-                        'Les taxis autour de vous sont occupés. Réessayez '
-                        'dans quelques minutes.',
-                  ),
-                  RideCancelled() => _buildStopped(
-                    context,
-                    title: 'Course annulée',
-                    text: 'Vous avez annulé cette course.',
-                  ),
-                  RidePassengerNoShow() => _buildStopped(
-                    context,
-                    title: 'Votre chauffeur ne vous a pas trouvé',
-                    text:
-                        'Il vous a attendu au point de prise en charge, '
-                        'puis a dû repartir.',
-                  ),
-                  RideDriverApproaching() => _buildApproaching(context, ride),
-                  RideDriverArrived() => _buildDriverComing(
-                    context,
-                    title:
-                        '${_firstName(ride.driver)} vous attend au point '
-                        'de prise en charge',
-                    driver: ride.driver,
-                    vehicle: ride.vehicle,
-                    boardingCode: ride.boardingCode,
-                  ),
-                  RideInProgress() => _buildInProgress(ride, remainingRoute),
-                  // Shown full screen, never on the map.
-                  RideCompleted() => const SizedBox.shrink(),
-                },
-                if (canCancel) ...[
-                  const SizedBox(height: 12),
-                  DestructiveButton(
-                    onPressed: isSubmitting
-                        ? null
-                        : () => context.read<RideBloc>().add(
-                            const RideCancelRequested(),
-                          ),
-                    alignment: Alignment.center,
-                    child: const Text('Annuler la course'),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
       ],
+      panel: BottomPanel(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (!ride.isDriverConnected) ...[
+              // The position, and the time shown, stopped moving: the
+              // passenger must not think the driver stopped.
+              const ConnectionLostBanner(
+                title: 'Votre chauffeur a perdu la connexion.',
+                consequence:
+                    'Sa position et l’heure d’arrivée ne sont plus à '
+                    'jour, mais il est peut-être toujours en route.',
+              ),
+              const SizedBox(height: 12),
+            ],
+            switch (ride) {
+              RideSearchingDriver() => _buildSearching(),
+              RideNoDriverFound() => _buildStopped(
+                context,
+                title: 'Aucun taxi disponible',
+                text:
+                    'Les taxis autour de vous sont occupés. Réessayez '
+                    'dans quelques minutes.',
+              ),
+              RideCancelled() => _buildStopped(
+                context,
+                title: 'Course annulée',
+                text: 'Vous avez annulé cette course.',
+              ),
+              RidePassengerNoShow() => _buildStopped(
+                context,
+                title: 'Votre chauffeur ne vous a pas trouvé',
+                text:
+                    'Il vous a attendu au point de prise en charge, '
+                    'puis a dû repartir.',
+              ),
+              RideDriverApproaching() => _buildApproaching(context, ride),
+              RideDriverArrived() => _buildDriverComing(
+                context,
+                title:
+                    '${_firstName(ride.driver)} vous attend au point '
+                    'de prise en charge',
+                driver: ride.driver,
+                vehicle: ride.vehicle,
+                boardingCode: ride.boardingCode,
+              ),
+              RideInProgress() => _buildInProgress(ride, remainingRoute),
+              // Shown full screen, never on the map.
+              RideCompleted() => const SizedBox.shrink(),
+            },
+            if (canCancel) ...[
+              const SizedBox(height: 12),
+              DestructiveButton(
+                onPressed: isSubmitting
+                    ? null
+                    : () => context.read<RideBloc>().add(
+                        const RideCancelRequested(),
+                      ),
+                alignment: Alignment.center,
+                child: const Text('Annuler la course'),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -333,28 +327,32 @@ class RidePage extends StatelessWidget {
           LicensePlate(plate: vehicle.plate),
         ],
         const SizedBox(height: 12),
-        DriverSummary(driver: driver, vehicle: vehicle),
+        RideContactListener(
+          child: DriverSummary(
+            driver: driver,
+            vehicle: vehicle,
+            actions: [
+              SecondaryButton(
+                density: ButtonDensity.icon,
+                shape: ButtonShape.circle,
+                onPressed: () => context.read<RideContactBloc>().add(
+                  RideContactMessaged(phone: driver.phone),
+                ),
+                child: const Icon(Icons.chat_bubble_outline),
+              ),
+              SecondaryButton(
+                density: ButtonDensity.icon,
+                shape: ButtonShape.circle,
+                onPressed: () => context.read<RideContactBloc>().add(
+                  RideContactCalled(phone: driver.phone),
+                ),
+                child: const Icon(Icons.phone_outlined),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 12),
         _buildBoardingCode(boardingCode),
-        const SizedBox(height: 12),
-        RideContactListener(
-          child: _buildActions([
-            (
-              Icons.phone_outlined,
-              'Appeler',
-              () => context.read<RideContactBloc>().add(
-                RideContactCalled(phone: driver.phone),
-              ),
-            ),
-            (
-              Icons.chat_bubble_outline,
-              'Écrire',
-              () => context.read<RideContactBloc>().add(
-                RideContactMessaged(phone: driver.phone),
-              ),
-            ),
-          ]),
-        ),
       ],
     );
   }
@@ -427,30 +425,6 @@ class RidePage extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-
-  Widget _buildActions(List<(IconData, String, VoidCallback)> actions) {
-    return Row(
-      children: [
-        for (final (index, (icon, label, onPressed)) in actions.indexed) ...[
-          if (index > 0) const SizedBox(width: 8),
-          Expanded(
-            child: OutlineButton(
-              onPressed: onPressed,
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, size: 20),
-                  const SizedBox(height: 4),
-                  Text(label, maxLines: 1),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ],
     );
   }
 }

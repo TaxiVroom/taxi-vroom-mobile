@@ -4,15 +4,23 @@ import 'package:mobile/core/utils/rating_formatter.dart';
 import 'package:mobile/features/passenger_home/domain/entities/driver.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-/// The driver's initials, name, rating and taxi licence.
+/// The driver's initials, name, rating and taxi licence, with optional round
+/// buttons at the end of the row.
 class DriverSummary extends StatelessWidget {
-  const DriverSummary({required this.driver, this.vehicle, super.key});
+  const DriverSummary({
+    required this.driver,
+    this.vehicle,
+    this.actions = const [],
+    super.key,
+  });
 
   final Driver driver;
 
   // Null for a driver registered before the "Votre taxi" step existed: no
   // licence line.
   final Vehicle? vehicle;
+
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +51,7 @@ class DriverSummary extends StatelessWidget {
             ],
           ),
         ),
+        for (final action in actions) ...[const SizedBox(width: 8), action],
       ],
     );
   }

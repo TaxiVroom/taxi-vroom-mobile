@@ -6,7 +6,9 @@ import 'package:mobile/core/domain/usecases/open_location_settings_usecase.dart'
 import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/driver_home/domain/entities/driver_home.dart';
+import 'package:mobile/features/driver_home/domain/usecases/go_offline_to_sign_out_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/load_driver_home_usecase.dart';
+import 'package:mobile/features/driver_home/domain/usecases/restore_driver_presence_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/set_online_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/share_driver_position_usecase.dart';
 import 'package:mobile/features/driver_home/domain/usecases/watch_online_allowed_usecase.dart';
@@ -21,7 +23,11 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     required ShareDriverPositionUseCase shareDriverPositionUseCase,
     required WatchOnlineAllowedUseCase watchOnlineAllowedUseCase,
     required OpenLocationSettingsUseCase openLocationSettingsUseCase,
+    required RestoreDriverPresenceUseCase restoreDriverPresenceUseCase,
+    required GoOfflineToSignOutUseCase goOfflineToSignOutUseCase,
   }) : _loadDriverHomeUseCase = loadDriverHomeUseCase,
+       _restoreDriverPresenceUseCase = restoreDriverPresenceUseCase,
+       _goOfflineToSignOutUseCase = goOfflineToSignOutUseCase,
        _openLocationSettingsUseCase = openLocationSettingsUseCase,
        _watchOnlineAllowedUseCase = watchOnlineAllowedUseCase,
        _setOnlineUseCase = setOnlineUseCase,
@@ -33,7 +39,15 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
     );
     on<DriverOnlineToggled>(_onOnlineToggled);
     on<_DriverTakenOfflineForDocuments>(_onTakenOfflineForDocuments);
+    on<DriverPresenceRestored>(_onPresenceRestored);
+    on<DriverSignOutRequested>(_onSignOutRequested);
   }
+
+  final RestoreDriverPresenceUseCase _restoreDriverPresenceUseCase;
+  final GoOfflineToSignOutUseCase _goOfflineToSignOutUseCase;
+
+  // Once per app start: later returns to the home must not run it again.
+  bool _hasRestoredPresence = false;
 
   final LoadDriverHomeUseCase _loadDriverHomeUseCase;
   final SetOnlineUseCase _setOnlineUseCase;
@@ -100,6 +114,77 @@ class DriverHomeBloc extends Bloc<DriverHomeEvent, DriverHomeState> {
         ),
       },
     );
+  }
+
+  // Waits for the home: its position is what going online needs.
+  Future<void> _onPresenceRestored(
+    DriverPresenceRestored event,
+    Emitter<DriverHomeState> emit,
+  ) async {
+    final currentState = state;
+    if (_hasRestoredPresence || currentState is DriverHomeLoading) return;
+    _hasRestoredPresence = true;
+    // No position: offline whatever the entry says, the home tells why.
+    if (currentState is! DriverHomeReady) {
+      await _restoreDriverPresenceUseCase(mayGoOnline: false);
+      return;
+    }
+    // Already back online with a resumed ride.
+    if (currentState.home.isOnline) return;
+
+    final home = currentState.home;
+    emit(DriverHomeReady(home: home, isRestoringPresence: true));
+    final result = await _restoreDriverPresenceUseCase(mayGoOnline: true);
+    if (result case Ok(value: true)) _startBeingOnline();
+    emit(
+      switch (result) {
+        Ok(value: true) => DriverHomeReady(
+          home: home.withOnline(isOnline: true),
+        ),
+        Ok() => DriverHomeReady(home: home),
+        Error(error: DocumentsBlockingFailure()) => DriverHomeReady(
+          home: home,
+          isBlockedByDocuments: true,
+        ),
+        Error(:final error) => DriverHomeReady(
+          home: home,
+          switchFailureMessage: error.message,
+        ),
+      },
+    );
+  }
+
+  // Positions stop first, so a late one does not write the entry back; they
+  // start again if the driver has to stay online.
+  Future<void> _onSignOutRequested(
+    DriverSignOutRequested event,
+    Emitter<DriverHomeState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! DriverHomeReady || currentState.isSigningOut) return;
+
+    final home = currentState.home;
+    // Offline: nothing left for the passengers, sign out at once.
+    if (!home.isOnline) {
+      emit(DriverHomeReady(home: home, isReadyToSignOut: true));
+      return;
+    }
+    emit(DriverHomeReady(home: home, isSigningOut: true));
+    await _stopBeingOnline();
+    switch (await _goOfflineToSignOutUseCase()) {
+      case Ok():
+        emit(
+          DriverHomeReady(
+            home: home.withOnline(isOnline: false),
+            isReadyToSignOut: true,
+          ),
+        );
+      case Error(:final error):
+        _startBeingOnline();
+        emit(
+          DriverHomeReady(home: home, signOutFailureMessage: error.message),
+        );
+    }
   }
 
   // A failed position is simply retried with the next one.
