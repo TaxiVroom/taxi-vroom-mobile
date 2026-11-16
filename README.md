@@ -95,5 +95,9 @@ The tests cover the business rules: entities and use cases in pure Dart, written
 - Recompute the driver's route when they leave it. Guidance computes it once today.
 - Replace the placeholder Google sign-in button of the registration.
 
+## How I work with AI
+
+I set up a versioned [`.aimemory/`](./.aimemory) knowledge base in each repo that AI coding assistants must follow: the architecture, and working rules such as "write the spec first, no code without my approval". It lives in git, so the rules are reviewed like code. I make the design decisions and review every change.
+
 ## Contact
 
