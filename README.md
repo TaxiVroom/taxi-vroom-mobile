@@ -2,10 +2,10 @@
 
 Flutter app of **Taxi Vroom**, a ride-hailing app for French licensed taxis. One app, two roles: a passenger gets a legal price estimate and orders a taxi, a driver goes online, accepts the offer and drives the ride with turn-by-turn guidance.
 
-Backend (NestJS, PostgreSQL, Firebase): [taxi-vroom-api](https://github.com/TaxiVroom/taxi-vroom-api)
-
 ## Demo
 https://github.com/user-attachments/assets/a5a6274a-ff3d-44c9-a1ac-9627ad9f8cf0
+
+Backend (NestJS, PostgreSQL, Firebase): [taxi-vroom-api](https://github.com/TaxiVroom/taxi-vroom-api)
 
 ## Architecture
 
