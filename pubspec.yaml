@@ -19,12 +19,12 @@ dependencies:
   font_awesome_flutter: ^10.8.0
   permission_handler: ^12.0.1
   shadcn_flutter: ^0.0.51
-  firebase_auth: ^6.1.4
-  firebase_core: ^4.4.0
+  firebase_auth: ^7.1.0
+  firebase_core: ^5.2.0
   flow_builder: ^0.1.0
   dio: ^5.9.1
-  envied: ^1.3.3
-  envied_generator: ^1.3.3
+  envied: ^1.3.10
+  envied_generator: ^1.3.9
   image_picker: ^1.2.1
   image_cropper: ^11.0.0
   flutter_screenutil: ^5.9.3
@@ -32,20 +32,20 @@ dependencies:
   geolocator: ^14.1.0
   uuid: ^4.6.0
   stream_transform: ^2.1.2
-  firebase_database: ^12.6.0
+  firebase_database: ^13.1.0
   flutter_geo_hash: ^0.0.7
-  firebase_messaging: ^16.7.1
+  firebase_messaging: ^17.1.0
   url_launcher: ^6.3.3
 dev_dependencies:
   flutter_native_splash: ^2.4.6
-  bloc_lint: ">=0.3.3 <0.3.6"
+  bloc_lint: ^0.4.4
   bloc_test: ^10.0.0
-  bloc_tools: ^0.1.0-dev.20
+  bloc_tools: ^0.1.0-dev.26
   flutter_test:
     sdk: flutter
   mocktail: ^1.0.4
   very_good_analysis: ^10.1.0
-  build_runner: ^2.11.1
+  build_runner: ^2.16.2
   fake_async: ^1.3.3
 
 flutter:
